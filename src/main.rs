@@ -27,16 +27,17 @@ pub struct AggravationPlugin;
 
 impl Plugin for AggravationPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .insert_resource(HelloTimer(Timer::from_seconds(2.0, true)))
-            .add_system(hello_world);
+        app.add_startup_system(setup);
     }
 }
 
-pub struct HelloTimer(Timer);
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    // need a 2D camera so we can see things
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
-fn hello_world(time: Res<Time>, mut timer: ResMut<HelloTimer>) {
-    if timer.0.tick(time.delta()).just_finished() {
-        println!("hello world!");
-    }
+    // board
+    commands.spawn_bundle(SpriteBundle {
+        texture: asset_server.load("board.png"),
+        ..default()
+    });
 }
