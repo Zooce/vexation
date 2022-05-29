@@ -1,9 +1,25 @@
 use bevy::prelude::*;
+use bevy::window::PresentMode;
+
+const TILE_SIZE: f32 = 32.;
+const WINDOW_SIZE: f32 = TILE_SIZE * 17.;
 
 fn main() {
     App::new()
+        // resources
+        .insert_resource(WindowDescriptor {
+            title: "Aggravation".to_string(),
+            width: WINDOW_SIZE,
+            height: WINDOW_SIZE,
+            resizable: false,
+            present_mode: PresentMode::Fifo,
+            ..default()
+        })
+
+        // plugins
         .add_plugins(DefaultPlugins)
         .add_plugin(AggravationPlugin)
+
         .run();
 }
 
