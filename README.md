@@ -6,6 +6,19 @@ This is my implementation of Aggravation with the Bevy engine!
 
 > Note: I'm following the Bevy book to get this set up.
 
+## Flow
+
+1. Render the board + marbles
+2. Ask the user to click on a player tile to choose their color
+3. Render the human player indicator
+4. Randomly choose the starting player
+5. Play loop:
+    1. Render the dice in the current player's tile
+    2. Roll the dice (animation)
+    3. Player move/capture
+    4. Break if current player wins
+6. Play again?
+
 ## TODOs (in no particular order)
 
 Drawing Systems:
