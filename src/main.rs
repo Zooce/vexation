@@ -41,10 +41,46 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
     // board
-    commands.spawn_bundle(SpriteBundle {
+    commands.spawn_bundle(SpriteBundle{
         texture: asset_server.load("board.png"),
         ..default()
     });
+
+    // marbles
+    for (x, y) in vec![(3., 3.5), (3., 4.5), (4., 3.), (4., 4.), (4., 5.)] {
+        // green marbles
+        commands
+            .spawn_bundle(SpriteBundle{
+                texture: asset_server.load("green-marble.png"),
+                transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 1.),
+                ..default()
+            })
+            ;
+        // yellow marbles
+        commands
+            .spawn_bundle(SpriteBundle{
+                texture: asset_server.load("yellow-marble.png"),
+                transform: Transform::from_xyz(-x * TILE_SIZE, -y * TILE_SIZE, 1.),
+                ..default()
+            })
+            ;
+        // red marbles
+        commands
+            .spawn_bundle(SpriteBundle{
+                texture: asset_server.load("red-marble.png"),
+                transform: Transform::from_xyz(-y * TILE_SIZE, x * TILE_SIZE, 1.),
+                ..default()
+            })
+            ;
+        // blue marbles
+        commands
+            .spawn_bundle(SpriteBundle{
+                texture: asset_server.load("blue-marble.png"),
+                transform: Transform::from_xyz(y * TILE_SIZE, -x * TILE_SIZE, 1.),
+                ..default()
+            })
+            ;
+    }
 }
 
 fn handle_mouse_clicks(mut mouse_events: EventReader<MouseButtonInput>, windows: Res<Windows>) {
