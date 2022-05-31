@@ -26,8 +26,8 @@ Drawing Systems:
 - [ ] Draw the dice
     - [ ] Orientation is based on current player
     - Note: the player with the dice is the current player
-- [ ] Draw the marbles (5 per player)
-    - [ ] "Jailed" marbles' orientation is based on current player
+- [x] Draw the marbles (5 per player)
+    - [x] "Jailed" marbles' orientation is based on current player
 - [ ] Animate marble movement
 - [ ] Draw human player indicator (arrow pointing at the color they chose)
 
@@ -41,3 +41,12 @@ Other Game Systems:
 - [ ] Make computer player moves
 - [ ] Choose the player who goes first
 - [ ] Player picks their color
+
+## Tile Mapping
+
+Starts from hte bottom left corner since window cursor positions are calculated from the bottom left corner.
+
+Game board range:
+
+- Horizontal: col(2, 14) row(7, 9)
+- Vertical: col(7, 9), row(2, 14)
