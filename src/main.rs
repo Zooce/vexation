@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy::window::PresentMode;
 use bevy::input::mouse::{MouseButtonInput, MouseButton};
+use bevy::math::const_vec2;
 
 use rand::{Rng, thread_rng};
 use rand::distributions::Uniform;
@@ -8,6 +9,10 @@ use rand::distributions::Uniform;
 const TILE_SIZE: f32 = 32.;
 const TILE_COUNT: f32 = 17.;
 const WINDOW_SIZE: f32 = TILE_SIZE * TILE_COUNT;
+const RED_DICE_LOCATIONS: (Vec2, Vec2) = (const_vec2!([-3.0 * TILE_SIZE, 5.5 * TILE_SIZE]), const_vec2!([-5.0 * TILE_SIZE, 5.5 * TILE_SIZE]));
+const GREEN_DICE_LOCATIONS: (Vec2, Vec2) = (const_vec2!([5.5 * TILE_SIZE, 3.0 * TILE_SIZE]), const_vec2!([5.5 * TILE_SIZE, 5.0 * TILE_SIZE]));
+const BLUE_DICE_LOCATIONS: (Vec2, Vec2) = (const_vec2!([3.0 * TILE_SIZE, -5.5 * TILE_SIZE]), const_vec2!([5.0 * TILE_SIZE, -5.5 * TILE_SIZE]));
+const YELLOW_DICE_LOCATIONS: (Vec2, Vec2) = (const_vec2!([-5.5 * TILE_SIZE, -3.0 * TILE_SIZE]), const_vec2!([-5.5 * TILE_SIZE, -5.0 * TILE_SIZE]));
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum GameState {
@@ -20,7 +25,7 @@ pub enum GameState {
 }
 
 #[derive(Debug)]
-pub struct GameData {
+pub struct DiceData {
     pub die_1: Entity,
     pub die_2: Entity,
     pub die_sheet_handle: Handle<TextureAtlas>,
@@ -31,6 +36,19 @@ pub struct Die {
     animation_timer: Timer,
     side: u8,
 }
+
+#[derive(Component)]
+pub enum Player {
+    Red,
+    Green,
+    Blue,
+    Yellow,
+}
+
+pub struct PlayerData {
+    current_player: Player,
+}
+
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
@@ -58,12 +76,14 @@ impl Plugin for AggravationPlugin {
     fn build(&self, app: &mut App) {
         app
             .insert_resource(RollAnimationTimer(Timer::from_seconds(3., false)))
+            .insert_resource(PlayerData{ current_player: Player::Red }) // TODO: pick starting player by rolling dice for each player - biggest roll wins
 
             .add_startup_system(setup)
 
             .add_state(GameState::NextPlayer)
 
-            // prototyping turn-based systems
+            // TODO: define ChooseColor state
+
             .add_system_set(SystemSet::on_enter(GameState::NextPlayer).with_system(next_player))
 
             .add_system_set(SystemSet::on_enter(GameState::TurnSetup).with_system(turn_setup))
@@ -144,7 +164,6 @@ fn setup(
         asset_server.load("die-sheet.png"), Vec2::new(32.0, 32.0), 6, 1
     );
     let die_sheet_handle = texture_atlases.add(texture_atlas);
-    let (d1, d2) = roll_dice();
     let die_1 = commands
         .spawn_bundle(SpriteSheetBundle {
             texture_atlas: die_sheet_handle.clone(),
@@ -153,7 +172,7 @@ fn setup(
         })
         .insert(Die{
             animation_timer: Timer::from_seconds(0.1, true),
-            side: d1,
+            side: roll_die(),
             })
         .id()
         ;
@@ -165,12 +184,12 @@ fn setup(
         })
         .insert(Die{
             animation_timer: Timer::from_seconds(0.1, true),
-            side: d2,
+            side: roll_die(),
             })
         .id()
         ;
 
-    commands.insert_resource(GameData{
+    commands.insert_resource(DiceData{
         die_1,
         die_2,
         die_sheet_handle,
@@ -182,28 +201,40 @@ fn setup(
 
 // TODO: consider using https://github.com/IyesGames/iyes_loopless to organize this turn-based game
 
-fn next_player(mut state: ResMut<State<GameState>>) {
+fn next_player(mut state: ResMut<State<GameState>>, mut player_data: ResMut<PlayerData>) {
     println!("1. next_player");
+
+    player_data.current_player = match player_data.current_player {
+        Player::Red => Player::Green,
+        Player::Green => Player::Blue,
+        Player::Blue => Player::Yellow,
+        Player::Yellow => Player::Red,
+    };
 
     state.set(GameState::TurnSetup).unwrap();
 }
 
-fn turn_setup(game_data: Res<GameData>, mut dice: Query<(&mut Visibility, &mut Transform, &mut Die)>) {
-    let (d1, d2) = roll_dice();
+fn turn_setup(dice_data: Res<DiceData>, player_data: Res<PlayerData>, mut dice: Query<(&mut Visibility, &mut Transform, &mut Die)>) {
+    let (d1_loc, d2_loc) = match player_data.current_player {
+        Player::Red => RED_DICE_LOCATIONS,
+        Player::Green => GREEN_DICE_LOCATIONS,
+        Player::Blue => BLUE_DICE_LOCATIONS,
+        Player::Yellow => YELLOW_DICE_LOCATIONS,
+    };
 
-    let (mut visibility, mut transform, mut die) = dice.get_mut(game_data.die_1).expect("Unable to get die 1");
+    let (mut visibility, mut transform, mut die) = dice.get_mut(dice_data.die_1).expect("Unable to get die 1");
     visibility.is_visible = true;
-    transform.translation.x = 3.0 * TILE_SIZE; // TOOD: move transform to current player's base
-    transform.translation.y = -5.5 * TILE_SIZE; // TOOD: move transform to current player's base
+    transform.translation.x = d1_loc.x;
+    transform.translation.y = d1_loc.y;
     die.animation_timer.reset();
-    die.side = d1;
+    die.side = roll_die();
 
-    let (mut visibility, mut transform, mut die) = dice.get_mut(game_data.die_2).expect("Unable to get dice 2");
+    let (mut visibility, mut transform, mut die) = dice.get_mut(dice_data.die_2).expect("Unable to get dice 2");
     visibility.is_visible = true;
-    transform.translation.x = 5.0 * TILE_SIZE; // TOOD: move transform to current player's base
-    transform.translation.y = -5.5 * TILE_SIZE; // TOOD: move transform to current player's base
+    transform.translation.x = d2_loc.x;
+    transform.translation.y = d2_loc.y;
     die.animation_timer.reset();
-    die.side = d2;
+    die.side = roll_die();
 
     println!("2b. calc possible moves for current player's marbles");
 }
@@ -217,8 +248,7 @@ fn roll_animation(
     // https://github.com/bevyengine/bevy/blob/latest/examples/2d/sprite_sheet.rs
     for (mut die, mut sprite) in query.iter_mut() {
         if die.animation_timer.tick(time.delta()).just_finished() {
-            let (d, _) = roll_dice();
-            sprite.index = (d - 1) as usize % 6;
+            sprite.index = (roll_die() - 1) as usize;
         }
     }
 
@@ -229,21 +259,21 @@ fn roll_animation(
     }
 }
 
-fn roll_dice() -> (u8, u8) {
+fn roll_die() -> u8 {
     let mut rng = thread_rng();
     let die = Uniform::new_inclusive(1u8, 6u8);
-    (rng.sample(die), rng.sample(die))
+    rng.sample(die)
 }
 
 fn stop_roll_animation(
     mut query: Query<(&Die, &mut TextureAtlasSprite)>,
-    game_data: Res<GameData>,
+    dice_data: Res<DiceData>,
 ) {
-    let (die, mut sprite) = query.get_mut(game_data.die_1).expect("Unable to get die 1");
-    sprite.index = (die.side - 1) as usize % 6;
+    let (die, mut sprite) = query.get_mut(dice_data.die_1).expect("Unable to get die 1");
+    sprite.index = (die.side - 1) as usize;
 
-    let (die, mut sprite) = query.get_mut(game_data.die_2).expect("Unable to get die 2");
-    sprite.index = (die.side - 1) as usize % 6;
+    let (die, mut sprite) = query.get_mut(dice_data.die_2).expect("Unable to get die 2");
+    sprite.index = (die.side - 1) as usize;
 }
 
 fn choose_moves(mut state: ResMut<State<GameState>>) {
