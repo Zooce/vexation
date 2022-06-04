@@ -2,6 +2,9 @@ use bevy::prelude::*;
 use bevy::window::PresentMode;
 use bevy::input::mouse::{MouseButtonInput, MouseButton};
 
+use rand::{Rng, thread_rng};
+use rand::distributions::Uniform;
+
 const TILE_SIZE: f32 = 32.;
 const TILE_COUNT: f32 = 17.;
 const WINDOW_SIZE: f32 = TILE_SIZE * TILE_COUNT;
@@ -16,8 +19,22 @@ pub enum GameState {
     CheckWinner,
 }
 
+#[derive(Debug)]
+pub struct GameData {
+    pub die_1: Entity,
+    pub die_2: Entity,
+    pub die_sheet_handle: Handle<TextureAtlas>,
+}
+
+#[derive(Component)]
+pub struct Die {
+    animation_timer: Timer,
+    side: u8,
+}
 fn main() {
     App::new()
+        .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
+
         // resources
         .insert_resource(WindowDescriptor {
             title: "Aggravation".to_string(),
@@ -40,8 +57,9 @@ pub struct AggravationPlugin;
 impl Plugin for AggravationPlugin {
     fn build(&self, app: &mut App) {
         app
+            .insert_resource(RollAnimationTimer(Timer::from_seconds(3., false)))
+
             .add_startup_system(setup)
-            .insert_resource(RollAnimationTimer(Timer::from_seconds(3., true)))
 
             .add_state(GameState::NextPlayer)
 
@@ -67,7 +85,11 @@ pub struct RollAnimationTimer(Timer);
 #[derive(Component)]
 pub struct Marble;
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+) {
     // need a 2D camera so we can see things
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
@@ -116,6 +138,43 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             .insert(Marble)
             ;
     }
+
+    // die sprite sheet
+    let texture_atlas = TextureAtlas::from_grid(
+        asset_server.load("die-sheet.png"), Vec2::new(32.0, 32.0), 6, 1
+    );
+    let die_sheet_handle = texture_atlases.add(texture_atlas);
+    let (d1, d2) = roll_dice();
+    let die_1 = commands
+        .spawn_bundle(SpriteSheetBundle {
+            texture_atlas: die_sheet_handle.clone(),
+            visibility: Visibility{ is_visible: false },
+            ..default()
+        })
+        .insert(Die{
+            animation_timer: Timer::from_seconds(0.1, true),
+            side: d1,
+            })
+        .id()
+        ;
+    let die_2 = commands
+        .spawn_bundle(SpriteSheetBundle {
+            texture_atlas: die_sheet_handle.clone(),
+            visibility: Visibility{ is_visible: false },
+            ..default()
+        })
+        .insert(Die{
+            animation_timer: Timer::from_seconds(0.1, true),
+            side: d2,
+            })
+        .id()
+        ;
+
+    commands.insert_resource(GameData{
+        die_1,
+        die_2,
+        die_sheet_handle,
+    });
 }
 
 // TOOD: when a human player's marble is clicked, send and event to highlight the tiles it can move to based on the current state of the dice
@@ -129,23 +188,62 @@ fn next_player(mut state: ResMut<State<GameState>>) {
     state.set(GameState::TurnSetup).unwrap();
 }
 
-fn turn_setup() {
-    println!("2a. choose dice values randomly");
+fn turn_setup(game_data: Res<GameData>, mut dice: Query<(&mut Visibility, &mut Transform, &mut Die)>) {
+    let (d1, d2) = roll_dice();
+
+    let (mut visibility, mut transform, mut die) = dice.get_mut(game_data.die_1).expect("Unable to get die 1");
+    visibility.is_visible = true;
+    transform.translation.x = 3.0 * TILE_SIZE; // TOOD: move transform to current player's base
+    transform.translation.y = -5.5 * TILE_SIZE; // TOOD: move transform to current player's base
+    die.animation_timer.reset();
+    die.side = d1;
+
+    let (mut visibility, mut transform, mut die) = dice.get_mut(game_data.die_2).expect("Unable to get dice 2");
+    visibility.is_visible = true;
+    transform.translation.x = 5.0 * TILE_SIZE; // TOOD: move transform to current player's base
+    transform.translation.y = -5.5 * TILE_SIZE; // TOOD: move transform to current player's base
+    die.animation_timer.reset();
+    die.side = d2;
+
     println!("2b. calc possible moves for current player's marbles");
 }
 
-fn roll_animation(mut state: ResMut<State<GameState>>, time: Res<Time>, mut roll_animation_timer: ResMut<RollAnimationTimer>) {
+fn roll_animation(
+    mut state: ResMut<State<GameState>>,
+    time: Res<Time>,
+    mut roll_animation_timer: ResMut<RollAnimationTimer>,
+    mut query: Query<(&mut Die, &mut TextureAtlasSprite)>,
+) {
     // https://github.com/bevyengine/bevy/blob/latest/examples/2d/sprite_sheet.rs
-    println!("3. roll animation for X seconds");
+    for (mut die, mut sprite) in query.iter_mut() {
+        if die.animation_timer.tick(time.delta()).just_finished() {
+            let (d, _) = roll_dice();
+            sprite.index = (d - 1) as usize % 6;
+        }
+    }
 
     if roll_animation_timer.0.tick(time.delta()).just_finished() {
+        roll_animation_timer.0.reset();
         // after the animation has run for X seconds, go to the ChooseMoves state
         state.set(GameState::ChooseMoves).unwrap();
     }
 }
 
-fn stop_roll_animation() {
-    println!("4. stop roll animation on sprite sheet index corresponding to randomly chosen dice valuse");
+fn roll_dice() -> (u8, u8) {
+    let mut rng = thread_rng();
+    let die = Uniform::new_inclusive(1u8, 6u8);
+    (rng.sample(die), rng.sample(die))
+}
+
+fn stop_roll_animation(
+    mut query: Query<(&Die, &mut TextureAtlasSprite)>,
+    game_data: Res<GameData>,
+) {
+    let (die, mut sprite) = query.get_mut(game_data.die_1).expect("Unable to get die 1");
+    sprite.index = (die.side - 1) as usize % 6;
+
+    let (die, mut sprite) = query.get_mut(game_data.die_2).expect("Unable to get die 2");
+    sprite.index = (die.side - 1) as usize % 6;
 }
 
 fn choose_moves(mut state: ResMut<State<GameState>>) {

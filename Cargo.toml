@@ -9,3 +9,4 @@ edition = "2021"
 
 # TODO: remove the "dynamic" feature when we're done so the binary can be standalone
 bevy = { version = "0.7.0", features = ["dynamic"] }
+rand = "0.8"
