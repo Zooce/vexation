@@ -9,10 +9,6 @@ use rand::distributions::Uniform;
 const TILE_SIZE: f32 = 32.;
 const TILE_COUNT: f32 = 17.;
 const WINDOW_SIZE: f32 = TILE_SIZE * TILE_COUNT;
-const RED_DICE_LOCATIONS: (Vec2, Vec2) = (const_vec2!([-3.0 * TILE_SIZE, 5.5 * TILE_SIZE]), const_vec2!([-5.0 * TILE_SIZE, 5.5 * TILE_SIZE]));
-const GREEN_DICE_LOCATIONS: (Vec2, Vec2) = (const_vec2!([5.5 * TILE_SIZE, 3.0 * TILE_SIZE]), const_vec2!([5.5 * TILE_SIZE, 5.0 * TILE_SIZE]));
-const BLUE_DICE_LOCATIONS: (Vec2, Vec2) = (const_vec2!([3.0 * TILE_SIZE, -5.5 * TILE_SIZE]), const_vec2!([5.0 * TILE_SIZE, -5.5 * TILE_SIZE]));
-const YELLOW_DICE_LOCATIONS: (Vec2, Vec2) = (const_vec2!([-5.5 * TILE_SIZE, -3.0 * TILE_SIZE]), const_vec2!([-5.5 * TILE_SIZE, -5.0 * TILE_SIZE]));
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum GameState {
@@ -216,23 +212,23 @@ fn next_player(mut state: ResMut<State<GameState>>, mut player_data: ResMut<Play
 
 fn turn_setup(dice_data: Res<DiceData>, player_data: Res<PlayerData>, mut dice: Query<(&mut Visibility, &mut Transform, &mut Die)>) {
     let (d1_loc, d2_loc) = match player_data.current_player {
-        Player::Red => RED_DICE_LOCATIONS,
-        Player::Green => GREEN_DICE_LOCATIONS,
-        Player::Blue => BLUE_DICE_LOCATIONS,
-        Player::Yellow => YELLOW_DICE_LOCATIONS,
+        Player::Red    => ((-3.0,  5.5), (-5.0,  5.5)),
+        Player::Green  => (( 5.5,  3.0), ( 5.5,  5.0)),
+        Player::Blue   => (( 3.0, -5.5), ( 5.0, -5.5)),
+        Player::Yellow => ((-5.5, -3.0), (-5.5, -5.0)),
     };
 
     let (mut visibility, mut transform, mut die) = dice.get_mut(dice_data.die_1).expect("Unable to get die 1");
     visibility.is_visible = true;
-    transform.translation.x = d1_loc.x;
-    transform.translation.y = d1_loc.y;
+    transform.translation.x = d1_loc.0 * TILE_SIZE;
+    transform.translation.y = d1_loc.1 * TILE_SIZE;
     die.animation_timer.reset();
     die.side = roll_die();
 
     let (mut visibility, mut transform, mut die) = dice.get_mut(dice_data.die_2).expect("Unable to get dice 2");
     visibility.is_visible = true;
-    transform.translation.x = d2_loc.x;
-    transform.translation.y = d2_loc.y;
+    transform.translation.x = d2_loc.0 * TILE_SIZE;
+    transform.translation.y = d2_loc.1 * TILE_SIZE;
     die.animation_timer.reset();
     die.side = roll_die();
 
