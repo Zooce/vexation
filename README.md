@@ -1,52 +1,45 @@
-# The Aggravation game with Bevy
+# Vexation
 
-This is my implementation of Aggravation with the Bevy engine!
+Vexation is a game very similar to [Aggravation](https://en.wikipedia.org/wiki/Aggravation_(board_game)) but with a few tweaks.
 
-> Important: Remove the "dynamic" feature from our Bevy dep before release.
+## The Objective
 
-> Note: I'm following the Bevy book to get this set up.
+The first player to move all 5 of their marbles clockwise around the board and into their "home" row wins.
 
-## Flow
+## The Board
 
-1. Render the board + marbles
-2. Ask the user to click on a player tile to choose their color
-3. Render the human player indicator
-4. Randomly choose the starting player
-5. Play loop:
-    1. Render the dice in the current player's tile
-    2. Roll the dice (animation)
-    3. Player move/capture
-    4. Break if current player wins
-6. Play again?
+> TODO: include an annotated picture
 
-## TODOs (in no particular order)
+1. Base
+    * This is where marbles start and go back to if they are captured.
+    * The base with the dice indicates the current player.
+    * The base highlighed indicates the human player.
+2. Starting space
+    * Must roll a 1 to exit the base and land on this space.
+3. Home row
+    * Only the matching color can enter their home row.
+4. Shortcut entrance
+    * The 3 colors in the corner indicate which players **can** enter from this space.
+    * The colored arrow indicates which player **cannot** enter from this space.
+    * Can only enter with an exact roll of **both** dice. Ex: Marble at starting space and rolled a total of 6 (e.g, 2+4, 3+3, etc.).
+5. Center
+    * Must roll a 1 to exit.
+    * Can only exit in the direction matching your color.
 
-Drawing Systems:
-- [x] Draw the board
-- [ ] Draw the dice
-    - [ ] Orientation is based on current player
-    - Note: the player with the dice is the current player
-- [x] Draw the marbles (5 per player)
-    - [x] "Jailed" marbles' orientation is based on current player
-- [ ] Animate marble movement
-- [ ] Draw human player indicator (arrow pointing at the color they chose)
+## Setup
 
-User Input:
-- [ ] Allow user to chose their move (2-step: choose marble > choose destination)
+The human player picks their color by clicking on the "base" of the color they want. Then random player is chosen to go first.
 
-Other Game Systems:
-- [ ] Setup (resources, system registration, spawn entities, etc.)
-- [ ] Roll dice for the current player
-- [ ] Choose next player
-- [ ] Make computer player moves
-- [ ] Choose the player who goes first
-- [ ] Player picks their color
+## Player Turn
 
-## Tile Mapping
+First, the dice are automatically rolled for the current player. The player can then use the values of the dice individually to move two marbles or use the sum of the dice to move one marble clockwise around the board.
 
-Starts from hte bottom left corner since window cursor positions are calculated from the bottom left corner.
+## Marble Movement and Captures
 
-Game board range:
+A player's marble can hop over opponents marbles but cannot hop over their own marbles. If a marble lands exacly on an opponent's marble the opponent's marble is considered "captured" and is moved back to its base.
 
-- Horizontal: col(2, 14) row(7, 9)
-- Vertical: col(7, 9), row(2, 14)
+---
+
+## Running the game
+
+Download or clone this repository, install [Rust](https://rust-lang.org), and running `cargo run` at the root of the directory.
