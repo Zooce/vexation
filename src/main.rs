@@ -143,7 +143,7 @@ pub struct Die {
     side: u8,
 }
 
-#[derive(Component)]
+#[derive(Component, Eq, PartialEq, Clone)]
 pub enum Player {
     Red,
     Green,
@@ -151,9 +151,31 @@ pub enum Player {
     Yellow,
 }
 
+impl From<u8> for Player {
+    fn from(x: u8) -> Self {
+        match x {
+            0 => Player::Red,
+            1 => Player::Green,
+            2 => Player::Blue,
+            3 => Player::Yellow,
+            _ => panic!("Cannot convert {} to Player", x),
+        }
+    }
+}
+
 pub struct PlayerData {
     current_player: Player,
 }
+
+pub struct RollAnimationTimer(Timer);
+
+#[derive(Component)]
+pub struct Marble {
+    index: usize,
+}
+
+#[derive(Component)]
+pub struct CurrentPlayer;
 
 fn main() {
     App::new()
@@ -182,7 +204,6 @@ impl Plugin for AggravationPlugin {
     fn build(&self, app: &mut App) {
         app
             .insert_resource(RollAnimationTimer(Timer::from_seconds(3., false)))
-            .insert_resource(PlayerData{ current_player: Player::Red }) // TODO: pick starting player by rolling dice for each player - biggest roll wins
 
             .add_startup_system(setup)
 
@@ -206,11 +227,6 @@ impl Plugin for AggravationPlugin {
     }
 }
 
-pub struct RollAnimationTimer(Timer);
-
-#[derive(Component)]
-pub struct Marble;
-
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -225,44 +241,68 @@ fn setup(
         ..default()
     });
 
+    // pick the first player randomly
+    let current_player: Player = ((roll_die() - 1) % 4).into();
+    commands.insert_resource(PlayerData{ current_player: current_player.clone() });
+
     // marbles
     for (x, y) in vec![(3., 3.5), (3., 4.5), (4., 3.), (4., 4.), (4., 5.)] {
         // green marbles
-        commands
+        let mut green = commands
             .spawn_bundle(SpriteBundle{
                 texture: asset_server.load("green-marble.png"),
                 transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 1.),
                 ..default()
-            })
-            .insert(Marble)
+            });
+        green
+            .insert(Marble{ index: BOARD.len() })
+            .insert(Player::Green)
             ;
+        if current_player == Player::Green {
+            green.insert(CurrentPlayer);
+        }
         // yellow marbles
-        commands
+        let mut yellow = commands
             .spawn_bundle(SpriteBundle{
                 texture: asset_server.load("yellow-marble.png"),
                 transform: Transform::from_xyz(-x * TILE_SIZE, -y * TILE_SIZE, 1.),
                 ..default()
-            })
-            .insert(Marble)
+            });
+        yellow
+            .insert(Marble{ index: BOARD.len() })
+            .insert(Player::Yellow)
             ;
+        if current_player == Player::Yellow {
+            yellow.insert(CurrentPlayer);
+        }
         // red marbles
-        commands
+        let mut red = commands
             .spawn_bundle(SpriteBundle{
                 texture: asset_server.load("red-marble.png"),
                 transform: Transform::from_xyz(-y * TILE_SIZE, x * TILE_SIZE, 1.),
                 ..default()
-            })
-            .insert(Marble)
+            });
+        red
+            .insert(Marble{ index: BOARD.len() })
+            .insert(Player::Red)
             ;
+        if current_player == Player::Red {
+            red.insert(CurrentPlayer);
+        }
         // blue marbles
-        commands
+        let mut blue = commands
             .spawn_bundle(SpriteBundle{
                 texture: asset_server.load("blue-marble.png"),
                 transform: Transform::from_xyz(y * TILE_SIZE, -x * TILE_SIZE, 1.),
                 ..default()
-            })
-            .insert(Marble)
+            });
+        blue
+            .insert(Marble{ index: BOARD.len() })
+            .insert(Player::Blue)
             ;
+        if current_player == Player::Blue {
+            blue.insert(CurrentPlayer);
+        }
     }
 
     // die sprite sheet
@@ -307,15 +347,22 @@ fn setup(
 
 // TODO: consider using https://github.com/IyesGames/iyes_loopless to organize this turn-based game
 
-fn next_player(mut state: ResMut<State<GameState>>, mut player_data: ResMut<PlayerData>) {
-    println!("1. next_player");
-
+fn next_player(mut commands: Commands, mut state: ResMut<State<GameState>>, mut player_data: ResMut<PlayerData>, marbles: Query<(Entity, &Player, Option<&CurrentPlayer>), With<Marble>>) {
     player_data.current_player = match player_data.current_player {
         Player::Red => Player::Green,
         Player::Green => Player::Blue,
         Player::Blue => Player::Yellow,
         Player::Yellow => Player::Red,
     };
+
+    for (marble, color, current_player) in marbles.iter() {
+        if current_player.is_some() {
+            commands.entity(marble).remove::<CurrentPlayer>();
+        }
+        if *color == player_data.current_player {
+            commands.entity(marble).insert(CurrentPlayer);
+        }
+    }
 
     state.set(GameState::TurnSetup).unwrap();
 }
@@ -342,7 +389,7 @@ fn turn_setup(dice_data: Res<DiceData>, player_data: Res<PlayerData>, mut dice: 
     die.animation_timer.reset();
     die.side = roll_die();
 
-    println!("2b. calc possible moves for current player's marbles");
+    println!("2b. calc possible moves for current player's marbles"); // with system after this one
 }
 
 fn calc_possible_moves() {
