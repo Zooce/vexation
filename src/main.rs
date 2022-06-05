@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy::window::PresentMode;
 use bevy::input::mouse::{MouseButtonInput, MouseButton};
-use bevy::math::const_vec2;
 
 use rand::{Rng, thread_rng};
 use rand::distributions::Uniform;
@@ -9,6 +8,117 @@ use rand::distributions::Uniform;
 const TILE_SIZE: f32 = 32.;
 const TILE_COUNT: f32 = 17.;
 const WINDOW_SIZE: f32 = TILE_SIZE * TILE_COUNT;
+
+/// Main board cell indexes - rotate clockwise for each color
+///
+///                10 11 12
+///                 9 -- 13
+///                 8 -- 14
+///                 7 -- 15
+/// red             6 -- 16          green
+///  0  1  2  3  4  5 -- 17 18 19 20 21 22
+/// 47 48 49 50 51 52 53 -- -- -- -- -- 23
+/// 46 45 44 43 42 41 -- 29 28 27 26 25 24
+/// yellow         40 -- 30           blue
+///                39 -- 31
+///                38 -- 32
+///                37 -- 33
+///                36 35 34
+///
+const BOARD: [(i32, i32); 54] = [
+    ((-6, 1)), // 0: start
+    ((-5, 1)),
+    ((-4, 1)),
+    ((-3, 1)),
+    ((-2, 1)),
+
+    ((-1, 1)), // 5: shortcut entrance
+
+    ((-1, 2)),
+    ((-1, 3)),
+    ((-1, 4)),
+    ((-1, 5)),
+    ((-1, 6)),
+
+    ((0, 6)),
+
+    ((1, 6)),
+    ((1, 5)),
+    ((1, 4)),
+    ((1, 3)),
+    ((1, 2)),
+
+    ((1, 1)), // 17: shortcut entrance
+
+    ((2, 1)),
+    ((3, 1)),
+    ((4, 1)),
+    ((5, 1)),
+    ((6, 1)),
+
+    ((6, 0)),
+
+    ((6, -1)),
+    ((5, -1)),
+    ((4, -1)),
+    ((3, -1)),
+    ((2, -1)),
+
+    ((1, -1)), // 29: shortcut entrance
+
+    ((1, -2)),
+    ((1, -3)),
+    ((1, -4)),
+    ((1, -5)),
+    ((1, -6)),
+
+    ((0, -6)),
+
+    ((-1, -6)),
+    ((-1, -5)),
+    ((-1, -4)),
+    ((-1, -3)),
+    ((-1, -2)),
+
+    ((-1, -1)),
+
+    ((-2, -1)),
+    ((-3, -1)),
+    ((-4, -1)),
+    ((-5, -1)),
+    ((-6, -1)),
+
+    ((-6, 0)), // 47: home entrance
+
+    // 48-52: home
+    ((-5, 0)),
+    ((-4, 0)),
+    ((-3, 0)),
+    ((-2, 0)),
+    ((-1, 0)),
+
+    ((0, 0)), // 53: center
+];
+
+const fn red(coord: (i32, i32)) -> (i32, i32) {
+    coord
+}
+
+const fn green(coord: (i32, i32)) -> (i32, i32) {
+    rotate(red(coord))
+}
+
+const fn blue(coord: (i32, i32)) -> (i32, i32) {
+    rotate(green(coord))
+}
+
+const fn yellow(coord: (i32, i32)) -> (i32, i32) {
+    rotate(blue(coord))
+}
+
+const fn rotate(coord: (i32, i32)) -> (i32, i32) {
+    (coord.1, -coord.0)
+}
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum GameState {
@@ -233,6 +343,36 @@ fn turn_setup(dice_data: Res<DiceData>, player_data: Res<PlayerData>, mut dice: 
     die.side = roll_die();
 
     println!("2b. calc possible moves for current player's marbles");
+}
+
+fn calc_possible_moves() {
+    // red path    :  0 -> 47          [48 -> 52]
+    // green path  : 12 -> 47, 0 -> 11 [53 -> 57]
+    // blue path   : 24 -> 47, 0 -> 23 [58 -> 62]
+    // yellow path : 36 -> 47, 0 -> 35 [63 -> 67]
+
+    // --- general path algorithm per marble ---
+    //
+    // next_index = marble.index + die.side;
+    // if next_index <= player.home_end_index {
+    //     // add (marble entity, next_index) to possible moves
+    // }
+
+    // --- shortcut entrance algorithm per marble ---
+    //
+    // if vec![6, 18, 30].contains(&next_index) { // 1 past the corner
+    //     // add (marble entity, 53) to possible moves
+    // }
+
+    // --- shortcut exit algorithm per marble ---
+    //
+    // if marble.index == 53 && die.side == 1 {
+    //     // add (marble.entity, 41) to possible moves
+    // }
+
+    // --- remove possible moves that violate "self-hop" rule per marble ---
+    //
+
 }
 
 fn roll_animation(
