@@ -5,9 +5,17 @@ use bevy::input::mouse::{MouseButtonInput, MouseButton};
 use rand::{Rng, thread_rng};
 use rand::distributions::Uniform;
 
+use std::collections::BTreeSet;
+
 const TILE_SIZE: f32 = 32.;
 const TILE_COUNT: f32 = 17.;
 const WINDOW_SIZE: f32 = TILE_SIZE * TILE_COUNT;
+
+const START_INDEX: usize = 0;
+const CENTER_INDEX: usize = 53;
+const LAST_HOME_INDEX: usize = 52;
+const CENTER_ENTRANCE_INDEXES: [usize; 3] = [5, 17, 29];
+const CENTER_EXIT_INDEX: usize = 41;
 
 /// Main board cell indexes - rotate clockwise for each color
 ///
@@ -164,6 +172,8 @@ impl From<u8> for Player {
 
 pub struct CurrentPlayerData {
     player: Player,
+    possible_moves: BTreeSet<(Entity, usize)>,
+}
 }
 
 pub struct RollAnimationTimer(Timer);
@@ -212,7 +222,10 @@ impl Plugin for AggravationPlugin {
 
             .add_system_set(SystemSet::on_enter(GameState::NextPlayer).with_system(next_player))
 
-            .add_system_set(SystemSet::on_enter(GameState::TurnSetup).with_system(turn_setup))
+            .add_system_set(SystemSet::on_enter(GameState::TurnSetup)
+                .with_system(turn_setup)
+                .with_system(calc_possible_moves.after(turn_setup))
+            )
             .add_system_set(SystemSet::on_update(GameState::TurnSetup).with_system(roll_animation))
             .add_system_set(SystemSet::on_exit(GameState::TurnSetup).with_system(stop_roll_animation))
 
@@ -399,34 +412,59 @@ fn turn_setup(
     println!("2b. calc possible moves for current player's marbles"); // with system after this one
 }
 
-fn calc_possible_moves() {
-    // red path    :  0 -> 47          [48 -> 52]
-    // green path  : 12 -> 47, 0 -> 11 [53 -> 57]
-    // blue path   : 24 -> 47, 0 -> 23 [58 -> 62]
-    // yellow path : 36 -> 47, 0 -> 35 [63 -> 67]
+fn calc_possible_moves(
+    dice_data: Res<DiceData>,
+    marbles: Query<(Entity, &Marble), With<CurrentPlayer>>,
+    mut current_player_data: ResMut<CurrentPlayerData>,
+) {
+    // !!!!! BIG TODO !!! - we must calculate possible moves twice since one move can change the possible moves for the
+    //                      next move if the player uses the dice independently
 
-    // --- general path algorithm per marble ---
-    //
-    // next_index = marble.index + die.side;
-    // if next_index <= player.home_end_index {
-    //     // add (marble entity, next_index) to possible moves
-    // }
+    let mut possible_moves = std::collections::BTreeSet::new(); // so we disregard duplicates
+    for (entity, marble) in marbles.iter() {
+        for side in [dice_data.die_1_side, dice_data.die_2_side, dice_data.die_1_side + dice_data.die_2_side] {
+            // exit base / enter board - only one possible move for this marble
+            if marble.index == BOARD.len() {
+                if side == 1 {
+                    possible_moves.insert((entity, START_INDEX));
+                }
+                continue;
+            }
 
-    // --- shortcut entrance algorithm per marble ---
-    //
-    // if vec![6, 18, 30].contains(&next_index) { // 1 past the corner
-    //     // add (marble entity, 53) to possible moves
-    // }
+            // exit center space - only one possible move for this marble
+            if marble.index == CENTER_INDEX {
+                if side == 1 {
+                    possible_moves.insert((entity, CENTER_EXIT_INDEX));
+                }
+                continue;
+            }
 
-    // --- shortcut exit algorithm per marble ---
-    //
-    // if marble.index == 53 && die.side == 1 {
-    //     // add (marble.entity, 41) to possible moves
-    // }
+            // basic move
+            let next_index = marble.index + side as usize;
+            if next_index <= LAST_HOME_INDEX { // the very last home position
+                possible_moves.insert((entity, next_index));
+            }
 
-    // --- remove possible moves that violate "self-hop" rule per marble ---
-    //
+            // enter center space
+            if CENTER_ENTRANCE_INDEXES.contains(&(next_index - 1)) {
+                possible_moves.insert((entity, CENTER_INDEX));
+            }
+        }
+    }
 
+    // remove possible moves that violate "self-hop" rule per marble
+    for (entity_a, marble_a) in marbles.iter() {
+        for (entity_b, marble_b) in marbles.iter() {
+            if entity_a == entity_b {
+                continue;
+            }
+            possible_moves = possible_moves.into_iter().filter(|(_, next_index)| {
+                marble_b.index != *next_index && !((marble_a.index + 1)..=*next_index).contains(&marble_b.index)
+            }).collect();
+        }
+    }
+
+    current_player_data.possible_moves = possible_moves;
 }
 
 fn roll_animation(
