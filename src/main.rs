@@ -135,13 +135,12 @@ pub struct DiceData {
     pub die_1: Entity,
     pub die_2: Entity,
     pub die_sheet_handle: Handle<TextureAtlas>,
+    pub die_1_side: u8,
+    pub die_2_side: u8,
 }
 
 #[derive(Component)]
-pub struct Die {
-    animation_timer: Timer,
-    side: u8,
-}
+pub struct DieAnimationTimer(Timer);
 
 #[derive(Component, Eq, PartialEq, Clone)]
 pub enum Player {
@@ -163,8 +162,8 @@ impl From<u8> for Player {
     }
 }
 
-pub struct PlayerData {
-    current_player: Player,
+pub struct CurrentPlayerData {
+    player: Player,
 }
 
 pub struct RollAnimationTimer(Timer);
@@ -243,7 +242,7 @@ fn setup(
 
     // pick the first player randomly
     let current_player: Player = ((roll_die() - 1) % 4).into();
-    commands.insert_resource(PlayerData{ current_player: current_player.clone() });
+    commands.insert_resource(CurrentPlayerData{ player: current_player.clone(), possible_moves: BTreeSet::new() });
 
     // marbles
     for (x, y) in vec![(3., 3.5), (3., 4.5), (4., 3.), (4., 4.), (4., 5.)] {
@@ -316,10 +315,7 @@ fn setup(
             visibility: Visibility{ is_visible: false },
             ..default()
         })
-        .insert(Die{
-            animation_timer: Timer::from_seconds(0.1, true),
-            side: roll_die(),
-            })
+        .insert(DieAnimationTimer(Timer::from_seconds(0.1, true)))
         .id()
         ;
     let die_2 = commands
@@ -328,10 +324,7 @@ fn setup(
             visibility: Visibility{ is_visible: false },
             ..default()
         })
-        .insert(Die{
-            animation_timer: Timer::from_seconds(0.1, true),
-            side: roll_die(),
-            })
+        .insert(DieAnimationTimer(Timer::from_seconds(0.1, true)))
         .id()
         ;
 
@@ -339,6 +332,8 @@ fn setup(
         die_1,
         die_2,
         die_sheet_handle,
+        die_1_side: roll_die(),
+        die_2_side: roll_die(),
     });
 }
 
@@ -347,19 +342,26 @@ fn setup(
 
 // TODO: consider using https://github.com/IyesGames/iyes_loopless to organize this turn-based game
 
-fn next_player(mut commands: Commands, mut state: ResMut<State<GameState>>, mut player_data: ResMut<PlayerData>, marbles: Query<(Entity, &Player, Option<&CurrentPlayer>), With<Marble>>) {
-    player_data.current_player = match player_data.current_player {
+fn next_player(
+    mut commands: Commands,
+    mut state: ResMut<State<GameState>>,
+    mut current_player_data: ResMut<CurrentPlayerData>,
+    marbles: Query<(Entity, &Player, Option<&CurrentPlayer>), With<Marble>>,
+) {
+    // move clockwise to the next player
+    current_player_data.player = match current_player_data.player {
         Player::Red => Player::Green,
         Player::Green => Player::Blue,
         Player::Blue => Player::Yellow,
         Player::Yellow => Player::Red,
     };
 
+    // update the marbles accordingly
     for (marble, color, current_player) in marbles.iter() {
         if current_player.is_some() {
             commands.entity(marble).remove::<CurrentPlayer>();
         }
-        if *color == player_data.current_player {
+        if *color == current_player_data.player {
             commands.entity(marble).insert(CurrentPlayer);
         }
     }
@@ -367,27 +369,32 @@ fn next_player(mut commands: Commands, mut state: ResMut<State<GameState>>, mut 
     state.set(GameState::TurnSetup).unwrap();
 }
 
-fn turn_setup(dice_data: Res<DiceData>, player_data: Res<PlayerData>, mut dice: Query<(&mut Visibility, &mut Transform, &mut Die)>) {
-    let (d1_loc, d2_loc) = match player_data.current_player {
+fn turn_setup(
+    mut dice_data: ResMut<DiceData>,
+    current_player_data: Res<CurrentPlayerData>,
+    mut dice: Query<(&mut Visibility, &mut Transform, &mut DieAnimationTimer)>,
+) {
+    let (d1_loc, d2_loc) = match current_player_data.player {
         Player::Red    => ((-3.0,  5.5), (-5.0,  5.5)),
         Player::Green  => (( 5.5,  3.0), ( 5.5,  5.0)),
         Player::Blue   => (( 3.0, -5.5), ( 5.0, -5.5)),
         Player::Yellow => ((-5.5, -3.0), (-5.5, -5.0)),
     };
 
-    let (mut visibility, mut transform, mut die) = dice.get_mut(dice_data.die_1).expect("Unable to get die 1");
+    let (mut visibility, mut transform, mut die_animation_timer) = dice.get_mut(dice_data.die_1).expect("Unable to get die 1");
     visibility.is_visible = true;
     transform.translation.x = d1_loc.0 * TILE_SIZE;
     transform.translation.y = d1_loc.1 * TILE_SIZE;
-    die.animation_timer.reset();
-    die.side = roll_die();
+    die_animation_timer.0.reset();
 
-    let (mut visibility, mut transform, mut die) = dice.get_mut(dice_data.die_2).expect("Unable to get dice 2");
+    let (mut visibility, mut transform, mut die_animation_timer) = dice.get_mut(dice_data.die_2).expect("Unable to get dice 2");
     visibility.is_visible = true;
     transform.translation.x = d2_loc.0 * TILE_SIZE;
     transform.translation.y = d2_loc.1 * TILE_SIZE;
-    die.animation_timer.reset();
-    die.side = roll_die();
+    die_animation_timer.0.reset();
+
+    dice_data.die_1_side = roll_die();
+    dice_data.die_2_side = roll_die();
 
     println!("2b. calc possible moves for current player's marbles"); // with system after this one
 }
@@ -426,14 +433,16 @@ fn roll_animation(
     mut state: ResMut<State<GameState>>,
     time: Res<Time>,
     mut roll_animation_timer: ResMut<RollAnimationTimer>,
-    mut query: Query<(&mut Die, &mut TextureAtlasSprite)>,
+    mut query: Query<(&mut DieAnimationTimer, &mut TextureAtlasSprite)>,
 ) {
     // https://github.com/bevyengine/bevy/blob/latest/examples/2d/sprite_sheet.rs
-    for (mut die, mut sprite) in query.iter_mut() {
-        if die.animation_timer.tick(time.delta()).just_finished() {
+    for (mut die_animation_timer, mut sprite) in query.iter_mut() {
+        if die_animation_timer.0.tick(time.delta()).just_finished() {
             sprite.index = (roll_die() - 1) as usize;
         }
     }
+
+    // TODO: also rotate the dice
 
     if roll_animation_timer.0.tick(time.delta()).just_finished() {
         roll_animation_timer.0.reset();
@@ -449,14 +458,14 @@ fn roll_die() -> u8 {
 }
 
 fn stop_roll_animation(
-    mut query: Query<(&Die, &mut TextureAtlasSprite)>,
+    mut query: Query<&mut TextureAtlasSprite>,
     dice_data: Res<DiceData>,
 ) {
-    let (die, mut sprite) = query.get_mut(dice_data.die_1).expect("Unable to get die 1");
-    sprite.index = (die.side - 1) as usize;
+    let mut sprite = query.get_mut(dice_data.die_1).expect("Unable to get die 1");
+    sprite.index = (dice_data.die_1_side - 1) as usize;
 
-    let (die, mut sprite) = query.get_mut(dice_data.die_2).expect("Unable to get die 2");
-    sprite.index = (die.side - 1) as usize;
+    let mut sprite = query.get_mut(dice_data.die_2).expect("Unable to get die 2");
+    sprite.index = (dice_data.die_2_side - 1) as usize;
 }
 
 fn choose_moves(mut state: ResMut<State<GameState>>) {
