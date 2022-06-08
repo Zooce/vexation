@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy::window::PresentMode;
 use bevy::input::mouse::{MouseButtonInput, MouseButton};
+use bevy::ecs::schedule::ShouldRun;
 
 use rand::{Rng, thread_rng};
 use rand::distributions::Uniform;
@@ -132,7 +133,7 @@ const fn rotate(coord: (i32, i32)) -> (i32, i32) {
 pub enum GameState {
     // ChooseColor,
     NextPlayer,
-    TurnSetup,
+    DiceRoll,
     ChooseMoves,
     ComputerChooseMoves,
     CheckWinner,
@@ -143,12 +144,31 @@ pub struct DiceData {
     pub die_1: Entity,
     pub die_2: Entity,
     pub die_sheet_handle: Handle<TextureAtlas>,
-    pub die_1_side: u8,
-    pub die_2_side: u8,
+    pub die_1_side: Option<u8>,
+    pub die_2_side: Option<u8>,
+}
+
+impl DiceData {
+    pub fn get_dice_values(&self) -> Vec<u8> {
+        match (self.die_1_side, self.die_2_side) {
+            (Some(d1), Some(d2)) => vec![d1, d2, d1 + d2],
+            (Some(d1), None) => vec![d1],
+            (None, Some(d2)) => vec![d2],
+            _ => vec![],
+        }
+    }
+}
+
+fn roll_die() -> u8 {
+    let mut rng = thread_rng();
+    let die = Uniform::new_inclusive(1u8, 6u8);
+    rng.sample(die)
 }
 
 #[derive(Component)]
 pub struct DieAnimationTimer(Timer);
+
+pub struct RunMoveCalculation(bool);
 
 #[derive(Component, Eq, PartialEq, Clone)]
 pub enum Player {
@@ -181,6 +201,7 @@ pub struct RollAnimationTimer(Timer);
 #[derive(Component)]
 pub struct Marble {
     index: usize,
+    can_move: bool,
 }
 
 #[derive(Component)]
@@ -213,6 +234,7 @@ impl Plugin for AggravationPlugin {
     fn build(&self, app: &mut App) {
         app
             .insert_resource(RollAnimationTimer(Timer::from_seconds(3., false)))
+            .insert_resource(RunMoveCalculation(false))
 
             .add_startup_system(setup)
 
@@ -220,14 +242,16 @@ impl Plugin for AggravationPlugin {
 
             // TODO: define ChooseColor state
 
-            .add_system_set(SystemSet::on_enter(GameState::NextPlayer).with_system(next_player))
-
-            .add_system_set(SystemSet::on_enter(GameState::TurnSetup)
-                .with_system(turn_setup)
-                .with_system(calc_possible_moves.after(turn_setup))
+            .add_system_set(SystemSet::on_enter(GameState::NextPlayer)
+                .with_system(choose_next_player)
+                .with_system(next_player_setup.after(choose_next_player))
             )
-            .add_system_set(SystemSet::on_update(GameState::TurnSetup).with_system(roll_animation))
-            .add_system_set(SystemSet::on_exit(GameState::TurnSetup).with_system(stop_roll_animation))
+
+            .add_system_set(SystemSet::on_enter(GameState::DiceRoll).with_system(roll_dice))
+            .add_system_set(SystemSet::on_update(GameState::DiceRoll).with_system(roll_animation))
+            .add_system_set(SystemSet::on_exit(GameState::DiceRoll).with_system(stop_roll_animation))
+
+            .add_system_set(SystemSet::new().with_run_criteria(can_calc_moves).with_system(calc_possible_moves))
 
             .add_system_set(SystemSet::on_enter(GameState::ChooseMoves).with_system(choose_moves))
             .add_system_set(SystemSet::on_update(GameState::ChooseMoves).with_system(handle_mouse_clicks))
@@ -267,7 +291,7 @@ fn setup(
                 ..default()
             });
         green
-            .insert(Marble{ index: BOARD.len() })
+            .insert(Marble{ index: BOARD.len(), can_move: true })
             .insert(Player::Green)
             ;
         if current_player == Player::Green {
@@ -281,7 +305,7 @@ fn setup(
                 ..default()
             });
         yellow
-            .insert(Marble{ index: BOARD.len() })
+            .insert(Marble{ index: BOARD.len(), can_move: true })
             .insert(Player::Yellow)
             ;
         if current_player == Player::Yellow {
@@ -295,7 +319,7 @@ fn setup(
                 ..default()
             });
         red
-            .insert(Marble{ index: BOARD.len() })
+            .insert(Marble{ index: BOARD.len(), can_move: true })
             .insert(Player::Red)
             ;
         if current_player == Player::Red {
@@ -309,7 +333,7 @@ fn setup(
                 ..default()
             });
         blue
-            .insert(Marble{ index: BOARD.len() })
+            .insert(Marble{ index: BOARD.len(), can_move: true })
             .insert(Player::Blue)
             ;
         if current_player == Player::Blue {
@@ -341,12 +365,12 @@ fn setup(
         .id()
         ;
 
-    commands.insert_resource(DiceData{
+    commands.insert_resource(DiceData {
         die_1,
         die_2,
         die_sheet_handle,
-        die_1_side: roll_die(),
-        die_2_side: roll_die(),
+        die_1_side: Some(roll_die()),
+        die_2_side: Some(roll_die()),
     });
 }
 
@@ -355,9 +379,10 @@ fn setup(
 
 // TODO: consider using https://github.com/IyesGames/iyes_loopless to organize this turn-based game
 
-fn next_player(
+// ----------------------------------------------------------------------------- NextPlayer
+
+fn choose_next_player(
     mut commands: Commands,
-    mut state: ResMut<State<GameState>>,
     mut current_player_data: ResMut<CurrentPlayerData>,
     marbles: Query<(Entity, &Player, Option<&CurrentPlayer>), With<Marble>>,
 ) {
@@ -378,14 +403,14 @@ fn next_player(
             commands.entity(marble).insert(CurrentPlayer);
         }
     }
-
-    state.set(GameState::TurnSetup).unwrap();
 }
 
-fn turn_setup(
-    mut dice_data: ResMut<DiceData>,
+fn next_player_setup(
+    mut state: ResMut<State<GameState>>,
+    dice_data: Res<DiceData>,
     current_player_data: Res<CurrentPlayerData>,
-    mut dice: Query<(&mut Visibility, &mut Transform, &mut DieAnimationTimer)>,
+    mut dice: Query<(&mut Visibility, &mut Transform)>,
+    mut marbles: Query<&mut Marble>,
 ) {
     let (d1_loc, d2_loc) = match current_player_data.player {
         Player::Red    => ((-3.0,  5.5), (-5.0,  5.5)),
@@ -394,35 +419,99 @@ fn turn_setup(
         Player::Yellow => ((-5.5, -3.0), (-5.5, -5.0)),
     };
 
-    let (mut visibility, mut transform, mut die_animation_timer) = dice.get_mut(dice_data.die_1).expect("Unable to get die 1");
+    let (mut visibility, mut transform) = dice.get_mut(dice_data.die_1).expect("Unable to get die 1");
     visibility.is_visible = true;
     transform.translation.x = d1_loc.0 * TILE_SIZE;
     transform.translation.y = d1_loc.1 * TILE_SIZE;
-    die_animation_timer.0.reset();
 
-    let (mut visibility, mut transform, mut die_animation_timer) = dice.get_mut(dice_data.die_2).expect("Unable to get dice 2");
+    let (mut visibility, mut transform) = dice.get_mut(dice_data.die_2).expect("Unable to get dice 2");
     visibility.is_visible = true;
     transform.translation.x = d2_loc.0 * TILE_SIZE;
     transform.translation.y = d2_loc.1 * TILE_SIZE;
-    die_animation_timer.0.reset();
 
-    dice_data.die_1_side = roll_die();
-    dice_data.die_2_side = roll_die();
+    marbles.for_each_mut(|mut m| m.can_move = true);
 
-    println!("2b. calc possible moves for current player's marbles"); // with system after this one
+    state.set(GameState::DiceRoll).unwrap();
+}
+
+// ----------------------------------------------------------------------------- DiceRoll
+
+fn roll_dice(
+    mut dice_data: ResMut<DiceData>,
+    mut die_animation_timers: Query<&mut DieAnimationTimer>,
+    mut run_move_calc: ResMut<RunMoveCalculation>,
+) {
+    dice_data.die_1_side = Some(roll_die());
+    dice_data.die_2_side = Some(roll_die());
+
+    die_animation_timers.for_each_mut(|mut t| t.0.reset());
+
+    run_move_calc.0 = true;
+}
+
+fn roll_animation(
+    mut state: ResMut<State<GameState>>,
+    time: Res<Time>,
+    mut roll_animation_timer: ResMut<RollAnimationTimer>,
+    mut query: Query<(&mut DieAnimationTimer, &mut TextureAtlasSprite)>,
+    human_player: Res<HumanPlayer>,
+    current_player_data: Res<CurrentPlayerData>,
+) {
+    // https://github.com/bevyengine/bevy/blob/latest/examples/2d/sprite_sheet.rs
+    for (mut die_animation_timer, mut sprite) in query.iter_mut() {
+        if die_animation_timer.0.tick(time.delta()).just_finished() {
+            sprite.index = (roll_die() - 1) as usize;
+        }
+    }
+
+    // TODO: also rotate the dice
+
+    if roll_animation_timer.0.tick(time.delta()).just_finished() {
+        roll_animation_timer.0.reset();
+        // after the animation has run for X seconds, go to the ChooseMoves state
+        if human_player.color == current_player_data.player {
+            // TODO: go to the human choose moves state (i.e., wait for human to select a marble and destination)
+        } else {
+            // TODO: this path should go to the computer player move state (i.e., choose move, select marble, select destination)
+            state.set(GameState::ChooseMoves).unwrap();
+        }
+    }
+}
+
+fn stop_roll_animation(
+    mut query: Query<&mut TextureAtlasSprite>,
+    dice_data: Res<DiceData>,
+) {
+    let mut sprite = query.get_mut(dice_data.die_1).expect("Unable to get die 1");
+    sprite.index = (dice_data.die_1_side.unwrap() - 1) as usize;
+
+    let mut sprite = query.get_mut(dice_data.die_2).expect("Unable to get die 2");
+    sprite.index = (dice_data.die_2_side.unwrap() - 1) as usize;
+}
+
+// ----------------------------------------------------------------------------- Move Calculation
+
+fn can_calc_moves(run_calc: Res<RunMoveCalculation>) -> ShouldRun {
+    if run_calc.0 {
+        ShouldRun::Yes
+    } else {
+        ShouldRun::No
+    }
 }
 
 fn calc_possible_moves(
     dice_data: Res<DiceData>,
     marbles: Query<(Entity, &Marble), With<CurrentPlayer>>,
     mut current_player_data: ResMut<CurrentPlayerData>,
+    mut run_move_calc: ResMut<RunMoveCalculation>,
 ) {
-    // !!!!! BIG TODO !!! - we must calculate possible moves twice since one move can change the possible moves for the
-    //                      next move if the player uses the dice independently
-
     let mut possible_moves = std::collections::BTreeSet::new(); // so we disregard duplicates
     for (entity, marble) in marbles.iter() {
-        for side in [dice_data.die_1_side, dice_data.die_2_side, dice_data.die_1_side + dice_data.die_2_side] {
+        if !marble.can_move {
+            continue;
+        }
+
+        for side in dice_data.get_dice_values() { // TODO: need to check if we've already used one or both dice in the previous move
             // exit base / enter board - only one possible move for this marble
             if marble.index == BOARD.len() {
                 if side == 1 {
@@ -453,57 +542,21 @@ fn calc_possible_moves(
     }
 
     // remove possible moves that violate "self-hop" rule per marble
-    for (entity_a, marble_a) in marbles.iter() {
-        for (entity_b, marble_b) in marbles.iter() {
-            if entity_a == entity_b {
-                continue;
-            }
-            possible_moves = possible_moves.into_iter().filter(|(_, next_index)| {
-                marble_b.index != *next_index && !((marble_a.index + 1)..=*next_index).contains(&marble_b.index)
-            }).collect();
+    for (marble, other_marble) in marbles.iter().zip(marbles.iter()) {
+        if marble.0 == other_marble.0 || marble.1.index > other_marble.1.index {
+            continue;
         }
+        // remove possible moves where either:
+        // - marble_a lands on marble_b
+        // - marble_b is between marble_a's current position and the destination
+        possible_moves = possible_moves.into_iter().filter(|(_, next_index)| {
+            *next_index != other_marble.1.index && !(marble.1.index..*next_index).contains(&other_marble.1.index)
+        }).collect();
     }
 
     current_player_data.possible_moves = possible_moves;
-}
 
-fn roll_animation(
-    mut state: ResMut<State<GameState>>,
-    time: Res<Time>,
-    mut roll_animation_timer: ResMut<RollAnimationTimer>,
-    mut query: Query<(&mut DieAnimationTimer, &mut TextureAtlasSprite)>,
-) {
-    // https://github.com/bevyengine/bevy/blob/latest/examples/2d/sprite_sheet.rs
-    for (mut die_animation_timer, mut sprite) in query.iter_mut() {
-        if die_animation_timer.0.tick(time.delta()).just_finished() {
-            sprite.index = (roll_die() - 1) as usize;
-        }
-    }
-
-    // TODO: also rotate the dice
-
-    if roll_animation_timer.0.tick(time.delta()).just_finished() {
-        roll_animation_timer.0.reset();
-        // after the animation has run for X seconds, go to the ChooseMoves state
-        state.set(GameState::ChooseMoves).unwrap();
-    }
-}
-
-fn roll_die() -> u8 {
-    let mut rng = thread_rng();
-    let die = Uniform::new_inclusive(1u8, 6u8);
-    rng.sample(die)
-}
-
-fn stop_roll_animation(
-    mut query: Query<&mut TextureAtlasSprite>,
-    dice_data: Res<DiceData>,
-) {
-    let mut sprite = query.get_mut(dice_data.die_1).expect("Unable to get die 1");
-    sprite.index = (dice_data.die_1_side - 1) as usize;
-
-    let mut sprite = query.get_mut(dice_data.die_2).expect("Unable to get die 2");
-    sprite.index = (dice_data.die_2_side - 1) as usize;
+    run_move_calc.0 = false;
 }
 
 fn choose_moves(mut state: ResMut<State<GameState>>) {
@@ -517,7 +570,7 @@ fn handle_mouse_clicks(
     mut mouse_events: EventReader<MouseButtonInput>,
     windows: Res<Windows>,
     images: Res<Assets<Image>>,
-    marbles: Query<(&Handle<Image>, &Transform), With<Marble>>,
+    marbles: Query<(&Handle<Image>, &Transform), (With<Marble>, With<CurrentPlayer>)>,
 ) {
     // we need the current position of the cursor or else we don't really care
     let cursor = match windows.get_primary() {
