@@ -134,6 +134,8 @@ pub enum GameState {
     // ChooseColor,
     NextPlayer,
     DiceRoll,
+    HumanTurn,
+    ComputerTurn,
     ChooseMoves,
     ComputerChooseMoves,
     CheckWinner,
@@ -170,7 +172,7 @@ pub struct DieAnimationTimer(Timer);
 
 pub struct RunMoveCalculation(bool);
 
-#[derive(Component, Eq, PartialEq, Clone)]
+#[derive(Component, Debug, Eq, PartialEq, Clone)]
 pub enum Player {
     Red,
     Green,
@@ -190,10 +192,14 @@ impl From<u8> for Player {
     }
 }
 
+#[derive(Debug)]
 pub struct CurrentPlayerData {
     player: Player,
     possible_moves: BTreeSet<(Entity, usize)>,
 }
+
+pub struct HumanPlayer {
+    color: Player,
 }
 
 pub struct RollAnimationTimer(Timer);
@@ -235,6 +241,7 @@ impl Plugin for AggravationPlugin {
         app
             .insert_resource(RollAnimationTimer(Timer::from_seconds(3., false)))
             .insert_resource(RunMoveCalculation(false))
+            .insert_resource(HumanPlayer{ color: Player::Blue }) // TODO: insert this after human chooses their color
 
             .add_startup_system(setup)
 
@@ -253,12 +260,7 @@ impl Plugin for AggravationPlugin {
 
             .add_system_set(SystemSet::new().with_run_criteria(can_calc_moves).with_system(calc_possible_moves))
 
-            .add_system_set(SystemSet::on_enter(GameState::ChooseMoves).with_system(choose_moves))
-            .add_system_set(SystemSet::on_update(GameState::ChooseMoves).with_system(handle_mouse_clicks))
-
-            .add_system_set(SystemSet::on_enter(GameState::ComputerChooseMoves).with_system(computer_choose_moves))
-
-            .add_system_set(SystemSet::on_enter(GameState::CheckWinner).with_system(check_winner))
+            .add_system_set(SystemSet::on_update(GameState::HumanTurn).with_system(handle_mouse_clicks))
             ;
     }
 }
@@ -278,8 +280,11 @@ fn setup(
     });
 
     // pick the first player randomly
-    let current_player: Player = ((roll_die() - 1) % 4).into();
-    commands.insert_resource(CurrentPlayerData{ player: current_player.clone(), possible_moves: BTreeSet::new() });
+    let current_player: Player = Player::Green; // TODO: ((roll_die() - 1) % 4).into();
+    commands.insert_resource(CurrentPlayerData{
+        player: current_player.clone(),
+        possible_moves: BTreeSet::new(),
+    });
 
     // marbles
     for (x, y) in vec![(3., 3.5), (3., 4.5), (4., 3.), (4., 4.), (4., 5.)] {
@@ -403,6 +408,8 @@ fn choose_next_player(
             commands.entity(marble).insert(CurrentPlayer);
         }
     }
+
+    println!("choose_next_player: {:?}", current_player_data.player);
 }
 
 fn next_player_setup(
@@ -432,6 +439,8 @@ fn next_player_setup(
     marbles.for_each_mut(|mut m| m.can_move = true);
 
     state.set(GameState::DiceRoll).unwrap();
+
+    println!("next_player_setup");
 }
 
 // ----------------------------------------------------------------------------- DiceRoll
@@ -447,13 +456,15 @@ fn roll_dice(
     die_animation_timers.for_each_mut(|mut t| t.0.reset());
 
     run_move_calc.0 = true;
+
+    println!("roll_dice: {:?} {:?}", dice_data.die_1_side, dice_data.die_2_side);
 }
 
 fn roll_animation(
-    mut state: ResMut<State<GameState>>,
     time: Res<Time>,
     mut roll_animation_timer: ResMut<RollAnimationTimer>,
     mut query: Query<(&mut DieAnimationTimer, &mut TextureAtlasSprite)>,
+    mut state: ResMut<State<GameState>>,
     human_player: Res<HumanPlayer>,
     current_player_data: Res<CurrentPlayerData>,
 ) {
@@ -467,13 +478,12 @@ fn roll_animation(
     // TODO: also rotate the dice
 
     if roll_animation_timer.0.tick(time.delta()).just_finished() {
+        println!("roll_animation timer expired");
         roll_animation_timer.0.reset();
-        // after the animation has run for X seconds, go to the ChooseMoves state
         if human_player.color == current_player_data.player {
-            // TODO: go to the human choose moves state (i.e., wait for human to select a marble and destination)
+            state.set(GameState::HumanTurn).unwrap();
         } else {
-            // TODO: this path should go to the computer player move state (i.e., choose move, select marble, select destination)
-            state.set(GameState::ChooseMoves).unwrap();
+            state.set(GameState::ComputerTurn).unwrap();
         }
     }
 }
@@ -487,6 +497,8 @@ fn stop_roll_animation(
 
     let mut sprite = query.get_mut(dice_data.die_2).expect("Unable to get die 2");
     sprite.index = (dice_data.die_2_side.unwrap() - 1) as usize;
+
+    println!("stop_roll_animation");
 }
 
 // ----------------------------------------------------------------------------- Move Calculation
@@ -557,14 +569,11 @@ fn calc_possible_moves(
     current_player_data.possible_moves = possible_moves;
 
     run_move_calc.0 = false;
+
+    println!("calc_possible_moves");
 }
 
-fn choose_moves(mut state: ResMut<State<GameState>>) {
-    println!("5. choose moves");
-
-    // if the current player is a computer then go to the ComputerChooseMoves state
-    state.set(GameState::ComputerChooseMoves).unwrap();
-}
+// ----------------------------------------------------------------------------- Move Execution
 
 fn handle_mouse_clicks(
     mut mouse_events: EventReader<MouseButtonInput>,
@@ -601,21 +610,17 @@ fn handle_mouse_clicks(
                 None => false,
             }
         }) {
-            println!("clicked on marble!");
+            println!("handle_mouse_clicks: clicked on marble!");
         }
 
         let (col, row) = ((cursor.x / WINDOW_SIZE * TILE_COUNT).floor(), (cursor.y / WINDOW_SIZE * TILE_COUNT).floor());
     }
 }
 
-fn computer_choose_moves(mut state: ResMut<State<GameState>>) {
-    println!("6. computer choose moves");
-
-    state.set(GameState::CheckWinner).unwrap();
-}
-
-fn check_winner(mut state: ResMut<State<GameState>>) {
-    println!("7. check for winner");
-
-    state.set(GameState::NextPlayer).unwrap();
+fn check_end_turn(dice_data: Res<DiceData>) {
+    if dice_data.get_dice_values().is_empty() {
+        // go to the choose_next_player state
+    } else {
+        // go to the calc_moves state
+    }
 }
