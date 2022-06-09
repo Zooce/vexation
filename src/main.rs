@@ -35,78 +35,78 @@ const CENTER_EXIT_INDEX: usize = 41;
 ///                36 35 34
 ///
 const BOARD: [(i32, i32); 54] = [
-    ((-6, 1)), // 0: start
-    ((-5, 1)),
-    ((-4, 1)),
-    ((-3, 1)),
-    ((-2, 1)),
+    (-6, 1), // 0: start
+    (-5, 1),
+    (-4, 1),
+    (-3, 1),
+    (-2, 1),
 
-    ((-1, 1)), // 5: shortcut entrance
+    (-1, 1), // 5: shortcut entrance
 
-    ((-1, 2)),
-    ((-1, 3)),
-    ((-1, 4)),
-    ((-1, 5)),
-    ((-1, 6)),
+    (-1, 2),
+    (-1, 3),
+    (-1, 4),
+    (-1, 5),
+    (-1, 6),
 
-    ((0, 6)),
+    (0, 6),
 
-    ((1, 6)),
-    ((1, 5)),
-    ((1, 4)),
-    ((1, 3)),
-    ((1, 2)),
+    (1, 6),
+    (1, 5),
+    (1, 4),
+    (1, 3),
+    (1, 2),
 
-    ((1, 1)), // 17: shortcut entrance
+    (1, 1), // 17: shortcut entrance
 
-    ((2, 1)),
-    ((3, 1)),
-    ((4, 1)),
-    ((5, 1)),
-    ((6, 1)),
+    (2, 1),
+    (3, 1),
+    (4, 1),
+    (5, 1),
+    (6, 1),
 
-    ((6, 0)),
+    (6, 0),
 
-    ((6, -1)),
-    ((5, -1)),
-    ((4, -1)),
-    ((3, -1)),
-    ((2, -1)),
+    (6, -1),
+    (5, -1),
+    (4, -1),
+    (3, -1),
+    (2, -1),
 
-    ((1, -1)), // 29: shortcut entrance
+    (1, -1), // 29: shortcut entrance
 
-    ((1, -2)),
-    ((1, -3)),
-    ((1, -4)),
-    ((1, -5)),
-    ((1, -6)),
+    (1, -2),
+    (1, -3),
+    (1, -4),
+    (1, -5),
+    (1, -6),
 
-    ((0, -6)),
+    (0, -6),
 
-    ((-1, -6)),
-    ((-1, -5)),
-    ((-1, -4)),
-    ((-1, -3)),
-    ((-1, -2)),
+    (-1, -6),
+    (-1, -5),
+    (-1, -4),
+    (-1, -3),
+    (-1, -2),
 
-    ((-1, -1)),
+    (-1, -1),
 
-    ((-2, -1)),
-    ((-3, -1)),
-    ((-4, -1)),
-    ((-5, -1)),
-    ((-6, -1)),
+    (-2, -1),
+    (-3, -1),
+    (-4, -1),
+    (-5, -1),
+    (-6, -1),
 
-    ((-6, 0)), // 47: home entrance
+    (-6, 0), // 47: home entrance
 
     // 48-52: home
-    ((-5, 0)),
-    ((-4, 0)),
-    ((-3, 0)),
-    ((-2, 0)),
-    ((-1, 0)),
+    (-5, 0),
+    (-4, 0),
+    (-3, 0),
+    (-2, 0),
+    (-1, 0),
 
-    ((0, 0)), // 53: center
+    (0, 0), // 53: center
 ];
 
 const fn red(coord: (i32, i32)) -> (i32, i32) {
@@ -678,6 +678,7 @@ fn handle_highlight_events(
     mut commands: Commands,
     mut events: EventReader<HighlightEvent>,
     highlight_data: Res<HighlightData>,
+    current_player_data: Res<CurrentPlayerData>,
 ) {
     // create a sprite located at the same location as the marble entity
     if let Some(highlight) = events.iter().last() {
@@ -690,7 +691,31 @@ fn handle_highlight_events(
         })
         .insert(Highlighted(highlight_data.marble.unwrap()))
         ;
-        // TODO: also spawn sprite bundles for the possible moves of this selected marble
+        let indexes = current_player_data.possible_moves.iter()
+            .filter_map(|(e, i)| {
+                if *e == highlight_data.marble.unwrap() {
+                    Some(*i)
+                } else {
+                    None
+                }
+        });
+        println!("highlight: entity = {:?}, possible_moves: {:?}", highlight_data.marble, current_player_data);
+        for board_index in indexes {
+            let tile = BOARD[board_index];
+            let (x, y) = match current_player_data.player {
+                Player::Red => red(tile),
+                Player::Green => green(tile),
+                Player::Blue => blue(tile),
+                Player::Yellow => yellow(tile),
+            };
+            commands.spawn_bundle(SpriteBundle{
+                texture: highlight_data.texture.clone(),
+                transform: Transform::from_xyz(x as f32 * TILE_SIZE, y as f32 * TILE_SIZE, t.z),
+                ..default()
+            })
+            .insert(Highlighted(highlight_data.marble.unwrap()))
+            ;
+        }
     }
 }
 
