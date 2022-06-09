@@ -210,6 +210,25 @@ pub struct Marble {
     can_move: bool,
 }
 
+/// The resource for highlight data.
+pub struct HighlightData {
+    /// The marble that is currently highlighted
+    marble: Option<Entity>,
+    /// The highlight texture
+    texture: Handle<Image>,
+}
+
+/// Used to mark the highlight sprites when a marble is selected, so we can
+/// later remove them when a marble is no longer selected.
+#[derive(Component)]
+pub struct Highlighted(Entity);
+
+/// Event to inform the highlight system that it needs to highlight things.
+pub struct HighlightEvent(Vec3);
+
+/// Event to inform the highlight system that it needs to remove highlights.
+pub struct RemoveHighlightEvent;
+
 #[derive(Component)]
 pub struct CurrentPlayer;
 
@@ -243,6 +262,9 @@ impl Plugin for AggravationPlugin {
             .insert_resource(RunMoveCalculation(false))
             .insert_resource(HumanPlayer{ color: Player::Blue }) // TODO: insert this after human chooses their color
 
+            .add_event::<HighlightEvent>()
+            .add_event::<RemoveHighlightEvent>()
+
             .add_startup_system(setup)
 
             .add_state(GameState::NextPlayer)
@@ -260,7 +282,11 @@ impl Plugin for AggravationPlugin {
 
             .add_system_set(SystemSet::new().with_run_criteria(can_calc_moves).with_system(calc_possible_moves))
 
-            .add_system_set(SystemSet::on_update(GameState::HumanTurn).with_system(handle_mouse_clicks))
+            .add_system_set(SystemSet::on_update(GameState::HumanTurn)
+                .with_system(handle_mouse_clicks)
+                .with_system(handle_highlight_events)
+                .with_system(handle_remove_highlight_events)
+            )
             ;
     }
 }
@@ -377,6 +403,12 @@ fn setup(
         die_1_side: Some(roll_die()),
         die_2_side: Some(roll_die()),
     });
+
+    // highlight data
+    commands.insert_resource(HighlightData{
+        marble: None,
+        texture: asset_server.load("tile-highlight.png"),
+    })
 }
 
 // TOOD: when a human player's marble is clicked, send and event to highlight the tiles it can move to based on the current state of the dice
@@ -579,7 +611,10 @@ fn handle_mouse_clicks(
     mut mouse_events: EventReader<MouseButtonInput>,
     windows: Res<Windows>,
     images: Res<Assets<Image>>,
-    marbles: Query<(&Handle<Image>, &Transform), (With<Marble>, With<CurrentPlayer>)>,
+    marbles: Query<(Entity, &Handle<Image>, &Transform), (With<Marble>, With<CurrentPlayer>)>,
+    mut highlight_events: EventWriter<HighlightEvent>,
+    mut remove_highlight_events: EventWriter<RemoveHighlightEvent>,
+    mut highlight_data: ResMut<HighlightData>,
 ) {
     // we need the current position of the cursor or else we don't really care
     let cursor = match windows.get_primary() {
@@ -598,22 +633,60 @@ fn handle_mouse_clicks(
         let (cursor_x, cursor_y) = (cursor.x - WINDOW_SIZE / 2., cursor.y - WINDOW_SIZE / 2.);
 
         // find the marble under the cursor
-        if let Some(_) = marbles.iter().find(|(handle, marble_transform)| {
-            match images.get(*handle) {
+        for (entity, handle, transform) in marbles.iter() {
+            let selected = match images.get(handle) {
                 Some(img) => {
-                    let marble_size = img.size();
-                       cursor_x > marble_transform.translation.x - marble_size.x / 2.
-                    && cursor_x < marble_transform.translation.x + marble_size.x / 2.
-                    && cursor_y > marble_transform.translation.y - marble_size.y / 2.
-                    && cursor_y < marble_transform.translation.y + marble_size.y / 2.
+                    let marble_size = img.size(); // TODO: just hard code this to 32x32 - we're doing unnecessary work here
+                       cursor_x > transform.translation.x - marble_size.x / 2.
+                    && cursor_x < transform.translation.x + marble_size.x / 2.
+                    && cursor_y > transform.translation.y - marble_size.y / 2.
+                    && cursor_y < transform.translation.y + marble_size.y / 2.
                 }
                 None => false,
+            };
+            if selected {
+                highlight_data.marble = Some(entity);
+                highlight_events.send(HighlightEvent(transform.translation.clone()));
+                println!("handle_mouse_clicks: clicked on marble!");
+            } else {
+                remove_highlight_events.send(RemoveHighlightEvent);
             }
-        }) {
-            println!("handle_mouse_clicks: clicked on marble!");
         }
+    }
+}
 
-        let (col, row) = ((cursor.x / WINDOW_SIZE * TILE_COUNT).floor(), (cursor.y / WINDOW_SIZE * TILE_COUNT).floor());
+fn handle_remove_highlight_events(
+    mut commands: Commands,
+    mut events: EventReader<RemoveHighlightEvent>,
+    entities: Query<Entity, With<Highlighted>>,
+    highlight_data: Res<HighlightData>,
+) {
+    if events.iter().last().is_some() {
+        for entity in entities.iter() {
+            if entity != highlight_data.marble.unwrap() {
+                commands.entity(entity).despawn();
+            }
+        }
+    }
+}
+
+fn handle_highlight_events(
+    mut commands: Commands,
+    mut events: EventReader<HighlightEvent>,
+    highlight_data: Res<HighlightData>,
+) {
+    // create a sprite located at the same location as the marble entity
+    if let Some(highlight) = events.iter().last() {
+        let mut t = highlight.0.clone();
+        t.z += 1.0; // make sure it's drawn on top
+        commands.spawn_bundle(SpriteBundle{
+            texture: highlight_data.texture.clone(),
+            transform: Transform::from_translation(t),
+            ..default()
+        })
+        .insert(Highlighted(highlight_data.marble.unwrap()))
+        ;
+        // TODO: also spawn sprite bundles for the possible moves of this selected marble
     }
 }
 
