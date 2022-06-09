@@ -313,11 +313,15 @@ fn setup(
     });
 
     // marbles
+    let red_marble = asset_server.load("red-marble.png");
+    let green_marble = asset_server.load("green-marble.png");
+    let blue_marble = asset_server.load("blue-marble.png");
+    let yellow_marble = asset_server.load("yellow-marble.png");
     for (x, y) in vec![(3., 3.5), (3., 4.5), (4., 3.), (4., 4.), (4., 5.)] {
         // green marbles
         let mut green = commands
             .spawn_bundle(SpriteBundle{
-                texture: asset_server.load("green-marble.png"),
+                texture: green_marble.clone(),
                 transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 1.),
                 ..default()
             });
@@ -331,7 +335,7 @@ fn setup(
         // yellow marbles
         let mut yellow = commands
             .spawn_bundle(SpriteBundle{
-                texture: asset_server.load("yellow-marble.png"),
+                texture: yellow_marble.clone(),
                 transform: Transform::from_xyz(-x * TILE_SIZE, -y * TILE_SIZE, 1.),
                 ..default()
             });
@@ -345,7 +349,7 @@ fn setup(
         // red marbles
         let mut red = commands
             .spawn_bundle(SpriteBundle{
-                texture: asset_server.load("red-marble.png"),
+                texture: red_marble.clone(),
                 transform: Transform::from_xyz(-y * TILE_SIZE, x * TILE_SIZE, 1.),
                 ..default()
             });
@@ -359,7 +363,7 @@ fn setup(
         // blue marbles
         let mut blue = commands
             .spawn_bundle(SpriteBundle{
-                texture: asset_server.load("blue-marble.png"),
+                texture: blue_marble.clone(),
                 transform: Transform::from_xyz(y * TILE_SIZE, -x * TILE_SIZE, 1.),
                 ..default()
             });
