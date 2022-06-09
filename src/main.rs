@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy::window::PresentMode;
 use bevy::input::mouse::{MouseButtonInput, MouseButton};
+use bevy::input::keyboard::KeyboardInput;
 use bevy::ecs::schedule::ShouldRun;
 
 use rand::{Rng, thread_rng};
@@ -284,6 +285,7 @@ impl Plugin for AggravationPlugin {
 
             .add_system_set(SystemSet::on_update(GameState::HumanTurn)
                 .with_system(handle_mouse_clicks)
+                .with_system(handle_keyboard_input)
                 .with_system(handle_highlight_events)
                 .with_system(handle_remove_highlight_events)
             )
@@ -637,6 +639,7 @@ fn handle_mouse_clicks(
         let (cursor_x, cursor_y) = (cursor.x - WINDOW_SIZE / 2., cursor.y - WINDOW_SIZE / 2.);
 
         // find the marble under the cursor
+        let mut did_select = false;
         for (entity, handle, transform) in marbles.iter() {
             let selected = match images.get(handle) {
                 Some(img) => {
@@ -649,12 +652,32 @@ fn handle_mouse_clicks(
                 None => false,
             };
             if selected {
+                did_select = true;
                 highlight_data.marble = Some(entity);
                 highlight_events.send(HighlightEvent(transform.translation.clone()));
                 println!("handle_mouse_clicks: clicked on marble!");
             } else {
                 remove_highlight_events.send(RemoveHighlightEvent);
             }
+        }
+        if !did_select {
+            highlight_data.marble = None;
+        }
+    }
+}
+
+fn handle_keyboard_input(
+    mut keyboard_events: EventReader<KeyboardInput>,
+    mut remove_highlight_events: EventWriter<RemoveHighlightEvent>,
+    mut highlight_data: ResMut<HighlightData>,
+) {
+    for event in keyboard_events.iter() {
+        match event.key_code {
+            Some(KeyCode::Escape) => {
+                highlight_data.marble = None;
+                remove_highlight_events.send(RemoveHighlightEvent);
+            }
+            _ => return,
         }
     }
 }
@@ -667,8 +690,13 @@ fn handle_remove_highlight_events(
 ) {
     if events.iter().last().is_some() {
         for entity in entities.iter() {
-            if entity != highlight_data.marble.unwrap() {
-                commands.entity(entity).despawn();
+            match highlight_data.marble {
+                // marble selected - remove highlights not related to the selected marble
+                Some(marble) => if entity != marble {
+                    commands.entity(entity).despawn();
+                }
+                // no marbles selected - remove all highlights
+                None => commands.entity(entity).despawn(),
             }
         }
     }
