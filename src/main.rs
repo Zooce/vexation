@@ -181,6 +181,17 @@ pub enum Player {
     Yellow,
 }
 
+impl Player {
+    pub fn rotate(&self, coords: (f32, f32)) -> (f32, f32) {
+        match self {
+            Player::Red => coords,
+            Player::Green => (coords.1, -coords.0),
+            Player::Blue => (-coords.0, -coords.1),
+            Player::Yellow => (-coords.1, coords.0),
+        }
+    }
+}
+
 impl From<u8> for Player {
     fn from(x: u8) -> Self {
         match x {
@@ -197,6 +208,19 @@ impl From<u8> for Player {
 pub struct CurrentPlayerData {
     player: Player,
     possible_moves: BTreeSet<(Entity, usize)>,
+}
+
+impl CurrentPlayerData {
+    pub fn get_moves(&self, marble: Entity) -> Vec<usize> {
+        self.possible_moves.iter()
+            .filter_map(|(e, i)| {
+                if *e == marble {
+                    Some(*i)
+                } else {
+                    None
+                }
+        }).collect()
+    }
 }
 
 pub struct HumanPlayer {
@@ -621,6 +645,7 @@ fn handle_mouse_clicks(
     mut selection_events: EventWriter<SelectionEvent>,
     mut deselection_events: EventWriter<DeselectionEvent>,
     mut selection_data: ResMut<SelectionData>,
+    current_player_data: Res<CurrentPlayerData>,
 ) {
     // we need the current position of the cursor or else we don't really care
     let cursor = match windows.get_primary() {
@@ -639,14 +664,14 @@ fn handle_mouse_clicks(
         let (cursor_x, cursor_y) = (cursor.x - WINDOW_SIZE / 2., cursor.y - WINDOW_SIZE / 2.);
 
         // find the marble under the cursor
-        let mut did_select = false;
+        let mut did_select_marble = false;
         for (entity, transform) in marbles.iter() {
             let selected = cursor_x > transform.translation.x - TILE_SIZE / 2.
                         && cursor_x < transform.translation.x + TILE_SIZE / 2.
                         && cursor_y > transform.translation.y - TILE_SIZE / 2.
                         && cursor_y < transform.translation.y + TILE_SIZE / 2.;
             if selected {
-                did_select = true;
+                did_select_marble = true;
                 selection_data.marble = Some(entity);
                 selection_events.send(SelectionEvent(transform.translation.clone()));
                 println!("handle_mouse_clicks: clicked on marble!");
@@ -654,7 +679,18 @@ fn handle_mouse_clicks(
                 deselection_events.send(DeselectionEvent);
             }
         }
-        if !did_select {
+        if !did_select_marble {
+            // first check if we selected a destination
+            if let Some(marble) = selection_data.marble {
+                let (x, y) = (snap(cursor_x), snap(cursor_y));
+                let (col, row) = current_player_data.player.rotate((x / TILE_SIZE, y / TILE_SIZE));
+                if let Some(board_index) = BOARD.into_iter().position(|coord| coord == (col as i32, row as i32)) {
+                    if current_player_data.get_moves(marble).contains(&board_index) {
+                        println!("destination clicked!");
+                        // TODO: send MoveMarbleEvent((x, y))
+                    }
+                }
+            }
             selection_data.marble = None;
         }
     }
@@ -715,28 +751,13 @@ fn handle_selection_events(
         .insert(Highlight(selection_data.marble.unwrap()))
         ;
 
-
         // create sprites located at the possible moves for the selected marble
-        let indexes = current_player_data.possible_moves.iter()
-            .filter_map(|(e, i)| {
-                if *e == selection_data.marble.unwrap() {
-                    Some(*i)
-                } else {
-                    None
-                }
-        });
-        println!("highlight: entity = {:?}, possible_moves: {:?}", selection_data.marble, current_player_data);
-        for board_index in indexes {
+        for board_index in current_player_data.get_moves(selection_data.marble.unwrap()) {
             let tile = BOARD[board_index];
-            let (x, y) = match current_player_data.player {
-                Player::Red => red(tile),
-                Player::Green => green(tile),
-                Player::Blue => blue(tile),
-                Player::Yellow => yellow(tile),
-            };
+            let (x, y) = current_player_data.player.rotate((tile.0 as f32, tile.1 as f32));
             commands.spawn_bundle(SpriteBundle{
                 texture: selection_data.highlight_texture.clone(),
-                transform: Transform::from_xyz(x as f32 * TILE_SIZE, y as f32 * TILE_SIZE, t.z),
+                transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, t.z),
                 ..default()
             })
             .insert(Highlight(selection_data.marble.unwrap()))
@@ -745,10 +766,43 @@ fn handle_selection_events(
     }
 }
 
-fn check_end_turn(dice_data: Res<DiceData>) {
-    if dice_data.get_dice_values().is_empty() {
-        // go to the choose_next_player state
+// fn select_destination() {
+//     // let (col, row) = ((cursor.x / WINDOW_SIZE * TILE_COUNT).floor(), (cursor.y / WINDOW_SIZE * TILE_COUNT).floor());
+// }
+
+// fn check_end_turn(dice_data: Res<DiceData>) {
+//     if dice_data.get_dice_values().is_empty() {
+//         // go to the choose_next_player state
+//     } else {
+//         // go to the calc_moves state
+//     }
+// }
+
+/// Snaps the given coordinate to the center of the tile it's inside of.
+fn snap(coord: f32) -> f32 {
+    // let's only deal with positive values for now
+    let c = coord.abs();
+    // how far away is the coordinate from the center of the tile
+    let remainder = c % TILE_SIZE;
+    let result = if remainder < TILE_SIZE / 2. {
+        // if the coordinate is past the center (going away from the origin)
+        // then snap it back to the center
+        // |    X     |
+        // |    <---c |
+        c - remainder
     } else {
-        // go to the calc_moves state
+        // otherwise shift the coordinate to the next tile (going away from the
+        // origin) then snap it back to the center
+        // |    X    |
+        // | c-------|->
+        // |    <----|-c
+        let shift = c + TILE_SIZE;
+        shift - (shift % TILE_SIZE)
+    };
+    // just flip the result if the original coordinate was negative
+    if coord < 0.0 && result > 0.0 {
+        result * -1.0
+    } else {
+        result
     }
 }
