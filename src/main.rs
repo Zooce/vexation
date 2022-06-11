@@ -110,26 +110,6 @@ const BOARD: [(i32, i32); 54] = [
     (0, 0), // 53: center
 ];
 
-const fn red(coord: (i32, i32)) -> (i32, i32) {
-    coord
-}
-
-const fn green(coord: (i32, i32)) -> (i32, i32) {
-    rotate(red(coord))
-}
-
-const fn blue(coord: (i32, i32)) -> (i32, i32) {
-    rotate(green(coord))
-}
-
-const fn yellow(coord: (i32, i32)) -> (i32, i32) {
-    rotate(blue(coord))
-}
-
-const fn rotate(coord: (i32, i32)) -> (i32, i32) {
-    (coord.1, -coord.0)
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum GameState {
     // ChooseColor,
@@ -232,7 +212,6 @@ pub struct RollAnimationTimer(Timer);
 #[derive(Component)]
 pub struct Marble {
     index: usize,
-    can_move: bool,
 }
 
 /// The resource for selection data.
@@ -353,7 +332,7 @@ fn setup(
                 ..default()
             });
         green
-            .insert(Marble{ index: BOARD.len(), can_move: true })
+            .insert(Marble{ index: BOARD.len() })
             .insert(Player::Green)
             ;
         if current_player == Player::Green {
@@ -367,7 +346,7 @@ fn setup(
                 ..default()
             });
         yellow
-            .insert(Marble{ index: BOARD.len(), can_move: true })
+            .insert(Marble{ index: BOARD.len() })
             .insert(Player::Yellow)
             ;
         if current_player == Player::Yellow {
@@ -381,7 +360,7 @@ fn setup(
                 ..default()
             });
         red
-            .insert(Marble{ index: BOARD.len(), can_move: true })
+            .insert(Marble{ index: BOARD.len() })
             .insert(Player::Red)
             ;
         if current_player == Player::Red {
@@ -395,7 +374,7 @@ fn setup(
                 ..default()
             });
         blue
-            .insert(Marble{ index: BOARD.len(), can_move: true })
+            .insert(Marble{ index: BOARD.len() })
             .insert(Player::Blue)
             ;
         if current_player == Player::Blue {
@@ -480,7 +459,6 @@ fn next_player_setup(
     dice_data: Res<DiceData>,
     current_player_data: Res<CurrentPlayerData>,
     mut dice: Query<(&mut Visibility, &mut Transform)>,
-    mut marbles: Query<&mut Marble>,
 ) {
     let (d1_loc, d2_loc) = match current_player_data.player {
         Player::Red    => ((-3.0,  5.5), (-5.0,  5.5)),
@@ -498,8 +476,6 @@ fn next_player_setup(
     visibility.is_visible = true;
     transform.translation.x = d2_loc.0 * TILE_SIZE;
     transform.translation.y = d2_loc.1 * TILE_SIZE;
-
-    marbles.for_each_mut(|mut m| m.can_move = true);
 
     state.set(GameState::DiceRoll).unwrap();
 
@@ -582,10 +558,6 @@ fn calc_possible_moves(
 ) {
     let mut possible_moves = std::collections::BTreeSet::new(); // so we disregard duplicates
     for (entity, marble) in marbles.iter() {
-        if !marble.can_move {
-            continue;
-        }
-
         for side in dice_data.get_dice_values() { // TODO: need to check if we've already used one or both dice in the previous move
             // exit base / enter board - only one possible move for this marble
             if marble.index == BOARD.len() {
