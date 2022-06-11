@@ -19,6 +19,8 @@ const LAST_HOME_INDEX: usize = 52;
 const CENTER_ENTRANCE_INDEXES: [usize; 3] = [5, 17, 29];
 const CENTER_EXIT_INDEX: usize = 41;
 
+const MOVE_ANIM_DURATION: f32 = 0.2; // 200ms
+
 /// Main board cell indexes - rotate clockwise for each color
 ///
 ///                10 11 12
@@ -211,6 +213,7 @@ pub struct RollAnimationTimer(Timer);
 
 #[derive(Component)]
 pub struct Marble {
+    /// This is a index into the `BOARD` (i.e. which space this marble is located).
     index: usize,
 }
 
@@ -236,6 +239,23 @@ pub struct DeselectionEvent;
 #[derive(Component)]
 pub struct CurrentPlayer;
 
+#[derive(Component, Debug)]
+pub struct Moving{
+    timer: Timer,
+    destination: Vec3,
+    anim_step_dist: Vec3,
+}
+
+impl Moving {
+    /// Creates a new `Moving` component with a destination and origin.
+    fn new(destination: Vec3, origin: Vec3) -> Self {
+        Self{
+            timer: Timer::from_seconds(MOVE_ANIM_DURATION, false),
+            destination,
+            anim_step_dist: (destination - origin) / MOVE_ANIM_DURATION,
+        }
+    }
+}
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
@@ -291,7 +311,7 @@ impl Plugin for AggravationPlugin {
                 .with_system(handle_keyboard_input)
                 .with_system(handle_selection_events)
                 .with_system(handle_deselection_events)
-                //.with_system(handle_move_events)
+                .with_system(animate_marble_moves)
             )
             ;
     }
@@ -421,9 +441,6 @@ fn setup(
     })
 }
 
-// TOOD: when a human player's marble is clicked, send and event to highlight the tiles it can move to based on the current state of the dice
-// TOOD: highlight marble when cursor hovers it's bounds
-
 // TODO: consider using https://github.com/IyesGames/iyes_loopless to organize this turn-based game
 
 // ----------------------------------------------------------------------------- NextPlayer
@@ -489,7 +506,7 @@ fn roll_dice(
     mut die_animation_timers: Query<&mut DieAnimationTimer>,
     mut run_move_calc: ResMut<RunMoveCalculation>,
 ) {
-    dice_data.die_1_side = Some(roll_die());
+    dice_data.die_1_side = Some(1); // TODO: Some(roll_die());
     dice_data.die_2_side = Some(roll_die());
 
     die_animation_timers.for_each_mut(|mut t| t.0.reset());
@@ -611,9 +628,10 @@ fn calc_possible_moves(
 // ----------------------------------------------------------------------------- Move Execution
 
 fn handle_mouse_clicks(
+    mut commands: Commands,
     mut mouse_events: EventReader<MouseButtonInput>,
     windows: Res<Windows>,
-    marbles: Query<(Entity, &Transform), (With<Marble>, With<CurrentPlayer>)>,
+    mut marbles: Query<(Entity, &Transform, &mut Marble), With<CurrentPlayer>>,
     mut selection_events: EventWriter<SelectionEvent>,
     mut deselection_events: EventWriter<DeselectionEvent>,
     mut selection_data: ResMut<SelectionData>,
@@ -637,7 +655,7 @@ fn handle_mouse_clicks(
 
         // find the marble under the cursor
         let mut did_select_marble = false;
-        for (entity, transform) in marbles.iter() {
+        for (entity, transform, _) in marbles.iter() {
             let selected = cursor_x > transform.translation.x - TILE_SIZE / 2.
                         && cursor_x < transform.translation.x + TILE_SIZE / 2.
                         && cursor_y > transform.translation.y - TILE_SIZE / 2.
@@ -654,12 +672,13 @@ fn handle_mouse_clicks(
         if !did_select_marble {
             // first check if we selected a destination
             if let Some(marble) = selection_data.marble {
-                let (x, y) = (snap(cursor_x), snap(cursor_y));
-                let (col, row) = current_player_data.player.rotate((x / TILE_SIZE, y / TILE_SIZE));
+                let destination = Vec3::new(snap(cursor_x), snap(cursor_y), 1.0);
+                let (col, row) = current_player_data.player.rotate((destination.x / TILE_SIZE, destination.y / TILE_SIZE));
                 if let Some(board_index) = BOARD.into_iter().position(|coord| coord == (col as i32, row as i32)) {
                     if current_player_data.get_moves(marble).contains(&board_index) {
-                        println!("destination clicked!");
-                        // TODO: send MoveMarbleEvent((x, y))
+                        let (_, transform, mut m) = marbles.get_mut(marble).unwrap();
+                        m.index = board_index;
+                        commands.entity(marble).insert(Moving::new(destination, transform.translation));
                     }
                 }
             }
@@ -738,17 +757,22 @@ fn handle_selection_events(
     }
 }
 
-// fn select_destination() {
-//     // let (col, row) = ((cursor.x / WINDOW_SIZE * TILE_COUNT).floor(), (cursor.y / WINDOW_SIZE * TILE_COUNT).floor());
-// }
-
-// fn check_end_turn(dice_data: Res<DiceData>) {
-//     if dice_data.get_dice_values().is_empty() {
-//         // go to the choose_next_player state
-//     } else {
-//         // go to the calc_moves state
-//     }
-// }
+fn animate_marble_moves(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut moving_marbles: Query<(Entity, &mut Moving, &mut Transform)>,
+) {
+    for (entity, mut moving, mut transform) in moving_marbles.iter_mut() {
+        // using a timer so at the end of the animation we force the translation
+        // to be at the exact destination
+        if moving.timer.tick(time.delta()).just_finished() {
+            transform.translation = moving.destination;
+            commands.entity(entity).remove::<Moving>();
+            continue;
+        }
+        transform.translation += moving.anim_step_dist * time.delta_seconds();
+    }
+}
 
 /// Snaps the given coordinate to the center of the tile it's inside of.
 fn snap(coord: f32) -> f32 {
