@@ -117,6 +117,7 @@ pub enum GameState {
     // ChooseColor,
     NextPlayer,
     DiceRoll,
+    PlayTurn,
     HumanTurn,
     ComputerTurn,
     ChooseMoves,
@@ -153,7 +154,7 @@ fn roll_die() -> u8 {
 #[derive(Component)]
 pub struct DieAnimationTimer(Timer);
 
-pub struct RunMoveCalculation(bool);
+pub struct IsHumanTurn(bool);
 
 #[derive(Component, Debug, Eq, PartialEq, Clone)]
 pub enum Player {
@@ -283,7 +284,7 @@ impl Plugin for AggravationPlugin {
     fn build(&self, app: &mut App) {
         app
             .insert_resource(RollAnimationTimer(Timer::from_seconds(3., false)))
-            .insert_resource(RunMoveCalculation(false))
+            .insert_resource(IsHumanTurn(false))
             .insert_resource(HumanPlayer{ color: Player::Blue }) // TODO: insert this after human chooses their color
 
             .add_event::<SelectionEvent>()
@@ -304,9 +305,10 @@ impl Plugin for AggravationPlugin {
             .add_system_set(SystemSet::on_update(GameState::DiceRoll).with_system(roll_animation))
             .add_system_set(SystemSet::on_exit(GameState::DiceRoll).with_system(stop_roll_animation))
 
-            .add_system_set(SystemSet::new().with_run_criteria(can_calc_moves).with_system(calc_possible_moves))
+            .add_system_set(SystemSet::on_enter(GameState::PlayTurn).with_system(calc_possible_moves))
 
             .add_system_set(SystemSet::on_update(GameState::HumanTurn)
+                .with_run_criteria(is_human_turn.label("is_human_turn"))
                 .with_system(handle_mouse_clicks)
                 .with_system(handle_keyboard_input)
                 .with_system(handle_selection_events)
@@ -504,14 +506,11 @@ fn next_player_setup(
 fn roll_dice(
     mut dice_data: ResMut<DiceData>,
     mut die_animation_timers: Query<&mut DieAnimationTimer>,
-    mut run_move_calc: ResMut<RunMoveCalculation>,
 ) {
     dice_data.die_1_side = Some(1); // TODO: Some(roll_die());
     dice_data.die_2_side = Some(roll_die());
 
     die_animation_timers.for_each_mut(|mut t| t.0.reset());
-
-    run_move_calc.0 = true;
 
     println!("roll_dice: {:?} {:?}", dice_data.die_1_side, dice_data.die_2_side);
 }
@@ -521,8 +520,6 @@ fn roll_animation(
     mut roll_animation_timer: ResMut<RollAnimationTimer>,
     mut query: Query<(&mut DieAnimationTimer, &mut TextureAtlasSprite)>,
     mut state: ResMut<State<GameState>>,
-    human_player: Res<HumanPlayer>,
-    current_player_data: Res<CurrentPlayerData>,
 ) {
     // https://github.com/bevyengine/bevy/blob/latest/examples/2d/sprite_sheet.rs
     for (mut die_animation_timer, mut sprite) in query.iter_mut() {
@@ -536,11 +533,7 @@ fn roll_animation(
     if roll_animation_timer.0.tick(time.delta()).just_finished() {
         println!("roll_animation timer expired");
         roll_animation_timer.0.reset();
-        if human_player.color == current_player_data.player {
-            state.set(GameState::HumanTurn).unwrap();
-        } else {
-            state.set(GameState::ComputerTurn).unwrap();
-        }
+        state.set(GameState::PlayTurn).unwrap();
     }
 }
 
@@ -561,6 +554,9 @@ fn stop_roll_animation(
 
 fn can_calc_moves(run_calc: Res<RunMoveCalculation>) -> ShouldRun {
     if run_calc.0 {
+
+fn is_human_turn(current_player_data: Res<CurrentPlayerData>, human: Res<HumanPlayer>) -> ShouldRun {
+    if current_player_data.player == human.color {
         ShouldRun::Yes
     } else {
         ShouldRun::No
@@ -571,7 +567,8 @@ fn calc_possible_moves(
     dice_data: Res<DiceData>,
     marbles: Query<(Entity, &Marble), With<CurrentPlayer>>,
     mut current_player_data: ResMut<CurrentPlayerData>,
-    mut run_move_calc: ResMut<RunMoveCalculation>,
+    human_player: Res<HumanPlayer>,
+    mut state: ResMut<State<GameState>>,
 ) {
     let mut possible_moves = std::collections::BTreeSet::new(); // so we disregard duplicates
     for (entity, marble) in marbles.iter() {
@@ -620,7 +617,11 @@ fn calc_possible_moves(
 
     current_player_data.possible_moves = possible_moves;
 
-    run_move_calc.0 = false;
+    if human_player.color == current_player_data.player {
+        state.set(GameState::HumanTurn).unwrap();
+    } else {
+        state.set(GameState::ComputerTurn).unwrap();
+    }
 
     println!("calc_possible_moves");
 }
@@ -653,24 +654,17 @@ fn handle_mouse_clicks(
         // cursor position is measured from the bottom left corner, but transforms are measured from their center
         let (cursor_x, cursor_y) = (cursor.x - WINDOW_SIZE / 2., cursor.y - WINDOW_SIZE / 2.);
 
-        // find the marble under the cursor
-        let mut did_select_marble = false;
-        for (entity, transform, _) in marbles.iter() {
-            let selected = cursor_x > transform.translation.x - TILE_SIZE / 2.
-                        && cursor_x < transform.translation.x + TILE_SIZE / 2.
-                        && cursor_y > transform.translation.y - TILE_SIZE / 2.
-                        && cursor_y < transform.translation.y + TILE_SIZE / 2.;
-            if selected {
-                did_select_marble = true;
-                selection_data.marble = Some(entity);
-                selection_events.send(SelectionEvent(transform.translation.clone()));
-                println!("handle_mouse_clicks: clicked on marble!");
-            } else {
-                deselection_events.send(DeselectionEvent);
-            }
-        }
-        if !did_select_marble {
-            // first check if we selected a destination
+        // check for marble click
+        if let Some((entity, transform, _)) = marbles.iter().find(|(_, t, _)| {
+            cursor_x > t.translation.x - TILE_SIZE / 2. &&
+            cursor_x < t.translation.x + TILE_SIZE / 2. &&
+            cursor_y > t.translation.y - TILE_SIZE / 2. &&
+            cursor_y < t.translation.y + TILE_SIZE / 2.
+        }) {
+            selection_data.marble = Some(entity);
+            selection_events.send(SelectionEvent(transform.translation.clone()));
+        } else {
+            // check for marble destination click
             if let Some(marble) = selection_data.marble {
                 let destination = Vec3::new(snap(cursor_x), snap(cursor_y), 1.0);
                 let (col, row) = current_player_data.player.rotate((destination.x / TILE_SIZE, destination.y / TILE_SIZE));
@@ -683,6 +677,7 @@ fn handle_mouse_clicks(
                 }
             }
             selection_data.marble = None;
+            deselection_events.send(DeselectionEvent);
         }
     }
 }
@@ -710,15 +705,11 @@ fn handle_deselection_events(
     selection_data: Res<SelectionData>,
 ) {
     if deselection_events.iter().last().is_some() {
-        for entity in entities.iter() {
-            match selection_data.marble {
-                // marble selected - remove highlights not related to the selected marble
-                Some(marble) => if entity != marble {
-                    commands.entity(entity).despawn();
-                }
-                // no marbles selected - remove all highlights
-                None => commands.entity(entity).despawn(),
-            }
+        match selection_data.marble {
+            Some(marble) => entities.for_each(|e| if e != marble {
+                commands.entity(e).despawn();
+            }),
+            None => entities.for_each(|e| commands.entity(e).despawn()),
         }
     }
 }
@@ -730,6 +721,8 @@ fn handle_selection_events(
     current_player_data: Res<CurrentPlayerData>,
 ) {
     if let Some(selection) = selection_events.iter().last() {
+        let marble = selection_data.marble.unwrap();
+
         let mut t = selection.0.clone();
         t.z += 1.0; // make sure it's drawn on top
 
@@ -739,11 +732,11 @@ fn handle_selection_events(
             transform: Transform::from_translation(t),
             ..default()
         })
-        .insert(Highlight(selection_data.marble.unwrap()))
+        .insert(Highlight(marble))
         ;
 
         // create sprites located at the possible moves for the selected marble
-        for board_index in current_player_data.get_moves(selection_data.marble.unwrap()) {
+        for board_index in current_player_data.get_moves(marble) {
             let tile = BOARD[board_index];
             let (x, y) = current_player_data.player.rotate((tile.0 as f32, tile.1 as f32));
             commands.spawn_bundle(SpriteBundle{
@@ -751,7 +744,7 @@ fn handle_selection_events(
                 transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, t.z),
                 ..default()
             })
-            .insert(Highlight(selection_data.marble.unwrap()))
+            .insert(Highlight(marble))
             ;
         }
     }
