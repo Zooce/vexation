@@ -21,20 +21,17 @@ pub struct Marble {
 
 #[derive(Component, Debug)]
 pub struct Moving{
-    pub timer: Timer,
     pub destination: Vec3,
-    pub anim_step_dist: Vec3,
+    pub direction: Vec2,
 }
 
 impl Moving {
-
     /// Creates a new `Moving` component with a destination and origin.
     pub fn new(destination: Vec3, origin: Vec3) -> Self {
-        const MOVE_ANIM_DURATION: f32 = 0.2; // 200ms
+        let direction = (destination - origin).normalize();
         Self{
-            timer: Timer::from_seconds(MOVE_ANIM_DURATION, false),
             destination,
-            anim_step_dist: (destination - origin) / MOVE_ANIM_DURATION,
+            direction: Vec2::new(direction.x, direction.y),
         }
     }
 }
