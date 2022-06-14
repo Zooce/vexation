@@ -1,7 +1,20 @@
 // TODO: Bring only what we're actually using into scope - I'm bringing in everything help me code faster.
 
 use bevy::prelude::*;
+use bevy::ecs::schedule::ShouldRun;
 use crate::components::*;
+use crate::resources::*;
+
+pub fn should_animate_moves(
+    state: Res<State<GameState>>,
+) -> ShouldRun {
+    match state.current() {
+        GameState::NextPlayer |
+        GameState::DiceRoll |
+        GameState::CalculateMoves => ShouldRun::No,
+        _ => ShouldRun::Yes,
+    }
+}
 
 pub fn animate_marble_moves(
     mut commands: Commands,

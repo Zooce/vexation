@@ -60,7 +60,7 @@ pub fn calc_possible_moves(
     current_player_data.possible_moves = possible_moves;
 
     if human_player.color == current_player_data.player {
-        state.set(GameState::HumanTurn).unwrap();
+        state.set(GameState::HumanIdle).unwrap();
     } else {
         state.set(GameState::ComputerTurn).unwrap();
     }

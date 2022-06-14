@@ -35,7 +35,7 @@ pub fn roll_animation(
     if roll_animation_timer.0.tick(time.delta()).just_finished() {
         println!("roll_animation timer expired");
         roll_animation_timer.0.reset();
-        state.set(GameState::PlayTurn).unwrap();
+        state.set(GameState::CalculateMoves).unwrap();
     }
 }
 

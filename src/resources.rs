@@ -2,6 +2,7 @@
 
 use bevy::prelude::*;
 use crate::components::*;
+use crate::system_sets::ClickEvent;
 use std::collections::BTreeSet;
 
 #[derive(Debug)]
@@ -48,8 +49,9 @@ pub enum GameState {
     // ChooseColor,
     NextPlayer,
     DiceRoll,
-    PlayTurn,
-    HumanTurn,
+    CalculateMoves,
+    HumanIdle,
+    HumanMarbleSelected,
     ComputerTurn,
     // ChooseMoves,
     // ComputerChooseMoves,
@@ -68,4 +70,6 @@ pub struct SelectionData {
     pub marble: Option<Entity>,
     /// The highlight texture for the selected marble and its possible moves
     pub highlight_texture: Handle<Image>,
+    /// A previous click event from the destination state
+    pub prev_click: Option<ClickEvent>,
 }

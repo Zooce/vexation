@@ -3,7 +3,6 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
-use crate::events::*;
 use crate::resources::*;
 use crate::shared_systems::*;
 use crate::system_sets::*;
@@ -18,8 +17,7 @@ impl Plugin for VexationPlugin {
             .insert_resource(RollAnimationTimer(Timer::from_seconds(3., false)))
             .insert_resource(HumanPlayer{ color: Player::Blue }) // TODO: insert this after human chooses their color
 
-            .add_event::<SelectionEvent>()
-            .add_event::<DeselectionEvent>()
+            .add_event::<ClickEvent>()
 
             .add_startup_system(setup)
 
@@ -36,14 +34,27 @@ impl Plugin for VexationPlugin {
             .add_system_set(SystemSet::on_update(GameState::DiceRoll).with_system(roll_animation))
             .add_system_set(SystemSet::on_exit(GameState::DiceRoll).with_system(stop_roll_animation))
 
-            .add_system_set(SystemSet::on_enter(GameState::PlayTurn).with_system(calc_possible_moves))
+            .add_system_set(SystemSet::on_enter(GameState::CalculateMoves).with_system(calc_possible_moves))
 
-            .add_system_set(SystemSet::on_update(GameState::HumanTurn)
-                .with_system(handle_mouse_clicks)
-                .with_system(handle_keyboard_input)
-                .with_system(handle_selection_events)
-                .with_system(handle_deselection_events)
+            .add_system_set(SystemSet::new()
+                .with_run_criteria(should_animate_moves)
                 .with_system(animate_marble_moves)
+            )
+
+            .add_system_set(SystemSet::on_update(GameState::HumanIdle)
+                .with_system(handle_mouse_clicks)
+                .with_system(check_marble_clicked)
+            )
+            .add_system_set(SystemSet::on_exit(GameState::HumanIdle)
+                .with_system(highlight_selection)
+            )
+
+            .add_system_set(SystemSet::on_update(GameState::HumanMarbleSelected)
+                .with_system(handle_mouse_clicks)
+                .with_system(check_destination_clicked)
+            )
+            .add_system_set(SystemSet::on_exit(GameState::HumanMarbleSelected)
+                .with_system(remove_highlights)
             )
 
             // .add_system_set(SystemSet::on_enter(GameState::ComputerTurn)
@@ -173,5 +184,6 @@ fn setup(
     commands.insert_resource(SelectionData{
         marble: None,
         highlight_texture: asset_server.load("tile-highlight.png"),
+        prev_click: None,
     })
 }

@@ -5,7 +5,6 @@ use bevy::window::PresentMode;
 
 mod components;
 mod constants;
-mod events;
 mod resources;
 mod shared_systems;
 mod system_sets;
