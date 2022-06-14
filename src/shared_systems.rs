@@ -11,7 +11,7 @@ pub fn should_animate_moves(
     match state.current() {
         GameState::NextPlayer |
         GameState::DiceRoll |
-        GameState::CalculateMoves => ShouldRun::No,
+        GameState::TurnSetup => ShouldRun::No,
         _ => ShouldRun::Yes,
     }
 }

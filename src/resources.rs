@@ -58,7 +58,7 @@ pub enum GameState {
     // ChooseColor,
     NextPlayer,
     DiceRoll,
-    CalculateMoves,
+    TurnSetup,
     HumanIdle,
     HumanMarbleSelected,
     ComputerTurn,

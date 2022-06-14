@@ -34,7 +34,7 @@ impl Plugin for VexationPlugin {
             .add_system_set(SystemSet::on_update(GameState::DiceRoll).with_system(roll_animation))
             .add_system_set(SystemSet::on_exit(GameState::DiceRoll).with_system(stop_roll_animation))
 
-            .add_system_set(SystemSet::on_enter(GameState::CalculateMoves).with_system(calc_possible_moves))
+            .add_system_set(SystemSet::on_enter(GameState::TurnSetup).with_system(calc_possible_moves))
 
             .add_system_set(SystemSet::new()
                 .with_run_criteria(should_animate_moves)
