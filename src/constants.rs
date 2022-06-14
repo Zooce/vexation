@@ -2,6 +2,7 @@ pub const TILE_SIZE: f32 = 32.;
 pub const TILE_COUNT: f32 = 17.;
 pub const START_INDEX: usize = 0;
 pub const CENTER_INDEX: usize = 53;
+pub const FIRST_HOME_INDEX: usize = 48;
 pub const LAST_HOME_INDEX: usize = 52;
 pub const CENTER_ENTRANCE_INDEXES: [usize; 3] = [5, 17, 29];
 pub const CENTER_EXIT_INDEX: usize = 41;

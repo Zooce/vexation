@@ -17,6 +17,8 @@ pub struct Highlight(pub Entity);
 pub struct Marble {
     /// This is a index into the `BOARD` (i.e. which space this marble is located).
     pub index: usize,
+    /// Where this marble started in their base.
+    pub origin: Vec3,
 }
 
 #[derive(Component, Debug)]

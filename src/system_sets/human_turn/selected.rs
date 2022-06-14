@@ -50,6 +50,7 @@ pub fn check_destination_clicked(
             }
             commands.entity(marble).insert(Moving::new(destination, t.translation));
             println!("check_destination_clicked: Moving component added for {:?}", marble);
+            state.set(GameState::ProcessMove).unwrap();
         } else {
             selection_data.marble = None;
             state.set(GameState::HumanIdle).unwrap();

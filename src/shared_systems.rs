@@ -22,8 +22,7 @@ pub fn animate_marble_moves(
     mut moving_marbles: Query<(Entity, &Moving, &mut Transform)>,
 ) {
     const PIXELS_PER_SEC: f32 = 650.;
-
-    if let Ok((entity, moving, mut transform)) = moving_marbles.get_single_mut() {
+    for (entity, moving, mut transform) in moving_marbles.iter_mut() {
         transform.translation.x += moving.direction.x * PIXELS_PER_SEC * time.delta_seconds();
         transform.translation.y += moving.direction.y * PIXELS_PER_SEC * time.delta_seconds();
 

@@ -64,6 +64,7 @@ pub enum GameState {
     ComputerTurn,
     // ChooseMoves,
     // ComputerChooseMoves,
+    ProcessMove,
     // CheckWinner,
 }
 

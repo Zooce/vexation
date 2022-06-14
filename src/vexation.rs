@@ -57,6 +57,11 @@ impl Plugin for VexationPlugin {
                 .with_system(remove_highlights)
             )
 
+            .add_system_set(SystemSet::on_enter(GameState::ProcessMove)
+                .with_system(check_for_capture)
+                .with_system(check_for_winner.after(check_for_capture))
+            )
+
             // .add_system_set(SystemSet::on_enter(GameState::ComputerTurn)
             // )
             ;
@@ -91,56 +96,60 @@ fn setup(
     let yellow_marble = asset_server.load("yellow-marble.png");
     for (x, y) in vec![(3., 3.5), (3., 4.5), (4., 3.), (4., 4.), (4., 5.)] {
         // green marbles
+        let origin = Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 1.);
         let mut green = commands
             .spawn_bundle(SpriteBundle{
                 texture: green_marble.clone(),
-                transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 1.),
+                transform: origin.clone(),
                 ..default()
             });
         green
-            .insert(Marble{ index: BOARD.len() })
+            .insert(Marble{ index: BOARD.len(), origin: origin.translation })
             .insert(Player::Green)
             ;
         if current_player == Player::Green {
             green.insert(CurrentPlayer);
         }
         // yellow marbles
+        let origin = Transform::from_xyz(-x * TILE_SIZE, -y * TILE_SIZE, 1.);
         let mut yellow = commands
             .spawn_bundle(SpriteBundle{
                 texture: yellow_marble.clone(),
-                transform: Transform::from_xyz(-x * TILE_SIZE, -y * TILE_SIZE, 1.),
+                transform: origin,
                 ..default()
             });
         yellow
-            .insert(Marble{ index: BOARD.len() })
+            .insert(Marble{ index: BOARD.len(), origin: origin.translation })
             .insert(Player::Yellow)
             ;
         if current_player == Player::Yellow {
             yellow.insert(CurrentPlayer);
         }
         // red marbles
+        let origin = Transform::from_xyz(-y * TILE_SIZE, x * TILE_SIZE, 1.);
         let mut red = commands
             .spawn_bundle(SpriteBundle{
                 texture: red_marble.clone(),
-                transform: Transform::from_xyz(-y * TILE_SIZE, x * TILE_SIZE, 1.),
+                transform: origin,
                 ..default()
             });
         red
-            .insert(Marble{ index: BOARD.len() })
+            .insert(Marble{ index: BOARD.len(), origin: origin.translation })
             .insert(Player::Red)
             ;
         if current_player == Player::Red {
             red.insert(CurrentPlayer);
         }
         // blue marbles
+        let origin = Transform::from_xyz(y * TILE_SIZE, -x * TILE_SIZE, 1.);
         let mut blue = commands
             .spawn_bundle(SpriteBundle{
                 texture: blue_marble.clone(),
-                transform: Transform::from_xyz(y * TILE_SIZE, -x * TILE_SIZE, 1.),
+                transform: origin,
                 ..default()
             });
         blue
-            .insert(Marble{ index: BOARD.len() })
+            .insert(Marble{ index: BOARD.len(), origin: origin.translation })
             .insert(Player::Blue)
             ;
         if current_player == Player::Blue {
