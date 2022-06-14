@@ -14,32 +14,32 @@ pub fn calc_possible_moves(
 ) {
     let mut possible_moves = std::collections::BTreeSet::new(); // so we disregard duplicates
     for (entity, marble) in marbles.iter() {
-        for side in dice_data.get_dice_values() { // TODO: need to check if we've already used one or both dice in the previous move
+        for (value, which_die) in dice_data.get_dice_values() { // TODO: need to check if we've already used one or both dice in the previous move
             // exit base / enter board - only one possible move for this marble
             if marble.index == BOARD.len() {
-                if side == 1 {
-                    possible_moves.insert((entity, START_INDEX));
+                if value == 1 {
+                    possible_moves.insert((entity, START_INDEX, which_die));
                 }
                 continue;
             }
 
             // exit center space - only one possible move for this marble
             if marble.index == CENTER_INDEX {
-                if side == 1 {
-                    possible_moves.insert((entity, CENTER_EXIT_INDEX));
+                if value == 1 {
+                    possible_moves.insert((entity, CENTER_EXIT_INDEX, which_die));
                 }
                 continue;
             }
 
             // basic move
-            let next_index = marble.index + side as usize;
+            let next_index = marble.index + value as usize;
             if next_index <= LAST_HOME_INDEX { // the very last home position
-                possible_moves.insert((entity, next_index));
+                possible_moves.insert((entity, next_index, which_die));
             }
 
             // enter center space
             if CENTER_ENTRANCE_INDEXES.contains(&(next_index - 1)) {
-                possible_moves.insert((entity, CENTER_INDEX));
+                possible_moves.insert((entity, CENTER_INDEX, which_die));
             }
         }
     }
@@ -52,7 +52,7 @@ pub fn calc_possible_moves(
         // remove possible moves where either:
         // - marble_a lands on marble_b
         // - marble_b is between marble_a's current position and the destination
-        possible_moves = possible_moves.into_iter().filter(|(_, next_index)| {
+        possible_moves = possible_moves.into_iter().filter(|(_, next_index, _)| {
             *next_index != other_marble.1.index && !(marble.1.index..*next_index).contains(&other_marble.1.index)
         }).collect();
     }

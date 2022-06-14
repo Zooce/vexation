@@ -12,7 +12,7 @@ pub fn check_marble_clicked(
     mut selection_data: ResMut<SelectionData>,
     mut state: ResMut<State<GameState>>,
 ) {
-    if let Some(click) = click_events.iter().last().or(selection_data.prev_click.as_ref()) {
+    if let Some(click) = click_events.iter().last() {
         if let Some((entity, _)) = marbles.iter().find(|(_, t)| {
             click.x > t.translation.x - TILE_SIZE / 2. &&
             click.x < t.translation.x + TILE_SIZE / 2. &&
@@ -20,15 +20,11 @@ pub fn check_marble_clicked(
             click.y < t.translation.y + TILE_SIZE / 2.
         }) {
             selection_data.marble = Some(entity);
+            selection_data.selection_click = Some(click.clone());
             state.set(GameState::HumanMarbleSelected).unwrap();
-            println!("check_marble_clicked: true");
-        } else {
-            println!("check_marble_clicked: false");
+            println!("HumanIdle - check_marble_clicked: {:?}", click);
         }
     }
-    // make sure the prev click is removed
-    selection_data.prev_click = None;
-
 }
 
 pub fn highlight_selection(
@@ -52,7 +48,7 @@ pub fn highlight_selection(
     ;
 
     // create sprites located at the possible moves for the selected marble
-    for board_index in current_player_data.get_moves(marble) {
+    for (board_index, _) in current_player_data.get_moves(marble) {
         let tile = BOARD[board_index];
         let (x, y) = current_player_data.player.rotate((tile.0 as f32, tile.1 as f32));
         commands.spawn_bundle(SpriteBundle{
@@ -64,5 +60,5 @@ pub fn highlight_selection(
         ;
     }
 
-    println!("highlight_selection");
+    println!("HumanIdle - highlight_selection");
 }

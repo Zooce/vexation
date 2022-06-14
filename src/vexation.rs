@@ -184,6 +184,6 @@ fn setup(
     commands.insert_resource(SelectionData{
         marble: None,
         highlight_texture: asset_server.load("tile-highlight.png"),
-        prev_click: None,
+        selection_click: None,
     })
 }

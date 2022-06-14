@@ -10,7 +10,7 @@ mod selected;
 pub use idle::*;
 pub use selected::*;
 
-#[derive(Clone)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ClickEvent {
     x: f32,
     y: f32,

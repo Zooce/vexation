@@ -8,33 +8,53 @@ use super::ClickEvent;
 
 pub fn check_destination_clicked(
     mut commands: Commands,
-    mut click_event_reader: EventReader<ClickEvent>,
-    // mut click_event_writer: EventWriter<ClickEvent>,
+    mut click_events: EventReader<ClickEvent>,
     mut selection_data: ResMut<SelectionData>,
     current_player_data: Res<CurrentPlayerData>,
     mut marbles: Query<(&Transform, &mut Marble), With<CurrentPlayer>>,
     mut state: ResMut<State<GameState>>,
+    mut dice_data: ResMut<DiceData>,
 ) {
-    if let Some(click) = click_event_reader.iter().last() {
-        let marble = selection_data.marble.unwrap();
+    if let Some(click) = click_events.iter().last() {
+        if let Some(pclick) = selection_data.selection_click {
+            if pclick == *click {
+                println!("check_destination_clicked: ignoring {:?}", click);
+                selection_data.selection_click = None;
+                return;
+            }
+        }
         let destination = Vec3::new(snap(click.x), snap(click.y), 1.0);
         let (col, row) = current_player_data.player.rotate((destination.x / TILE_SIZE, destination.y / TILE_SIZE));
-        let dest_clicked = match BOARD.into_iter().position(|coord| coord == (col as i32, row as i32)) {
-            Some(board_index) if current_player_data.get_moves(marble).contains(&board_index) => {
-                let (t, mut m) = marbles.get_mut(marble).unwrap();
-                m.index = board_index;
-                commands.entity(marble).insert(Moving::new(destination, t.translation));
-                // TODO: state.set(GameState::ProcessMove).unwrap();
-                true
-            }
-            _ => false
+
+        let marble = selection_data.marble.unwrap();
+        let mv = match BOARD.into_iter().position(|coord| coord == (col as i32, row as i32)) {
+            Some(board_index) => current_player_data.get_moves(marble).into_iter().find(|(idx, _)| *idx == board_index),
+            _ => None,
         };
-        if !dest_clicked {
+        if let Some((idx, which)) = mv {
+            let (t, mut m) = marbles.get_mut(marble).unwrap();
+            match which {
+                WhichDie::One => {
+                    m.index = idx;
+                    dice_data.die_1_side = None;
+                }
+                WhichDie::Two => {
+                    m.index = idx;
+                    dice_data.die_2_side = None;
+                }
+                WhichDie::Both => {
+                    m.index = idx;
+                    dice_data.die_1_side = None;
+                    dice_data.die_2_side = None;
+                }
+            }
+            commands.entity(marble).insert(Moving::new(destination, t.translation));
+            println!("check_destination_clicked: Moving component added for {:?}", marble);
+        } else {
             selection_data.marble = None;
-            selection_data.prev_click = Some(click.clone());
             state.set(GameState::HumanIdle).unwrap();
         }
-        println!("check_destination_clicked: {}", dest_clicked);
+        println!("HumanMarbleSelected - check_destination_clicked: {:?}", click);
     }
 }
 
@@ -43,7 +63,7 @@ pub fn remove_highlights(
     entities: Query<Entity, With<Highlight>>,
 ) {
     entities.for_each(|e| commands.entity(e).despawn());
-    println!("remove_highlights")
+    println!("HumanMarbleSelected - remove_highlights")
 }
 
 /// Snaps the given coordinate to the center of the tile it's inside of.
