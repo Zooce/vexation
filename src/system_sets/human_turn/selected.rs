@@ -24,7 +24,7 @@ pub fn check_destination_clicked(
             }
         }
         let destination = Vec3::new(snap(click.x), snap(click.y), 1.0);
-        let (col, row) = current_player_data.player.rotate((destination.x / TILE_SIZE, destination.y / TILE_SIZE));
+        let (col, row) = current_player_data.player.rotate_coords((destination.x / TILE_SIZE, destination.y / TILE_SIZE));
 
         let marble = selection_data.marble.unwrap();
         let mv = match BOARD.into_iter().position(|coord| coord == (col as i32, row as i32)) {

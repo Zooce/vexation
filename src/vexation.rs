@@ -14,6 +14,7 @@ pub struct VexationPlugin;
 impl Plugin for VexationPlugin {
     fn build(&self, app: &mut App) {
         app
+            .insert_resource(ComputerTurnTimer(Timer::from_seconds(2., false)))
             .insert_resource(RollAnimationTimer(Timer::from_seconds(3., false)))
             .insert_resource(HumanPlayer{ color: Player::Blue }) // TODO: insert this after human chooses their color
 
@@ -39,6 +40,10 @@ impl Plugin for VexationPlugin {
             .add_system_set(SystemSet::new()
                 .with_run_criteria(should_animate_moves)
                 .with_system(animate_marble_moves)
+            )
+
+            .add_system_set(SystemSet::on_update(GameState::ComputerTurn)
+                .with_system(choose_move)
             )
 
             .add_system_set(SystemSet::on_update(GameState::HumanIdle)

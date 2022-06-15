@@ -47,7 +47,7 @@ pub enum Player {
 }
 
 impl Player {
-    pub fn rotate(&self, coords: (f32, f32)) -> (f32, f32) {
+    pub fn rotate_coords(&self, coords: (f32, f32)) -> (f32, f32) {
         match self {
             Player::Red => coords,
             Player::Green => (coords.1, -coords.0),

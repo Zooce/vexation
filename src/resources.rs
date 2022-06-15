@@ -5,6 +5,8 @@ use crate::components::*;
 use crate::system_sets::ClickEvent;
 use std::collections::BTreeSet;
 
+pub struct ComputerTurnTimer(pub Timer);
+
 #[derive(Debug)]
 pub struct CurrentPlayerData {
     pub player: Player,

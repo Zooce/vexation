@@ -50,7 +50,7 @@ pub fn highlight_selection(
     // create sprites located at the possible moves for the selected marble
     for (board_index, _) in current_player_data.get_moves(marble) {
         let tile = BOARD[board_index];
-        let (x, y) = current_player_data.player.rotate((tile.0 as f32, tile.1 as f32));
+        let (x, y) = current_player_data.player.rotate_coords((tile.0 as f32, tile.1 as f32));
         commands.spawn_bundle(SpriteBundle{
             texture: selection_data.highlight_texture.clone(),
             transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, t.z),
