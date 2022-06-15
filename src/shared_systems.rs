@@ -30,7 +30,7 @@ pub fn animate_marble_moves(
         // we've arrived if the direction to the destination has flipped, meaning we've passed it
         let arrived = {
             let d = (moving.destination - transform.translation).normalize();
-            Vec2::new(d.x, d.y).dot(moving.direction) == -1.0
+            Vec2::new(d.x, d.y).dot(moving.direction) < 0.0
         };
 
         if arrived {

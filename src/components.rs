@@ -61,6 +61,9 @@ impl Player {
         if i1 == CENTER_INDEX && i2 == CENTER_INDEX {
             return true;
         }
+        if i1 == CENTER_INDEX || i2 == CENTER_INDEX {
+            return false;
+        }
         let rotations = (4 - p1 as usize) % 4;
         (i1 + (rotations + p2 as usize) * 36) % 48 == i2
     }
@@ -89,6 +92,15 @@ mod tests {
         ));
         assert!(!Player::is_same_index(
             Player::Blue, 17, Player::Green, 13
+        ));
+        assert!(Player::is_same_index(
+            Player::Blue, 21, Player::Yellow, 9
+        ));
+        assert!(!Player::is_same_index(
+            Player::Blue, 21, Player::Green, 16
+        ));
+        assert!(!Player::is_same_index(
+            Player::Green, 53, Player::Red, 17
         ));
     }
 }
