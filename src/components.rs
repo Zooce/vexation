@@ -13,7 +13,7 @@ pub struct DieAnimationTimer(pub Timer);
 #[derive(Component)]
 pub struct Highlight(pub Entity);
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct Marble {
     /// This is a index into the `BOARD` (i.e. which space this marble is located).
     pub index: usize,

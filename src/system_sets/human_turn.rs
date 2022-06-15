@@ -40,10 +40,3 @@ pub fn handle_mouse_clicks(
         click_events.send(ClickEvent{ x, y });
     }
 }
-
-// pub fn point_in_rect((x, y): (f32, f32), t: Vec3) -> bool {
-//     x > t.x - TILE_SIZE / 2. &&
-//     x < t.x + TILE_SIZE / 2. &&
-//     y > t.y - TILE_SIZE / 2. &&
-//     y < t.y + TILE_SIZE / 2.
-// }

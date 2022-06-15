@@ -33,29 +33,26 @@ pub fn check_destination_clicked(
         };
         if let Some((idx, which)) = mv {
             let (t, mut m) = marbles.get_mut(marble).unwrap();
+            m.index = idx;
             match which {
                 WhichDie::One => {
-                    m.index = idx;
                     dice_data.die_1_side = None;
                 }
                 WhichDie::Two => {
-                    m.index = idx;
                     dice_data.die_2_side = None;
                 }
                 WhichDie::Both => {
-                    m.index = idx;
                     dice_data.die_1_side = None;
                     dice_data.die_2_side = None;
                 }
             }
             commands.entity(marble).insert(Moving::new(destination, t.translation));
-            println!("check_destination_clicked: Moving component added for {:?}", marble);
             state.set(GameState::ProcessMove).unwrap();
         } else {
             selection_data.marble = None;
             state.set(GameState::HumanIdle).unwrap();
         }
-        println!("HumanMarbleSelected - check_destination_clicked: {:?}", click);
+        println!("HumanMarbleSelected - check_destination_clicked: {:?}", (marble, mv));
     }
 }
 

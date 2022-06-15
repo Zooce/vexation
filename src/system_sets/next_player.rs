@@ -28,7 +28,7 @@ pub fn choose_next_player(
         }
     }
 
-    println!("choose_next_player: {:?}", current_player_data.player);
+    println!("NextPlayer - choose_next_player: {:?}", current_player_data.player);
 }
 
 pub fn next_player_setup(
@@ -55,6 +55,4 @@ pub fn next_player_setup(
     transform.translation.y = d2_loc.1 * TILE_SIZE;
 
     state.set(GameState::DiceRoll).unwrap();
-
-    println!("next_player_setup");
 }

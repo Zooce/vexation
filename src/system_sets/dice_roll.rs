@@ -33,7 +33,6 @@ pub fn roll_animation(
     // TODO: also rotate the dice
 
     if roll_animation_timer.0.tick(time.delta()).just_finished() {
-        println!("roll_animation timer expired");
         roll_animation_timer.0.reset();
         state.set(GameState::TurnSetup).unwrap();
     }
@@ -48,6 +47,4 @@ pub fn stop_roll_animation(
 
     let mut sprite = query.get_mut(dice_data.die_2).expect("Unable to get die 2");
     sprite.index = (dice_data.die_2_side.unwrap() - 1) as usize;
-
-    println!("stop_roll_animation");
 }

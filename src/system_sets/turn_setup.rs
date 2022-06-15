@@ -67,5 +67,5 @@ pub fn calc_possible_moves(
         state.set(GameState::ComputerTurn).unwrap();
     }
 
-    println!("calc_possible_moves");
+    println!("TurnSetup - calc_possible_moves: filtered = {:?}", current_player_data.possible_moves);
 }
