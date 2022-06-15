@@ -1,6 +1,7 @@
 // TODO: Bring only what we're actually using into scope - I'm bringing in everything help me code faster.
 
 use bevy::prelude::*;
+use crate::constants::*;
 
 #[derive(Component)]
 pub struct CurrentPlayer;
@@ -38,7 +39,7 @@ impl Moving {
     }
 }
 
-#[derive(Component, Debug, Eq, PartialEq, Clone)]
+#[derive(Component, Debug, Eq, PartialEq, Clone, Copy)]
 pub enum Player {
     Red,
     Green,
@@ -55,6 +56,14 @@ impl Player {
             Player::Yellow => (-coords.1, coords.0),
         }
     }
+
+    pub fn is_same_index(p1: Player, i1: usize, p2: Player, i2: usize) -> bool {
+        if i1 == CENTER_INDEX && i2 == CENTER_INDEX {
+            return true;
+        }
+        let rotations = (4 - p1 as usize) % 4;
+        (i1 + (rotations + p2 as usize) * 36) % 48 == i2
+    }
 }
 
 impl From<u8> for Player {
@@ -66,5 +75,20 @@ impl From<u8> for Player {
             3 => Player::Yellow,
             _ => unreachable!(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn same_index_test() {
+        assert!(Player::is_same_index(
+            Player::Yellow, 16, Player::Blue, 28
+        ));
+        assert!(!Player::is_same_index(
+            Player::Blue, 17, Player::Green, 13
+        ));
     }
 }
