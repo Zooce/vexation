@@ -3,14 +3,13 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::system_sets::ClickEvent;
-use std::collections::BTreeSet;
 
 pub struct ComputerTurnTimer(pub Timer);
 
 #[derive(Debug)]
 pub struct CurrentPlayerData {
     pub player: Player,
-    pub possible_moves: BTreeSet<(Entity, usize, WhichDie)>,
+    pub possible_moves: Vec<(Entity, usize, WhichDie)>,
 }
 
 impl CurrentPlayerData {
@@ -40,19 +39,6 @@ pub struct DiceData {
     pub die_sheet_handle: Handle<TextureAtlas>,
     pub die_1_side: Option<u8>,
     pub die_2_side: Option<u8>,
-}
-
-impl DiceData {
-    pub fn get_dice_values(&self) -> Vec<(u8, WhichDie)> {
-        match (self.die_1_side, self.die_2_side) {
-            (Some(d1), Some(d2)) => vec![
-                (d1, WhichDie::One), (d2, WhichDie::Two), (d1 + d2, WhichDie::Both)
-            ],
-            (Some(d1), None) => vec![(d1, WhichDie::One)],
-            (None, Some(d2)) => vec![(d2, WhichDie::Two)],
-            _ => vec![],
-        }
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

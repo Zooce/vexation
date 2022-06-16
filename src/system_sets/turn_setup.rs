@@ -13,62 +13,122 @@ pub fn calc_possible_moves(
     mut state: ResMut<State<GameState>>,
 ) {
     let mut possible_moves = std::collections::BTreeSet::new(); // so we disregard duplicates
-    let dice_values = dice_data.get_dice_values();
     for (entity, marble) in marbles.iter() {
-        for (value, which_die) in dice_values.iter() {
-            // exit base / enter board - only one possible move for this marble
-            if marble.index == BOARD.len() {
-                if *value == 1 {
-                    possible_moves.insert((entity, START_INDEX, *which_die)); // path = (BOARD.len(), START_INDEX)
+        // exit base
+        if marble.index == BOARD.len() {
+            match (dice_data.die_1_side, dice_data.die_2_side) {
+                (Some(1), Some(1)) => {
+                    possible_moves.insert((entity, vec![START_INDEX], WhichDie::One));
+                    possible_moves.insert((entity, vec![START_INDEX], WhichDie::Two));
+                    possible_moves.insert((entity, vec![START_INDEX, START_INDEX + 1], WhichDie::Both));
                 }
-                continue;
-            }
+                (Some(1), Some(d2)) => {
+                    possible_moves.insert((entity, vec![START_INDEX], WhichDie::One));
+                    possible_moves.insert((entity, (START_INDEX..=START_INDEX + d2 as usize).collect(), WhichDie::Both));
 
-            // exit center space - only one possible move for this marble
-            if marble.index == CENTER_INDEX {
-                if *value == 1 {
-                    possible_moves.insert((entity, CENTER_EXIT_INDEX, *which_die)); // path = (CENTER_INDEX, CENTER_EXIT_INDEX)
+                    // enter center - can only land on center using an exact roll with both dice
+                    if CENTER_ENTRANCE_INDEXES.contains(&(START_INDEX + d2 as usize - 1)) {
+                        let mut path: Vec<_> = (START_INDEX..=START_INDEX + d2 as usize - 1).collect();
+                        path.push(CENTER_INDEX);
+                        possible_moves.insert((entity, path, WhichDie::Both));
+                    }
                 }
-                continue;
-            }
+                (Some(d1), Some(1)) => {
+                    possible_moves.insert((entity, vec![START_INDEX], WhichDie::Two));
+                    possible_moves.insert((entity, (START_INDEX..=START_INDEX + d1 as usize).collect(), WhichDie::Both));
 
-            // basic move
-            let next_index = marble.index + *value as usize;
-            if next_index <= LAST_HOME_INDEX {
-                possible_moves.insert((entity, next_index, *which_die)); // path = (marble.index..=next_index)
+                    // enter center - can only land on center using an exact roll with both dice
+                    if CENTER_ENTRANCE_INDEXES.contains(&(START_INDEX + d1 as usize - 1)) {
+                        let mut path: Vec<_> = (START_INDEX..=START_INDEX + d1 as usize - 1).collect();
+                        path.push(CENTER_INDEX);
+                        possible_moves.insert((entity, path, WhichDie::Both));
+                    }
+                }
+                (Some(1), None) => { possible_moves.insert((entity, vec![START_INDEX], WhichDie::One)); }
+                (None, Some(1)) => { possible_moves.insert((entity, vec![START_INDEX], WhichDie::Two)); }
+                _ => {} // no exit
             }
-
-            // enter center space
-            if CENTER_ENTRANCE_INDEXES.contains(&(next_index - 1)) {
-                possible_moves.insert((entity, CENTER_INDEX, *which_die)); // path = (marble.index..next_index) + (CENTER_INDEX)
-            }
+            continue;
         }
+
+        // exit center
+        if marble.index == CENTER_INDEX {
+            match (dice_data.die_1_side, dice_data.die_2_side) {
+                (Some(1), Some(1)) => {
+                    possible_moves.insert((entity, vec![CENTER_EXIT_INDEX], WhichDie::One));
+                    possible_moves.insert((entity, vec![CENTER_EXIT_INDEX], WhichDie::Two));
+                    possible_moves.insert((entity, vec![CENTER_EXIT_INDEX, CENTER_EXIT_INDEX + 1], WhichDie::Both));
+                }
+                (Some(1), Some(d2)) => {
+                    possible_moves.insert((entity, vec![CENTER_EXIT_INDEX], WhichDie::One));
+                    possible_moves.insert((entity, (CENTER_EXIT_INDEX..=CENTER_EXIT_INDEX + d2 as usize).collect(), WhichDie::Both));
+                }
+                (Some(d1), Some(1)) => {
+                    possible_moves.insert((entity, vec![CENTER_EXIT_INDEX], WhichDie::Two));
+                    possible_moves.insert((entity, (CENTER_EXIT_INDEX..=CENTER_EXIT_INDEX + d1 as usize).collect(), WhichDie::Both));
+                }
+                (Some(1), None) => { possible_moves.insert((entity, vec![CENTER_EXIT_INDEX], WhichDie::One)); }
+                (None, Some(1)) => { possible_moves.insert((entity, vec![CENTER_EXIT_INDEX], WhichDie::Two)); }
+                _ => {} // no exit
+            }
+            continue;
+        }
+
+        // basic moves
+        let mut basic_moves = std::collections::BTreeSet::new();
+        match (dice_data.die_1_side, dice_data.die_2_side) {
+            (Some(d1), Some(d2)) => {
+                basic_moves.insert((entity, (marble.index + 1..=marble.index + d1 as usize).collect(), WhichDie::One));
+                basic_moves.insert((entity, (marble.index + 1..=marble.index + d2 as usize).collect(), WhichDie::Two));
+                basic_moves.insert((entity, (marble.index + 1..=marble.index + (d1 + d2) as usize).collect(), WhichDie::Both));
+
+                // enter center - can only land on center using an exact roll with both dice
+                if CENTER_ENTRANCE_INDEXES.contains(&(marble.index + (d1 + d2) as usize - 1)) {
+                    let mut path: Vec<_> = (marble.index + 1..=marble.index + (d1 + d2) as usize - 1).collect();
+                    path.push(CENTER_INDEX);
+                    basic_moves.insert((entity, path, WhichDie::Both));
+                }
+            }
+            (Some(d1), None) => {
+                basic_moves.insert((entity, (marble.index + 1..=marble.index + (d1 as usize)).collect(), WhichDie::One));
+            }
+            (None, Some(d2)) => {
+                basic_moves.insert((entity, (marble.index + 1..=marble.index + (d2 as usize)).collect(), WhichDie::Two));
+            }
+            _ => unreachable!(),
+        }
+
+        // can't move beyond the end of the home row
+        possible_moves.append(&mut basic_moves.into_iter().filter(|(_, path, _)| {
+            let src = *path.first().unwrap();
+            let dst = *path.last().unwrap();
+            dst <= LAST_HOME_INDEX // must be a valid board space
+                || (dst == CENTER_INDEX // center row is okay as long as...
+                    // ...we're coming from either the base or not the home row
+                    && (src < FIRST_HOME_INDEX || src == START_INDEX))
+        }).collect());
     }
-
-    println!("TurnSetup - calc_possible_moves: unfiltered = {:?}", possible_moves);
-
-    // FIXME: there's a bug where we can't properly filter out a move that jumps over a marble (same color) and into the center index - we need to know the actual path for this case
 
     // filter out moves that violate the self-hop rules
     // - marbles of the same color cannot capture each other
     // - marbles of the same color cannot jump over each other
-    possible_moves = possible_moves.into_iter().filter(|(entity, dest_index, _)| {
-        let (_, move_marble) = marbles.get(*entity).unwrap();
-        marbles.iter()
-            // no need to compare the same marbles
-            .filter(|(e, _)| *e != *entity)
-            // look for a reason why this is not a valid move
-            .find(|(_, other_marble)| {
-                // not valid if there's already a marble at the destination OR
-                other_marble.index == *dest_index ||
-                // not valid if there's a marble on the way to the destination
-                (move_marble.index < BOARD.len()
-                    && *dest_index != CENTER_INDEX
-                    && (move_marble.index..*dest_index).contains(&other_marble.index))
-            }).is_none()
-    }).collect();
-
-    current_player_data.possible_moves = possible_moves;
+    current_player_data.possible_moves = possible_moves.into_iter()
+        .filter_map(|(entity, path, which)| {
+            let dst = *path.last().unwrap();
+            if dst > LAST_HOME_INDEX && dst != CENTER_INDEX {
+                return None; // can't go past the last home index, unless we're going into the center
+            }
+            match marbles.iter()
+                // no need to compare the same marbles
+                .filter(|(e, _)| *e != entity)
+                // look for a same color marble along the path of this move
+                .find(|(_, other_marble)| path.iter().find(|i| other_marble.index == **i).is_some())
+            {
+                Some(_) => None, // we found a marble along the path of this move, so it's no good
+                None => Some((entity, dst, which))
+            }
+        })
+        .collect();
 
     if current_player_data.possible_moves.is_empty() {
         state.set(GameState::NextPlayer).unwrap();
@@ -77,6 +137,4 @@ pub fn calc_possible_moves(
     } else {
         state.set(GameState::ComputerTurn).unwrap();
     }
-
-    println!("TurnSetup - calc_possible_moves: filtered = {:?}", current_player_data.possible_moves);
 }

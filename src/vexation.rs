@@ -7,7 +7,6 @@ use crate::resources::*;
 use crate::shared_systems::*;
 use crate::system_sets::*;
 use crate::utils::*;
-use std::collections::BTreeSet;
 
 pub struct VexationPlugin;
 
@@ -91,7 +90,7 @@ fn setup(
     let current_player: Player = Player::Green; // TODO: ((roll_die() - 1) % 4).into();
     commands.insert_resource(CurrentPlayerData{
         player: current_player.clone(),
-        possible_moves: BTreeSet::new(),
+        possible_moves: Vec::new(),
     });
 
     // marbles
