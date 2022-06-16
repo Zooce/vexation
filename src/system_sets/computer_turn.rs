@@ -20,6 +20,7 @@ pub fn choose_move(
         let mut rng = thread_rng();
         let (entity, index, which) = current_player_data.possible_moves.iter().choose(&mut rng).unwrap();
         let (transform, mut marble) = marbles.get_mut(*entity).unwrap();
+        let old_index = marble.index; // just for logging
         marble.index = *index;
         match which {
             WhichDie::One => dice_data.die_1_side = None,
@@ -36,7 +37,7 @@ pub fn choose_move(
         };
         selection_data.marble = Some(*entity);
         commands.entity(*entity).insert(Moving::new(destination, transform.translation));
-        println!("ComputerTurn - choose_move: {:?}", (entity, index, which));
+        println!("Moving {:?} from {} to {} with {:?}", entity, old_index, index, which);
         state.set(GameState::ProcessMove).unwrap();
     }
 }

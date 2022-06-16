@@ -60,5 +60,5 @@ pub fn highlight_selection(
         ;
     }
 
-    println!("HumanIdle - highlight_selection");
+    // println!("HumanIdle - highlight_selection");
 }

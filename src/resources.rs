@@ -50,10 +50,7 @@ pub enum GameState {
     HumanIdle,
     HumanMarbleSelected,
     ComputerTurn,
-    // ChooseMoves,
-    // ComputerChooseMoves,
     ProcessMove,
-    // CheckWinner,
 }
 
 pub struct HumanPlayer {

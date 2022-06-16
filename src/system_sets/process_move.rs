@@ -36,6 +36,7 @@ pub fn check_for_winner(
     mut state: ResMut<State<GameState>>,
     dice_data: Res<DiceData>,
     marbles: Query<&Marble, With<CurrentPlayer>>,
+    current_player_data: Res<CurrentPlayerData>,
 ) {
     if marbles.iter()
         .find(|m| !(FIRST_HOME_INDEX..=LAST_HOME_INDEX).contains(&m.index))
@@ -47,9 +48,9 @@ pub fn check_for_winner(
             (None, None) => state.set(GameState::NextPlayer).unwrap(),
             _ => unreachable!(),
         }
-        println!("ProcessMove - check_for_winner: no winner yet");
+        // println!("ProcessMove - check_for_winner: no winner yet");
     } else {
         // winner
-        println!("ProcessMove - check_for_winner: game over!");
+        println!("{:?} Wins!", current_player_data.player);
     }
 }

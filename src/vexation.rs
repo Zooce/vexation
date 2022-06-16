@@ -13,8 +13,8 @@ pub struct VexationPlugin;
 impl Plugin for VexationPlugin {
     fn build(&self, app: &mut App) {
         app
-            .insert_resource(ComputerTurnTimer(Timer::from_seconds(2., false)))
-            .insert_resource(RollAnimationTimer(Timer::from_seconds(3., false)))
+            .insert_resource(ComputerTurnTimer(Timer::from_seconds(1.5, false)))
+            .insert_resource(RollAnimationTimer(Timer::from_seconds(2., false)))
             .insert_resource(HumanPlayer{ color: Player::Blue }) // TODO: insert this after human chooses their color
 
             .add_event::<ClickEvent>()

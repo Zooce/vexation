@@ -9,12 +9,12 @@ pub fn roll_dice(
     mut dice_data: ResMut<DiceData>,
     mut die_animation_timers: Query<&mut DieAnimationTimer>,
 ) {
-    dice_data.die_1_side = Some(1); // TODO: Some(roll_die());
+    dice_data.die_1_side = Some(roll_die());
     dice_data.die_2_side = Some(roll_die());
 
     die_animation_timers.for_each_mut(|mut t| t.0.reset());
 
-    println!("roll_dice: {:?} {:?}", dice_data.die_1_side, dice_data.die_2_side);
+    println!("Dice: {:?} and {:?}", dice_data.die_1_side.unwrap(), dice_data.die_2_side.unwrap());
 }
 
 pub fn roll_animation(
@@ -31,11 +31,14 @@ pub fn roll_animation(
     }
 
     // TODO: also rotate the dice
+    // TODO: animate the dice to the next player's base - see next_player::choose_next_player
 
     if roll_animation_timer.0.tick(time.delta()).just_finished() {
         roll_animation_timer.0.reset();
         state.set(GameState::TurnSetup).unwrap();
     }
+
+    // TODO: create a 'roll buffer' timer so after the 'roll timer' stops, we have a second to see what the dice roll was before letting the player pick a move
 }
 
 pub fn stop_roll_animation(

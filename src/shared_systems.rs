@@ -22,7 +22,7 @@ pub fn animate_marble_moves(
     time: Res<Time>,
     mut moving_marbles: Query<(Entity, &Moving, &mut Transform)>,
 ) {
-    const PIXELS_PER_SEC: f32 = 650.;
+    const PIXELS_PER_SEC: f32 = 750.;
     for (entity, moving, mut transform) in moving_marbles.iter_mut() {
         transform.translation.x += moving.direction.x * PIXELS_PER_SEC * time.delta_seconds();
         transform.translation.y += moving.direction.y * PIXELS_PER_SEC * time.delta_seconds();

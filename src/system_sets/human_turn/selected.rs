@@ -52,7 +52,7 @@ pub fn check_destination_clicked(
             selection_data.marble = None;
             state.set(GameState::HumanIdle).unwrap();
         }
-        println!("HumanMarbleSelected - check_destination_clicked: {:?}", (marble, mv));
+        // println!("HumanMarbleSelected - check_destination_clicked: {:?}", (marble, mv));
     }
 }
 
@@ -61,7 +61,7 @@ pub fn remove_highlights(
     entities: Query<Entity, With<Highlight>>,
 ) {
     entities.for_each(|e| commands.entity(e).despawn());
-    println!("HumanMarbleSelected - remove_highlights")
+    // println!("HumanMarbleSelected - remove_highlights");
 }
 
 /// Snaps the given coordinate to the center of the tile it's inside of.
