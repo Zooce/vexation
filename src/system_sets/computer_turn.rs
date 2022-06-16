@@ -9,6 +9,7 @@ pub fn choose_move(
     mut commands: Commands,
     mut state: ResMut<State<GameState>>,
     current_player_data: Res<CurrentPlayerData>,
+    mut selection_data: ResMut<SelectionData>,
     mut marbles: Query<(&Transform, &mut Marble), With<CurrentPlayer>>,
     mut dice_data: ResMut<DiceData>,
     time: Res<Time>,
@@ -33,6 +34,7 @@ pub fn choose_move(
             let d = current_player_data.player.rotate_coords((c as f32, r as f32));
             Vec3::new(d.0 * TILE_SIZE, d.1 * TILE_SIZE, 1.0)
         };
+        selection_data.marble = Some(*entity);
         commands.entity(*entity).insert(Moving::new(destination, transform.translation));
         println!("ComputerTurn - choose_move: {:?}", (entity, index, which));
         state.set(GameState::ProcessMove).unwrap();

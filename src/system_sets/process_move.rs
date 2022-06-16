@@ -6,23 +6,29 @@ use crate::resources::*;
 pub fn check_for_capture(
     mut commands: Commands,
     current_player_data: Res<CurrentPlayerData>,
+    selection_data: Res<SelectionData>,
     current_player_marbles: Query<&Marble, With<CurrentPlayer>>,
     mut opponent_marbles: Query<(Entity, &mut Marble, &Transform, &Player), Without<CurrentPlayer>>,
 ) {
-    // TODO: marbles which aren't vulnerable don't need to be included in these queries
-    for (entity, mut marble, transform, _) in opponent_marbles.iter_mut()
-        .filter(|(_, opp, _, p)| { // only need the marble for filtering
-            current_player_marbles.iter()
-                .find(|cur| {
-                    cur.index != BOARD.len()
-                        && Player::is_same_index(current_player_data.player, cur.index, **p, opp.index)
-                })
-                .is_some()
-        })
+    let cur = current_player_marbles.get(selection_data.marble.unwrap()).unwrap();
+
+    // we don't capture in the home row
+    if cur.index >= FIRST_HOME_INDEX && cur.index <= LAST_HOME_INDEX {
+        return;
+    }
+
+    if let Some((entity, mut oppenent_marble, transform, opponent)) = opponent_marbles.iter_mut()
+        // do not check opponent marbles in their home row or at their base
+        .filter(|(_, opp, _, _)| opp.index < FIRST_HOME_INDEX || opp.index == CENTER_INDEX)
+        // find an opponent marble at the same index as the marble just moved by the current player
+        .find(|(_, opp, _, p)| Player::is_same_index(current_player_data.player, cur.index, **p, opp.index))
     {
-        println!("ProcessMove - check_for_capture: {:?} captured @ {}", entity, marble.index);
-        marble.index = BOARD.len();
-        commands.entity(entity).insert(Moving::new(marble.origin, transform.translation));
+        println!("{:?} {:?} @ {} captured {:?} {:?} @ {}",
+            current_player_data.player, selection_data.marble.unwrap(), cur.index,
+            opponent, entity, oppenent_marble.index
+        );
+        oppenent_marble.index = BOARD.len();
+        commands.entity(entity).insert(Moving::new(oppenent_marble.origin, transform.translation));
     }
 }
 

@@ -9,9 +9,11 @@ pub fn calc_possible_moves(
     dice_data: Res<DiceData>,
     marbles: Query<(Entity, &Marble), With<CurrentPlayer>>,
     mut current_player_data: ResMut<CurrentPlayerData>,
+    mut selection_data: ResMut<SelectionData>,
     human_player: Res<HumanPlayer>,
     mut state: ResMut<State<GameState>>,
 ) {
+    selection_data.marble = None; // TODO: do this in its own system ?
     let mut possible_moves = std::collections::BTreeSet::new(); // so we disregard duplicates
     for (entity, marble) in marbles.iter() {
         // exit base
