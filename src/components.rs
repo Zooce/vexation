@@ -7,7 +7,10 @@ use crate::constants::*;
 pub struct CurrentPlayer;
 
 #[derive(Component)]
-pub struct DieAnimationTimer(pub Timer);
+pub struct Die {
+    pub location: Vec3,
+    pub timer: Timer,
+}
 
 /// Used to mark the highlight sprites when a marble is selected, so we can
 /// later remove them when a marble is no longer selected.

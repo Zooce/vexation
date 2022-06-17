@@ -4,15 +4,13 @@ use bevy::prelude::*;
 use crate::components::*;
 use crate::resources::*;
 use crate::utils::*;
+use rand::{Rng, thread_rng};
 
 pub fn roll_dice(
     mut dice_data: ResMut<DiceData>,
-    mut die_animation_timers: Query<&mut DieAnimationTimer>,
 ) {
     dice_data.die_1_side = Some(roll_die());
     dice_data.die_2_side = Some(roll_die());
-
-    die_animation_timers.for_each_mut(|mut t| t.0.reset());
 
     println!("Dice: {:?} and {:?}", dice_data.die_1_side.unwrap(), dice_data.die_2_side.unwrap());
 }
@@ -20,18 +18,32 @@ pub fn roll_dice(
 pub fn roll_animation(
     time: Res<Time>,
     mut roll_animation_timer: ResMut<RollAnimationTimer>,
-    mut query: Query<(&mut DieAnimationTimer, &mut TextureAtlasSprite)>,
+    mut query: Query<(&mut Die, &mut Transform, &mut TextureAtlasSprite)>,
     mut state: ResMut<State<GameState>>,
 ) {
+    const DIE_MOVE_SPEED: f32 = 500.;
+
     // https://github.com/bevyengine/bevy/blob/latest/examples/2d/sprite_sheet.rs
-    for (mut die_animation_timer, mut sprite) in query.iter_mut() {
-        if die_animation_timer.0.tick(time.delta()).just_finished() {
+    for (mut die, mut transform, mut sprite) in query.iter_mut() {
+        // advance the sprite sheet
+        if die.timer.tick(time.delta()).just_finished() {
             sprite.index = (roll_die() - 1) as usize;
         }
-    }
+        // move the dice
+        if die.location != transform.translation {
+            let dir = (die.location - transform.translation).normalize();
+            transform.translation.x += dir.x * DIE_MOVE_SPEED * time.delta_seconds();
+            transform.translation.y += dir.y * DIE_MOVE_SPEED * time.delta_seconds();
 
-    // TODO: also rotate the dice
-    // TODO: animate the dice to the next player's base - see next_player::choose_next_player
+            let new_dir = (die.location - transform.translation).normalize();
+            if new_dir.dot(dir) < 0.0 {
+                transform.translation = die.location;
+            }
+        }
+        // rotate the dice
+        let mut rng = thread_rng();
+        transform.rotate(Quat::from_rotation_z(rng.gen::<f32>() * 0.5));
+    }
 
     if roll_animation_timer.0.tick(time.delta()).just_finished() {
         roll_animation_timer.0.reset();
@@ -42,12 +54,14 @@ pub fn roll_animation(
 }
 
 pub fn stop_roll_animation(
-    mut query: Query<&mut TextureAtlasSprite>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut Transform)>,
     dice_data: Res<DiceData>,
 ) {
-    let mut sprite = query.get_mut(dice_data.die_1).expect("Unable to get die 1");
+    let (mut sprite, mut transform) = query.get_mut(dice_data.die_1).expect("Unable to get die 1");
     sprite.index = (dice_data.die_1_side.unwrap() - 1) as usize;
+    transform.rotation = Quat::from_rotation_z(0.0);
 
-    let mut sprite = query.get_mut(dice_data.die_2).expect("Unable to get die 2");
+    let (mut sprite, mut transform) = query.get_mut(dice_data.die_2).expect("Unable to get die 2");
     sprite.index = (dice_data.die_2_side.unwrap() - 1) as usize;
+    transform.rotation = Quat::from_rotation_z(0.0);
 }

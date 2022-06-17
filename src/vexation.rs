@@ -170,18 +170,20 @@ fn setup(
         .spawn_bundle(SpriteSheetBundle {
             texture_atlas: die_sheet_handle.clone(),
             visibility: Visibility{ is_visible: false },
+            transform: Transform::from_xyz(0.0, 0.0, 2.0),
             ..default()
         })
-        .insert(DieAnimationTimer(Timer::from_seconds(0.1, true)))
+        .insert(Die { location: Vec3::new(0.0, 0.0, 2.0), timer: Timer::from_seconds(0.1, true) })
         .id()
         ;
     let die_2 = commands
         .spawn_bundle(SpriteSheetBundle {
             texture_atlas: die_sheet_handle.clone(),
             visibility: Visibility{ is_visible: false },
+            transform: Transform::from_xyz(0.0, 0.0, 2.0),
             ..default()
         })
-        .insert(DieAnimationTimer(Timer::from_seconds(0.1, true)))
+        .insert(Die { location: Vec3::new(0.0, 0.0, 2.0), timer: Timer::from_seconds(0.1, true) })
         .id()
         ;
 

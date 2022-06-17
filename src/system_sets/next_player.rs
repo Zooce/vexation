@@ -35,7 +35,7 @@ pub fn next_player_setup(
     mut state: ResMut<State<GameState>>,
     dice_data: Res<DiceData>,
     current_player_data: Res<CurrentPlayerData>,
-    mut dice: Query<(&mut Visibility, &mut Transform)>,
+    mut dice: Query<(&mut Visibility, &mut Die)>,
 ) {
     let (d1_loc, d2_loc) = match current_player_data.player {
         Player::Red    => ((-3.0,  5.5), (-5.0,  5.5)),
@@ -44,15 +44,17 @@ pub fn next_player_setup(
         Player::Yellow => ((-5.5, -3.0), (-5.5, -5.0)),
     };
 
-    let (mut visibility, mut transform) = dice.get_mut(dice_data.die_1).expect("Unable to get die 1");
+    let (mut visibility, mut die) = dice.get_mut(dice_data.die_1).expect("Unable to get die 1");
     visibility.is_visible = true;
-    transform.translation.x = d1_loc.0 * TILE_SIZE;
-    transform.translation.y = d1_loc.1 * TILE_SIZE;
+    die.location.x = d1_loc.0 * TILE_SIZE;
+    die.location.y = d1_loc.1 * TILE_SIZE;
+    die.timer.reset();
 
-    let (mut visibility, mut transform) = dice.get_mut(dice_data.die_2).expect("Unable to get dice 2");
+    let (mut visibility, mut die) = dice.get_mut(dice_data.die_2).expect("Unable to get dice 2");
     visibility.is_visible = true;
-    transform.translation.x = d2_loc.0 * TILE_SIZE;
-    transform.translation.y = d2_loc.1 * TILE_SIZE;
+    die.location.x = d2_loc.0 * TILE_SIZE;
+    die.location.y = d2_loc.1 * TILE_SIZE;
+    die.timer.reset();
 
     state.set(GameState::DiceRoll).unwrap();
 }
