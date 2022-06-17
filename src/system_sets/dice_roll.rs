@@ -12,6 +12,8 @@ pub fn roll_dice(
     dice_data.die_1_side = Some(roll_die());
     dice_data.die_2_side = Some(roll_die());
 
+    // TODO: figure out how to allow the player to roll again if they roll doubles
+
     println!("Dice: {:?} and {:?}", dice_data.die_1_side.unwrap(), dice_data.die_2_side.unwrap());
 }
 

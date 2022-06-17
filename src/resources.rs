@@ -4,6 +4,8 @@ use bevy::prelude::*;
 use crate::components::*;
 use crate::system_sets::ClickEvent;
 
+pub struct BufferTimer(pub Timer);
+
 pub struct ComputerTurnTimer(pub Timer);
 
 #[derive(Debug)]

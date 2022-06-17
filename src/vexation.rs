@@ -13,8 +13,9 @@ pub struct VexationPlugin;
 impl Plugin for VexationPlugin {
     fn build(&self, app: &mut App) {
         app
+            .insert_resource(BufferTimer(Timer::from_seconds(1.0, false)))
             .insert_resource(ComputerTurnTimer(Timer::from_seconds(1.5, false)))
-            .insert_resource(RollAnimationTimer(Timer::from_seconds(2., false)))
+            .insert_resource(RollAnimationTimer(Timer::from_seconds(1.5, false)))
             .insert_resource(HumanPlayer{ color: Player::Blue }) // TODO: insert this after human chooses their color
 
             .add_event::<ClickEvent>()
@@ -35,6 +36,7 @@ impl Plugin for VexationPlugin {
             .add_system_set(SystemSet::on_exit(GameState::DiceRoll).with_system(stop_roll_animation))
 
             .add_system_set(SystemSet::on_enter(GameState::TurnSetup).with_system(calc_possible_moves))
+            .add_system_set(SystemSet::on_update(GameState::TurnSetup).with_system(buffer_timer))
 
             .add_system_set(SystemSet::new()
                 .with_run_criteria(should_animate_moves)

@@ -10,8 +10,6 @@ pub fn calc_possible_moves(
     marbles: Query<(Entity, &Marble), With<CurrentPlayer>>,
     mut current_player_data: ResMut<CurrentPlayerData>,
     mut selection_data: ResMut<SelectionData>,
-    human_player: Res<HumanPlayer>,
-    mut state: ResMut<State<GameState>>,
 ) {
     selection_data.marble = None; // TODO: do this in its own system ?
     let mut possible_moves = std::collections::BTreeSet::new(); // so we disregard duplicates
@@ -131,9 +129,22 @@ pub fn calc_possible_moves(
             }
         })
         .collect();
+}
 
+pub fn buffer_timer(
+    time: Res<Time>,
+    mut timer: ResMut<BufferTimer>,
+    current_player_data: ResMut<CurrentPlayerData>,
+    mut state: ResMut<State<GameState>>,
+    human_player: Res<HumanPlayer>,
+) {
     if current_player_data.possible_moves.is_empty() {
-        state.set(GameState::NextPlayer).unwrap();
+        // TODO: we really only want to do this if the player has no moves on their first roll
+        // give the player at least a second to see that they have no moves
+        if timer.0.tick(time.delta()).just_finished() {
+            timer.0.reset();
+            state.set(GameState::NextPlayer).unwrap();
+        }
     } else if human_player.color == current_player_data.player {
         state.set(GameState::HumanIdle).unwrap();
     } else {
