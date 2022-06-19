@@ -46,7 +46,7 @@ pub struct DiceData {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum GameState {
-    // ChooseColor,
+    ChooseColor,
     NextPlayer,
     DiceRoll,
     TurnSetup,
@@ -71,4 +71,11 @@ pub struct SelectionData {
     /// The click that selected a marble - this is so we can ignore that click
     /// in the destination selection state
     pub selection_click: Option<ClickEvent>,
+}
+
+#[derive(Debug)]
+pub struct ChooseColorData {
+    pub masks: [Handle<Image>;4],
+    pub current_color: Option<Player>,
+    pub current_mask: Option<Entity>,
 }

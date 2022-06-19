@@ -15,15 +15,18 @@ impl Plugin for VexationPlugin {
             .insert_resource(BufferTimer(Timer::from_seconds(1.0, false)))
             .insert_resource(ComputerTurnTimer(Timer::from_seconds(1.5, false)))
             .insert_resource(RollAnimationTimer(Timer::from_seconds(1.5, false)))
-            .insert_resource(HumanPlayer{ color: Player::Blue }) // TODO: insert this after human chooses their color
 
             .add_event::<ClickEvent>()
 
             .add_startup_system(setup)
 
-            .add_state(GameState::NextPlayer)
+            .add_state(GameState::ChooseColor)
 
-            // TODO: define ChooseColor state
+            .add_system_set(SystemSet::on_update(GameState::ChooseColor)
+                .with_system(choose_color)
+                .with_system(mouse_click_handler)
+            )
+            .add_system_set(SystemSet::on_exit(GameState::ChooseColor).with_system(human_player_chosen))
 
             .add_system_set(SystemSet::on_enter(GameState::NextPlayer)
                 .with_system(choose_next_player)
@@ -85,6 +88,18 @@ fn setup(
     commands.spawn_bundle(SpriteBundle{
         texture: asset_server.load("board.png"),
         ..default()
+    });
+
+    // choose color resource
+    commands.insert_resource(ChooseColorData{
+        masks: [
+            asset_server.load("red-mask.png"),
+            asset_server.load("green-mask.png"),
+            asset_server.load("blue-mask.png"),
+            asset_server.load("yellow-mask.png"),
+        ],
+        current_color: None,
+        current_mask: None,
     });
 
     // pick the first player randomly
