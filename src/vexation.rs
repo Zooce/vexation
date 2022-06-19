@@ -6,6 +6,7 @@ use crate::constants::*;
 use crate::resources::*;
 use crate::shared_systems::*;
 use crate::system_sets::*;
+use crate::utils::*;
 
 pub struct VexationPlugin;
 
@@ -103,7 +104,7 @@ fn setup(
     });
 
     // pick the first player randomly
-    let current_player: Player = Player::Green; // TODO: ((roll_die() - 1) % 4).into();
+    let current_player: Player = ((roll_die() - 1) % 4).into();
     commands.insert_resource(CurrentPlayerData{
         player: current_player.clone(),
         possible_moves: Vec::new(),
