@@ -23,16 +23,18 @@ pub fn check_destination_clicked(
                 return;
             }
         }
-        let destination = Vec3::new(snap(click.x), snap(click.y), 1.0);
-        let (col, row) = current_player_data.player.rotate_coords((destination.x / TILE_SIZE, destination.y / TILE_SIZE));
-
+        let (col, row) = (snap(click.x), snap(click.y));
         let marble = selection_data.marble.unwrap();
-        let mv = match BOARD.into_iter().position(|coord| coord == (col as i32, row as i32)) {
+        let mv = match BOARD.into_iter().position(|(x, y)| {
+            let rot = current_player_data.player.rotate_coords((x as f32, y as f32));
+            rot == (col / TILE_SIZE, row / TILE_SIZE)
+        }) {
             Some(board_index) => current_player_data.get_moves(marble).into_iter().find(|(idx, _)| *idx == board_index),
             _ => None,
         };
         if let Some((idx, which)) = mv {
             let (t, mut m) = marbles.get_mut(marble).unwrap();
+            let old_index = m.index; // just for logging
             m.index = idx;
             match which {
                 WhichDie::One => {
@@ -46,7 +48,8 @@ pub fn check_destination_clicked(
                     dice_data.die_2_side = None;
                 }
             }
-            commands.entity(marble).insert(Moving::new(destination, t.translation));
+            commands.entity(marble).insert(Moving::new(Vec3::new(col, row, 1.0), t.translation));
+            println!("Moving {:?} from {} to {} with {:?}", marble, old_index, idx, which);
             state.set(GameState::ProcessMove).unwrap();
         } else {
             selection_data.marble = None;
