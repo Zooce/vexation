@@ -6,7 +6,6 @@ use crate::constants::*;
 use crate::resources::*;
 use crate::shared_systems::*;
 use crate::system_sets::*;
-use crate::utils::*;
 
 pub struct VexationPlugin;
 
@@ -193,8 +192,9 @@ fn setup(
         die_1,
         die_2,
         die_sheet_handle,
-        die_1_side: Some(roll_die()),
-        die_2_side: Some(roll_die()),
+        die_1_side: None,
+        die_2_side: None,
+        doubles: false
     });
 
     // highlight data

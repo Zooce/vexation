@@ -41,6 +41,7 @@ pub struct DiceData {
     pub die_sheet_handle: Handle<TextureAtlas>,
     pub die_1_side: Option<u8>,
     pub die_2_side: Option<u8>,
+    pub doubles: bool,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

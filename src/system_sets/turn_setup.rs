@@ -137,13 +137,17 @@ pub fn buffer_timer(
     current_player_data: ResMut<CurrentPlayerData>,
     mut state: ResMut<State<GameState>>,
     human_player: Res<HumanPlayer>,
+    dice_data: Res<DiceData>,
 ) {
     if current_player_data.possible_moves.is_empty() {
-        // TODO: we really only want to do this if the player has no moves on their first roll
-        // give the player at least a second to see that they have no moves
-        if timer.0.tick(time.delta()).just_finished() {
+        let used_a_die = dice_data.die_1_side.is_none() || dice_data.die_2_side.is_none();
+        if used_a_die || timer.0.tick(time.delta()).just_finished() {
             timer.0.reset();
-            state.set(GameState::NextPlayer).unwrap();
+            if dice_data.doubles {
+                state.set(GameState::DiceRoll).unwrap();
+            } else {
+                state.set(GameState::NextPlayer).unwrap();
+            }
         }
     } else if human_player.color == current_player_data.player {
         state.set(GameState::HumanIdle).unwrap();

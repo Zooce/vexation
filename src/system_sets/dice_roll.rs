@@ -9,12 +9,12 @@ use rand::{Rng, thread_rng};
 pub fn roll_dice(
     mut dice_data: ResMut<DiceData>,
 ) {
-    dice_data.die_1_side = Some(roll_die());
-    dice_data.die_2_side = Some(roll_die());
+    let (d1, d2) = (roll_die(), roll_die());
+    dice_data.doubles = d1 == d2;
+    dice_data.die_1_side = Some(d1);
+    dice_data.die_2_side = Some(d2);
 
-    // TODO: figure out how to allow the player to roll again if they roll doubles
-
-    println!("Dice: {:?} and {:?}", dice_data.die_1_side.unwrap(), dice_data.die_2_side.unwrap());
+    println!("Dice: {:?} and {:?}", d1, d2);
 }
 
 pub fn roll_animation(
