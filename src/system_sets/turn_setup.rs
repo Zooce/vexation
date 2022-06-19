@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
 use crate::resources::*;
+use std::collections::BTreeSet;
 
 pub fn calc_possible_moves(
     dice_data: Res<DiceData>,
@@ -12,7 +13,7 @@ pub fn calc_possible_moves(
     mut selection_data: ResMut<SelectionData>,
 ) {
     selection_data.marble = None; // TODO: do this in its own system ?
-    let mut possible_moves = std::collections::BTreeSet::new(); // so we disregard duplicates
+    let mut possible_moves = BTreeSet::new(); // so we disregard duplicates
     for (entity, marble) in marbles.iter() {
         // exit base
         if marble.index == BOARD.len() {
@@ -75,38 +76,8 @@ pub fn calc_possible_moves(
         }
 
         // basic moves
-        let mut basic_moves = std::collections::BTreeSet::new();
-        match (dice_data.die_1_side, dice_data.die_2_side) {
-            (Some(d1), Some(d2)) => {
-                basic_moves.insert((entity, (marble.index + 1..=marble.index + d1 as usize).collect(), WhichDie::One));
-                basic_moves.insert((entity, (marble.index + 1..=marble.index + d2 as usize).collect(), WhichDie::Two));
-                basic_moves.insert((entity, (marble.index + 1..=marble.index + (d1 + d2) as usize).collect(), WhichDie::Both));
-
-                // enter center - can only land on center using an exact roll with both dice
-                if CENTER_ENTRANCE_INDEXES.contains(&(marble.index + (d1 + d2) as usize - 1)) {
-                    let mut path: Vec<_> = (marble.index + 1..=marble.index + (d1 + d2) as usize - 1).collect();
-                    path.push(CENTER_INDEX);
-                    basic_moves.insert((entity, path, WhichDie::Both));
-                }
-            }
-            (Some(d1), None) => {
-                basic_moves.insert((entity, (marble.index + 1..=marble.index + (d1 as usize)).collect(), WhichDie::One));
-            }
-            (None, Some(d2)) => {
-                basic_moves.insert((entity, (marble.index + 1..=marble.index + (d2 as usize)).collect(), WhichDie::Two));
-            }
-            _ => unreachable!(),
-        }
-
-        // can't move beyond the end of the home row
-        possible_moves.append(&mut basic_moves.into_iter().filter(|(_, path, _)| {
-            let src = *path.first().unwrap();
-            let dst = *path.last().unwrap();
-            dst <= LAST_HOME_INDEX // must be a valid board space
-                || (dst == CENTER_INDEX // center row is okay as long as...
-                    // ...we're coming from either the base or not the home row
-                    && (src < FIRST_HOME_INDEX || src == START_INDEX))
-        }).collect());
+        let mut basic_moves = basic((dice_data.die_1_side, dice_data.die_2_side), entity, marble);
+        possible_moves.append(&mut basic_moves);
     }
 
     // filter out moves that violate the self-hop rules
@@ -114,10 +85,6 @@ pub fn calc_possible_moves(
     // - marbles of the same color cannot jump over each other
     current_player_data.possible_moves = possible_moves.into_iter()
         .filter_map(|(entity, path, which)| {
-            let dst = *path.last().unwrap();
-            if dst > LAST_HOME_INDEX && dst != CENTER_INDEX {
-                return None; // can't go past the last home index, unless we're going into the center
-            }
             match marbles.iter()
                 // no need to compare the same marbles
                 .filter(|(e, _)| *e != entity)
@@ -125,7 +92,7 @@ pub fn calc_possible_moves(
                 .find(|(_, other_marble)| path.iter().find(|i| other_marble.index == **i).is_some())
             {
                 Some(_) => None, // we found a marble along the path of this move, so it's no good
-                None => Some((entity, dst, which))
+                None => Some((entity, *path.last().unwrap(), which))
             }
         })
         .collect();
@@ -153,5 +120,67 @@ pub fn buffer_timer(
         state.set(GameState::HumanIdle).unwrap();
     } else {
         state.set(GameState::ComputerTurn).unwrap();
+    }
+}
+
+fn basic(
+    dice: (Option<u8>, Option<u8>),
+    entity: Entity,
+    marble: &Marble
+) -> BTreeSet<(Entity, Vec<usize>, WhichDie)>
+{
+    let mut basic_moves = BTreeSet::new();
+    match dice {
+        (Some(d1), Some(d2)) => {
+            basic_moves.insert((entity, (marble.index + 1..=marble.index + d1 as usize).collect(), WhichDie::One));
+            basic_moves.insert((entity, (marble.index + 1..=marble.index + d2 as usize).collect(), WhichDie::Two));
+            basic_moves.insert((entity, (marble.index + 1..=marble.index + (d1 + d2) as usize).collect(), WhichDie::Both));
+
+            // enter center - can only land on center using an exact roll with both dice
+            if CENTER_ENTRANCE_INDEXES.contains(&(marble.index + (d1 + d2) as usize - 1)) {
+                let mut path: Vec<_> = (marble.index + 1..=marble.index + (d1 + d2) as usize - 1).collect();
+                path.push(CENTER_INDEX);
+                basic_moves.insert((entity, path, WhichDie::Both));
+            }
+        }
+        (Some(d1), None) => {
+            basic_moves.insert((entity, (marble.index + 1..=marble.index + (d1 as usize)).collect(), WhichDie::One));
+        }
+        (None, Some(d2)) => {
+            basic_moves.insert((entity, (marble.index + 1..=marble.index + (d2 as usize)).collect(), WhichDie::Two));
+        }
+        _ => unreachable!(),
+    }
+
+    // can't move beyond the end of the home row
+    basic_moves.into_iter().filter(|(_, path, _)| {
+        let dst = *path.last().unwrap();
+        dst <= LAST_HOME_INDEX // must be a valid board space
+            || (dst == CENTER_INDEX // center row is okay as long as...
+                // ...the marble was not at the end of the home row (this means the path will only be [CENTER_INDEX]) AND...
+                && marble.index != LAST_HOME_INDEX
+                // ...the path doesn't go through the home row
+                && path.iter().find(|i| **i >= FIRST_HOME_INDEX && **i <= LAST_HOME_INDEX).is_none())
+    }).collect()
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_basic_moves() {
+        let dice = (Some(5), Some(5));
+        let marble = Marble{ index: 43, origin: Vec3::ZERO };
+        let res = basic(dice, Entity::from_raw(12), &marble);
+        let mut iter = res.iter();
+        assert_eq!(2, res.len());
+        assert_eq!(vec![44, 45, 46, 47, 48], iter.next().unwrap().1);
+        assert_eq!(vec![44, 45, 46, 47, 48], iter.next().unwrap().1);
+
+        let dice = (Some(4), Some(1));
+        let marble = Marble{ index: 52, origin: Vec3::ZERO };
+        let res = basic(dice, Entity::from_raw(13), &marble);
+        assert_eq!(0, res.len());
     }
 }
