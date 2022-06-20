@@ -5,7 +5,7 @@ use crate::components::*;
 use crate::constants::*;
 use crate::resources::*;
 
-pub fn choose_color(
+pub fn mouse_hover_handler(
     commands: Commands,
     mut cursor_moved: EventReader<CursorMoved>,
     mut choose_color_data: ResMut<ChooseColorData>,

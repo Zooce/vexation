@@ -24,7 +24,7 @@ impl Plugin for VexationPlugin {
             .add_state(GameState::ChooseColor)
 
             .add_system_set(SystemSet::on_update(GameState::ChooseColor)
-                .with_system(choose_color)
+                .with_system(mouse_hover_handler)
                 .with_system(mouse_click_handler)
             )
             .add_system_set(SystemSet::on_exit(GameState::ChooseColor).with_system(human_player_chosen))
