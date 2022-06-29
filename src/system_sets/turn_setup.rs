@@ -117,7 +117,7 @@ pub fn buffer_timer(
             }
         }
     } else if human_player.color == current_player_data.player {
-        state.set(GameState::HumanIdle).unwrap();
+        state.set(GameState::HumanTurn).unwrap();
     } else {
         state.set(GameState::ComputerTurn).unwrap();
     }

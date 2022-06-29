@@ -23,56 +23,54 @@ impl Plugin for VexationPlugin {
 
             .add_state(GameState::ChooseColor)
 
+            // marble animation system
+            .add_system_set(SystemSet::new()
+                .with_run_criteria(should_animate_moves)
+                .with_system(animate_marble_moves)
+            )
+
+            // choose color
             .add_system_set(SystemSet::on_update(GameState::ChooseColor)
                 .with_system(mouse_hover_handler)
                 .with_system(mouse_click_handler)
             )
             .add_system_set(SystemSet::on_exit(GameState::ChooseColor).with_system(human_player_chosen))
 
+            // next player
             .add_system_set(SystemSet::on_enter(GameState::NextPlayer)
                 .with_system(choose_next_player)
                 .with_system(next_player_setup.after(choose_next_player))
             )
 
+            // dice roll
             .add_system_set(SystemSet::on_enter(GameState::DiceRoll).with_system(roll_dice))
             .add_system_set(SystemSet::on_update(GameState::DiceRoll).with_system(roll_animation))
             .add_system_set(SystemSet::on_exit(GameState::DiceRoll).with_system(stop_roll_animation))
 
+            // turn setup
             .add_system_set(SystemSet::on_enter(GameState::TurnSetup).with_system(calc_possible_moves))
             .add_system_set(SystemSet::on_update(GameState::TurnSetup).with_system(buffer_timer))
 
-            .add_system_set(SystemSet::new()
-                .with_run_criteria(should_animate_moves)
-                .with_system(animate_marble_moves)
-            )
-
+            // computer turn
             .add_system_set(SystemSet::on_update(GameState::ComputerTurn)
                 .with_system(choose_move)
             )
 
-            .add_system_set(SystemSet::on_update(GameState::HumanIdle)
+            // human turn
+            .add_system_set(SystemSet::on_update(GameState::HumanTurn)
                 .with_system(handle_mouse_clicks)
-                .with_system(check_marble_clicked)
+                .with_system(destination_click_handler)
+                .with_system(highlighter)
             )
-            .add_system_set(SystemSet::on_exit(GameState::HumanIdle)
-                .with_system(highlight_selection)
+            .add_system_set(SystemSet::on_exit(GameState::HumanTurn)
+                .with_system(remove_all_highlights)
             )
 
-            .add_system_set(SystemSet::on_update(GameState::HumanMarbleSelected)
-                .with_system(handle_mouse_clicks)
-                .with_system(check_destination_clicked)
-            )
-            .add_system_set(SystemSet::on_exit(GameState::HumanMarbleSelected)
-                .with_system(remove_highlights)
-            )
-
+            // process move
             .add_system_set(SystemSet::on_enter(GameState::ProcessMove)
                 .with_system(check_for_capture)
                 .with_system(check_for_winner.after(check_for_capture))
             )
-
-            // .add_system_set(SystemSet::on_enter(GameState::ComputerTurn)
-            // )
             ;
     }
 }
@@ -213,10 +211,12 @@ fn setup(
         doubles: false
     });
 
-    // highlight data
+    // selection data
     commands.insert_resource(SelectionData{
         marble: None,
-        highlight_texture: asset_server.load("tile-highlight.png"),
-        selection_click: None,
-    })
+    });
+    // highlight data
+    commands.insert_resource(HighlightData{
+        texture: asset_server.load("tile-highlight.png"),
+    });
 }

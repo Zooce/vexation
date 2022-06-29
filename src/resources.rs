@@ -2,7 +2,6 @@
 
 use bevy::prelude::*;
 use crate::components::*;
-use crate::system_sets::ClickEvent;
 
 pub struct BufferTimer(pub Timer);
 
@@ -50,10 +49,15 @@ pub enum GameState {
     NextPlayer,
     DiceRoll,
     TurnSetup,
-    HumanIdle,
-    HumanMarbleSelected,
     ComputerTurn,
+    HumanTurn,
     ProcessMove,
+}
+
+/// The resource for highlight data.
+pub struct HighlightData { // TODO: should this just be HighlightTexture(Handle<Image>)
+    /// The highlight texture for the selected marble and its possible moves
+    pub texture: Handle<Image>,
 }
 
 pub struct HumanPlayer {
@@ -66,11 +70,6 @@ pub struct RollAnimationTimer(pub Timer);
 pub struct SelectionData {
     /// The marble that is currently selected
     pub marble: Option<Entity>,
-    /// The highlight texture for the selected marble and its possible moves
-    pub highlight_texture: Handle<Image>,
-    /// The click that selected a marble - this is so we can ignore that click
-    /// in the destination selection state
-    pub selection_click: Option<ClickEvent>,
 }
 
 #[derive(Debug)]
