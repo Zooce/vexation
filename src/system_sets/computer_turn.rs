@@ -22,14 +22,7 @@ pub fn choose_move(
         let (transform, mut marble) = marbles.get_mut(*entity).unwrap();
         let old_index = marble.index; // just for logging
         marble.index = *index;
-        match which {
-            WhichDie::One => dice_data.die_1_side = None,
-            WhichDie::Two => dice_data.die_2_side = None,
-            WhichDie::Both => {
-                dice_data.die_1_side = None;
-                dice_data.die_2_side = None;
-            }
-        }
+        dice_data.use_die(*which);
         let destination = {
             let (c, r) = BOARD[*index];
             let d = current_player_data.player.rotate_coords((c as f32, r as f32));

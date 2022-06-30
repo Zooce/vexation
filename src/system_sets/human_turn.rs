@@ -74,18 +74,7 @@ pub fn destination_click_handler(
                     let (t, mut m) = marbles.get_mut(marble).unwrap();
                     let old_index = m.index; // just for logging
                     m.index = idx;
-                    match which {
-                        WhichDie::One => {
-                            dice_data.die_1_side = None;
-                        }
-                        WhichDie::Two => {
-                            dice_data.die_2_side = None;
-                        }
-                        WhichDie::Both => {
-                            dice_data.die_1_side = None;
-                            dice_data.die_2_side = None;
-                        }
-                    }
+                    dice_data.use_die(which);
                     commands.entity(marble).insert(Moving::new(Vec3::new(col, row, 1.0), t.translation));
                     println!("Moving {:?} from {} to {} with {:?}", marble, old_index, idx, which);
                     state.set(GameState::ProcessMove).unwrap();

@@ -44,6 +44,16 @@ pub struct DiceData {
 }
 
 impl DiceData {
+    pub fn use_die(&mut self, which: WhichDie) {
+        match which {
+            WhichDie::One => self.die_1_side = None,
+            WhichDie::Two => self.die_2_side = None,
+            WhichDie::Both => {
+                self.die_1_side = None;
+                self.die_2_side = None;
+            }
+        }
+    }
     pub fn sides(&self) -> (Option<u8>, Option<u8>) {
         (self.die_1_side, self.die_2_side)
     }
