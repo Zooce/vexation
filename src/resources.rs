@@ -43,6 +43,12 @@ pub struct DiceData {
     pub doubles: bool,
 }
 
+impl DiceData {
+    pub fn sides(&self) -> (Option<u8>, Option<u8>) {
+        (self.die_1_side, self.die_2_side)
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum GameState {
     ChooseColor,

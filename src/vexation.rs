@@ -208,7 +208,7 @@ fn setup(
         die_sheet_handle,
         die_1_side: None,
         die_2_side: None,
-        doubles: false
+        doubles: false,
     });
 
     // selection data
