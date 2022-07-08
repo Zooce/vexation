@@ -13,15 +13,21 @@ pub struct VexationPlugin;
 impl Plugin for VexationPlugin {
     fn build(&self, app: &mut App) {
         app
-            .insert_resource(BufferTimer(Timer::from_seconds(1.0, false)))
-            .insert_resource(ComputerTurnTimer(Timer::from_seconds(1.5, false)))
-            .insert_resource(RollAnimationTimer(Timer::from_seconds(1.5, false)))
-
             .add_event::<ClickEvent>()
 
-            .add_startup_system(setup)
+            .add_state(GameState::GamePlayEnter)
 
-            .add_state(GameState::ChooseColor)
+            // game play enter
+            .add_system_set(SystemSet::on_enter(GameState::GamePlayEnter)
+                .with_system(create)
+            )
+
+            // game play exit
+            .add_system_set(SystemSet::on_enter(GameState::GamePlayExit)
+                .with_system(destroy)
+            )
+
+            // --- states + systems -- TODO: move each to their own plugin to keep things smaller?
 
             // marble animation system
             .add_system_set(SystemSet::new()
@@ -75,21 +81,25 @@ impl Plugin for VexationPlugin {
     }
 }
 
-fn setup(
+pub fn create(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut state: ResMut<State<GameState>>,
+    asset_server: Res<AssetServer>,
 ) {
     // need a 2D camera so we can see things
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    let camera = commands.spawn_bundle(OrthographicCameraBundle::new_2d()).id();
 
     // board
-    commands.spawn_bundle(SpriteBundle{
+    let board = commands.spawn_bundle(SpriteBundle{
         texture: asset_server.load("board.png"),
         ..default()
-    });
+    }).id();
 
-    // choose color resource
+    // insert resources
+    commands.insert_resource(BufferTimer(Timer::from_seconds(1.0, false)));
+    commands.insert_resource(ComputerTurnTimer(Timer::from_seconds(1.5, false)));
+    commands.insert_resource(RollAnimationTimer(Timer::from_seconds(1.5, false)));
     commands.insert_resource(ChooseColorData{
         masks: [
             asset_server.load("red-mask.png"),
@@ -177,10 +187,9 @@ fn setup(
     }
 
     // die sprite sheet
-    let texture_atlas = TextureAtlas::from_grid(
+    let die_sheet_handle = texture_atlases.add(TextureAtlas::from_grid(
         asset_server.load("die-sheet.png"), Vec2::new(32.0, 32.0), 6, 1
-    );
-    let die_sheet_handle = texture_atlases.add(texture_atlas);
+    ));
     let die_1 = commands
         .spawn_bundle(SpriteSheetBundle {
             texture_atlas: die_sheet_handle.clone(),
@@ -219,4 +228,40 @@ fn setup(
     commands.insert_resource(HighlightData{
         texture: asset_server.load("tile-highlight.png"),
     });
+
+    commands.insert_resource(GamePlayEntities{ camera, board });
+
+    state.set(GameState::ChooseColor).unwrap();
+}
+
+pub fn destroy(
+    mut commands: Commands,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut state: ResMut<State<GameState>>,
+    dice_data: Res<DiceData>,
+    game_play_entities: Res<GamePlayEntities>,
+    marbles: Query<Entity, With<Marble>>,
+) {
+    commands.entity(game_play_entities.camera).despawn();
+    commands.entity(game_play_entities.board).despawn();
+    commands.entity(dice_data.die_1).despawn();
+    commands.entity(dice_data.die_2).despawn();
+
+    texture_atlases.remove(dice_data.die_sheet_handle.id);
+
+    commands.remove_resource::<GamePlayEntities>();
+    commands.remove_resource::<BufferTimer>();
+    commands.remove_resource::<ComputerTurnTimer>();
+    commands.remove_resource::<RollAnimationTimer>();
+    commands.remove_resource::<ChooseColorData>();
+    commands.remove_resource::<CurrentPlayerData>();
+    commands.remove_resource::<DiceData>();
+    commands.remove_resource::<SelectionData>();
+    commands.remove_resource::<HighlightData>();
+
+    for marble in marbles.iter() {
+        commands.entity(marble).despawn();
+    }
+
+    // TODO: state.set(GameState::MainMenu).unwrap();
 }

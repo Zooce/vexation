@@ -61,6 +61,7 @@ impl DiceData {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum GameState {
+    GamePlayEnter,
     ChooseColor,
     NextPlayer,
     DiceRoll,
@@ -68,6 +69,12 @@ pub enum GameState {
     ComputerTurn,
     HumanTurn,
     ProcessMove,
+    GamePlayExit,
+}
+
+pub struct GamePlayEntities {
+    pub camera: Entity,
+    pub board: Entity,
 }
 
 /// The resource for highlight data.

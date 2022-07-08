@@ -56,5 +56,6 @@ pub fn check_for_winner(
     } else {
         // winner
         println!("{:?} Wins!", current_player_data.player);
+        state.set(GameState::GamePlayExit).unwrap();
     }
 }
