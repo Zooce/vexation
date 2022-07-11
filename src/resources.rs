@@ -5,6 +5,13 @@ use crate::components::*;
 
 pub struct BufferTimer(pub Timer);
 
+#[derive(Debug)]
+pub struct ChooseColorData {
+    pub masks: [Handle<Image>;4],
+    pub current_color: Option<Player>,
+    pub current_mask: Option<Entity>,
+}
+
 pub struct ComputerTurnTimer(pub Timer);
 
 #[derive(Debug)]
@@ -61,7 +68,8 @@ impl DiceData {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum GameState {
-    GamePlayEnter,
+    MainMenu,
+    GameStart,
     ChooseColor,
     NextPlayer,
     DiceRoll,
@@ -69,7 +77,7 @@ pub enum GameState {
     ComputerTurn,
     HumanTurn,
     ProcessMove,
-    GamePlayExit,
+    GameEnd,
 }
 
 pub struct GamePlayEntities {
@@ -87,17 +95,15 @@ pub struct HumanPlayer {
     pub color: Player,
 }
 
+pub struct MainMenuEntities{
+    pub camera: Entity,
+    pub ui: Entity,
+}
+
 pub struct RollAnimationTimer(pub Timer);
 
 /// The resource for selection data.
 pub struct SelectionData {
     /// The marble that is currently selected
     pub marble: Option<Entity>,
-}
-
-#[derive(Debug)]
-pub struct ChooseColorData {
-    pub masks: [Handle<Image>;4],
-    pub current_color: Option<Player>,
-    pub current_mask: Option<Entity>,
 }

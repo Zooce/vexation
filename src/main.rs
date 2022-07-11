@@ -5,6 +5,7 @@ use bevy::window::PresentMode;
 
 mod components;
 mod constants;
+mod main_menu;
 mod resources;
 mod shared_systems;
 mod system_sets;
@@ -12,6 +13,7 @@ mod utils;
 mod vexation;
 
 use constants::*;
+use main_menu::*;
 use vexation::VexationPlugin;
 
 fn main() {
@@ -29,6 +31,7 @@ fn main() {
 
         // plugins
         .add_plugins(DefaultPlugins)
+        .add_plugin(MainMenuPlugin)
         .add_plugin(VexationPlugin)
 
         // go!

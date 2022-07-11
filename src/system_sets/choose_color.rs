@@ -1,9 +1,17 @@
 use bevy::prelude::*;
-use bevy::input::mouse::{MouseButtonInput, MouseButton};
+use bevy::input::mouse::MouseButton;
 use bevy::window::CursorMoved;
 use crate::components::*;
 use crate::constants::*;
 use crate::resources::*;
+
+/// This system runs when we enter the ChooseColor state to clear out mouse
+/// button clicks that carry over from the main menu.
+pub fn clear_mouse_events(
+    mut mouse_buttons: ResMut<Input<MouseButton>>,
+) {
+    mouse_buttons.clear();
+}
 
 pub fn mouse_hover_handler(
     commands: Commands,
@@ -46,19 +54,10 @@ pub fn mouse_click_handler(
     mut commands: Commands,
     mut state: ResMut<State<GameState>>,
     windows: Res<Windows>,
-    mut mouse_events: EventReader<MouseButtonInput>,
+    mouse_buttons: Res<Input<MouseButton>>,
 ) {
-    let cursor = match windows.get_primary() {
-        Some(w) => match w.cursor_position() {
-            Some(c) => c,
-            None => return,
-        }
-        None => return,
-    };
-    if let Some(_) = mouse_events.iter()
-        .filter(|e| e.button == MouseButton::Left && e.state.is_pressed())
-        .last()
-    {
+    if mouse_buttons.just_pressed(MouseButton::Left) {
+        let cursor = windows.get_primary().unwrap().cursor_position().unwrap();
         if let Some(color) = position_to_color(cursor) {
             commands.insert_resource(HumanPlayer{ color });
             state.set(GameState::NextPlayer).unwrap();

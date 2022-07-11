@@ -15,15 +15,13 @@ impl Plugin for VexationPlugin {
         app
             .add_event::<ClickEvent>()
 
-            .add_state(GameState::GamePlayEnter)
-
             // game play enter
-            .add_system_set(SystemSet::on_enter(GameState::GamePlayEnter)
+            .add_system_set(SystemSet::on_enter(GameState::GameStart)
                 .with_system(create)
             )
 
             // game play exit
-            .add_system_set(SystemSet::on_enter(GameState::GamePlayExit)
+            .add_system_set(SystemSet::on_enter(GameState::GameEnd)
                 .with_system(destroy)
             )
 
@@ -36,6 +34,9 @@ impl Plugin for VexationPlugin {
             )
 
             // choose color
+            .add_system_set(SystemSet::on_enter(GameState::ChooseColor)
+                .with_system(clear_mouse_events)
+            )
             .add_system_set(SystemSet::on_update(GameState::ChooseColor)
                 .with_system(mouse_hover_handler)
                 .with_system(mouse_click_handler)
@@ -263,5 +264,5 @@ pub fn destroy(
         commands.entity(marble).despawn();
     }
 
-    // TODO: state.set(GameState::MainMenu).unwrap();
+    state.set(GameState::MainMenu).unwrap();
 }

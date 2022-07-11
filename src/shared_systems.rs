@@ -3,18 +3,17 @@
 use bevy::prelude::*;
 use bevy::ecs::schedule::ShouldRun;
 use crate::components::*;
-// use crate::resources::*;
+use crate::resources::GameState;
 
 pub fn should_animate_moves(
-    // state: Res<State<GameState>>,
+    state: Res<State<GameState>>,
 ) -> ShouldRun {
-    // match state.current() {
-    //     GameState::NextPlayer |
-    //     GameState::DiceRoll |
-    //     GameState::TurnSetup => ShouldRun::No,
-    //     _ => ShouldRun::Yes,
-    // }
-    ShouldRun::Yes
+    match state.current() {
+        GameState::MainMenu |
+        GameState::GameStart |
+        GameState::ChooseColor => ShouldRun::No,
+        _ => ShouldRun::Yes,
+    }
 }
 
 pub fn animate_marble_moves(
