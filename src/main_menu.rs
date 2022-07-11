@@ -15,13 +15,13 @@ impl Plugin for MainMenuPlugin {
             .add_state(GameState::MainMenu) // the starting state
 
             .add_system_set(SystemSet::on_enter(GameState::MainMenu)
-                .with_system(create)
+                .with_system(create_main_menu)
             )
             .add_system_set(SystemSet::on_update(GameState::MainMenu)
-                .with_system(interact)
+                .with_system(interact_main_menu)
             )
             .add_system_set(SystemSet::on_exit(GameState::MainMenu)
-                .with_system(cleanup)
+                .with_system(destroy_main_menu)
             )
             ;
     }
@@ -33,7 +33,7 @@ pub struct PlayButton;
 #[derive(Component)]
 pub struct QuitButton;
 
-pub fn create(
+pub fn create_main_menu(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
@@ -74,7 +74,7 @@ pub fn create(
     commands.insert_resource(MainMenuEntities{ camera, ui });
 }
 
-pub fn interact(
+pub fn interact_main_menu(
     mut state: ResMut<State<GameState>>,
     mut app_exit_events: EventWriter<AppExit>,
     mut interaction_query: Query<
@@ -104,7 +104,7 @@ pub fn interact(
     }
 }
 
-pub fn cleanup(
+pub fn destroy_main_menu(
     mut commands: Commands,
     menu_entities: Res<MainMenuEntities>,
 ) {

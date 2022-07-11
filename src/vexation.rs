@@ -17,12 +17,12 @@ impl Plugin for VexationPlugin {
 
             // game play enter
             .add_system_set(SystemSet::on_enter(GameState::GameStart)
-                .with_system(create)
+                .with_system(create_game)
             )
 
             // game play exit
             .add_system_set(SystemSet::on_enter(GameState::GameEnd)
-                .with_system(destroy)
+                .with_system(destroy_game)
             )
 
             // --- states + systems -- TODO: move each to their own plugin to keep things smaller?
@@ -82,7 +82,7 @@ impl Plugin for VexationPlugin {
     }
 }
 
-pub fn create(
+pub fn create_game(
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut state: ResMut<State<GameState>>,
@@ -235,7 +235,7 @@ pub fn create(
     state.set(GameState::ChooseColor).unwrap();
 }
 
-pub fn destroy(
+pub fn destroy_game(
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut state: ResMut<State<GameState>>,
