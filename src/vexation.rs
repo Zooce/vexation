@@ -241,10 +241,12 @@ pub fn destroy_game(
     mut state: ResMut<State<GameState>>,
     dice_data: Res<DiceData>,
     game_play_entities: Res<GamePlayEntities>,
+    human_player: Res<HumanPlayer>,
     marbles: Query<Entity, With<Marble>>,
 ) {
     commands.entity(game_play_entities.camera).despawn();
     commands.entity(game_play_entities.board).despawn();
+    commands.entity(human_player.human_indicator).despawn();
     commands.entity(dice_data.die_1).despawn();
     commands.entity(dice_data.die_2).despawn();
 

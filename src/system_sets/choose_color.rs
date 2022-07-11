@@ -55,11 +55,25 @@ pub fn mouse_click_handler(
     mut state: ResMut<State<GameState>>,
     windows: Res<Windows>,
     mouse_buttons: Res<Input<MouseButton>>,
+    asset_server: Res<AssetServer>,
 ) {
     if mouse_buttons.just_pressed(MouseButton::Left) {
         let cursor = windows.get_primary().unwrap().cursor_position().unwrap();
         if let Some(color) = position_to_color(cursor) {
-            commands.insert_resource(HumanPlayer{ color });
+            let human_indicator = commands.spawn_bundle(SpriteBundle{
+                texture: asset_server.load("human-indicator.png"),
+                transform: {
+                    let (x, y) = match color {
+                        Player::Red => (-4.0, 4.0),
+                        Player::Green => (4.0, 4.0),
+                        Player::Blue => (4.0, -4.0),
+                        Player::Yellow => (-4.0, -4.0),
+                    };
+                    Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 1.0)
+                },
+                ..default()
+            }).id();
+            commands.insert_resource(HumanPlayer{ color, human_indicator });
             state.set(GameState::NextPlayer).unwrap();
         }
     }

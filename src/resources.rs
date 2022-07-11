@@ -93,6 +93,7 @@ pub struct HighlightData { // TODO: should this just be HighlightTexture(Handle<
 
 pub struct HumanPlayer {
     pub color: Player,
+    pub human_indicator: Entity,
 }
 
 pub struct MainMenuEntities{
