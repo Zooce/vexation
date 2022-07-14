@@ -27,9 +27,9 @@ impl Plugin for VexationPlugin {
 
             // --- states + systems -- TODO: move each to their own plugin to keep things smaller?
 
-            // marble animation system
+            // shared systems
             .add_system_set(SystemSet::new()
-                .with_run_criteria(should_animate_moves)
+                .with_run_criteria(should_run_shared_systems)
                 .with_system(animate_marble_moves)
             )
 

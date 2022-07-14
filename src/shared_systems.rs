@@ -5,7 +5,7 @@ use bevy::ecs::schedule::ShouldRun;
 use crate::components::*;
 use crate::resources::GameState;
 
-pub fn should_animate_moves(
+pub fn should_run_shared_systems(
     state: Res<State<GameState>>,
 ) -> ShouldRun {
     match state.current() {
