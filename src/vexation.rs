@@ -14,6 +14,8 @@ impl Plugin for VexationPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_event::<ClickEvent>()
+            .add_event::<MarbleAnimationDoneEvent>()
+            .add_event::<HighlightEvent>()
 
             // game play enter
             .add_system_set(SystemSet::on_enter(GameState::GameStart)
@@ -31,6 +33,7 @@ impl Plugin for VexationPlugin {
             .add_system_set(SystemSet::new()
                 .with_run_criteria(should_run_shared_systems)
                 .with_system(animate_marble_moves)
+                .with_system(highlighter)
             )
 
             // choose color
@@ -52,27 +55,38 @@ impl Plugin for VexationPlugin {
             )
 
             // dice roll
-            .add_system_set(SystemSet::on_enter(GameState::DiceRoll).with_system(roll_dice))
-            .add_system_set(SystemSet::on_update(GameState::DiceRoll).with_system(roll_animation))
-            .add_system_set(SystemSet::on_exit(GameState::DiceRoll).with_system(stop_roll_animation))
+            .add_system_set(SystemSet::on_enter(GameState::DiceRoll)
+                .with_system(remove_all_highlights)
+                .with_system(roll_dice.after(remove_all_highlights))
+            )
+            .add_system_set(SystemSet::on_update(GameState::DiceRoll)
+                .with_system(roll_animation)
+            )
+            .add_system_set(SystemSet::on_exit(GameState::DiceRoll)
+                .with_system(stop_roll_animation)
+            )
 
             // turn setup
             .add_system_set(SystemSet::on_enter(GameState::TurnSetup).with_system(calc_possible_moves))
             .add_system_set(SystemSet::on_update(GameState::TurnSetup).with_system(buffer_timer))
 
             // computer turn
+            .add_system_set(SystemSet::on_enter(GameState::ComputerTurn)
+                .with_system(clear_animation_events)
+                .with_system(computer_choose_move.after(clear_animation_events))
+            )
             .add_system_set(SystemSet::on_update(GameState::ComputerTurn)
-                .with_system(choose_move)
+                .with_system(computer_move_buffer)
             )
 
             // human turn
             .add_system_set(SystemSet::on_update(GameState::HumanTurn)
                 .with_system(handle_mouse_clicks)
                 .with_system(destination_click_handler)
-                .with_system(highlighter)
             )
-            .add_system_set(SystemSet::on_exit(GameState::HumanTurn)
-                .with_system(remove_all_highlights)
+
+            .add_system_set(SystemSet::on_update(GameState::WaitForAnimation)
+                .with_system(wait_for_marble_animation)
             )
 
             // process move
@@ -119,6 +133,7 @@ pub fn create_game(
     commands.insert_resource(CurrentPlayerData{
         player: current_player.clone(),
         possible_moves: Vec::new(),
+        selected_move_index: None,
     });
 
     // marbles

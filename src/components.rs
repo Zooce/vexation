@@ -15,7 +15,10 @@ pub struct Die {
 /// Used to mark the highlight sprites when a marble is selected, so we can
 /// later remove them when a marble is no longer selected.
 #[derive(Component)]
-pub struct Highlight(pub Entity);
+pub struct Highlight{
+    pub marble: Entity,
+    pub index: usize,
+}
 
 #[derive(Component, Debug)]
 pub struct Marble {

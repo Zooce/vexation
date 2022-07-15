@@ -18,6 +18,7 @@ pub struct ComputerTurnTimer(pub Timer);
 pub struct CurrentPlayerData {
     pub player: Player,
     pub possible_moves: Vec<(Entity, usize, WhichDie)>,
+    pub selected_move_index: Option<usize>,
 }
 
 impl CurrentPlayerData {
@@ -30,6 +31,13 @@ impl CurrentPlayerData {
                     None
                 }
         }).collect()
+    }
+
+    pub fn get_selected_move(&self) -> Option<(Entity, usize, WhichDie)> {
+        match self.selected_move_index {
+            Some(index) => Some(self.possible_moves[index]),
+            None => None,
+        }
     }
 }
 
@@ -76,6 +84,7 @@ pub enum GameState {
     TurnSetup,
     ComputerTurn,
     HumanTurn,
+    WaitForAnimation,
     ProcessMove,
     GameEnd,
 }
@@ -91,6 +100,10 @@ pub struct HighlightData { // TODO: should this just be HighlightTexture(Handle<
     pub texture: Handle<Image>,
 }
 
+pub struct HighlightEvent {
+    pub data: Option<(Entity, Vec<usize>)>,
+}
+
 pub struct HumanPlayer {
     pub color: Player,
     pub human_indicator: Entity,
@@ -100,6 +113,8 @@ pub struct MainMenuEntities{
     pub camera: Entity,
     pub ui: Entity,
 }
+
+pub struct MarbleAnimationDoneEvent(pub Player);
 
 pub struct RollAnimationTimer(pub Timer);
 

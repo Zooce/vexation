@@ -19,6 +19,8 @@ pub fn handle_mouse_clicks(
     windows: Res<Windows>,
     mut mouse_events: EventReader<MouseButtonInput>,
     mut click_events: EventWriter<ClickEvent>,
+    mut highlight_events: EventWriter<HighlightEvent>,
+    current_player_data: Res<CurrentPlayerData>,
     marbles: Query<(Entity, &Transform), (With<CurrentPlayer>, With<Marble>)>,
 ) {
     // we really only care about the most recent left mouse button press
@@ -30,16 +32,26 @@ pub fn handle_mouse_clicks(
             // cursor position is measured from the bottom left corner, but transforms are measured from their center
             let (x, y) = (cursor.x - WINDOW_SIZE / 2., cursor.y - WINDOW_SIZE / 2.);
 
-            let marble = marbles.iter().find_map(|(e, t)| {
-                    let found = x > t.translation.x - TILE_SIZE / 2. &&
-                                x < t.translation.x + TILE_SIZE / 2. &&
-                                y > t.translation.y - TILE_SIZE / 2. &&
-                                y < t.translation.y + TILE_SIZE / 2.;
-                    if found { Some(e) } else { None }
-                });
+            let selected_marble = marbles.iter().find_map(|(e, t)| {
+                let found = x > t.translation.x - TILE_SIZE / 2. &&
+                            x < t.translation.x + TILE_SIZE / 2. &&
+                            y > t.translation.y - TILE_SIZE / 2. &&
+                            y < t.translation.y + TILE_SIZE / 2.;
+                if found { Some(e) } else { None }
+            });
 
-            println!("click event @ {:?} on marble {:?}", (x, y), marble);
-            click_events.send(ClickEvent{ pos: Vec2::new(x, y), active_marble: marble });
+            click_events.send(ClickEvent{ pos: Vec2::new(x, y), active_marble: selected_marble });
+            highlight_events.send(HighlightEvent{
+                data: match selected_marble {
+                    Some(selected_marble) => {
+                        let indexes = current_player_data.get_moves(selected_marble)
+                            .iter().map(|(index, _)| *index)
+                            .collect();
+                        Some((selected_marble, indexes))
+                    }
+                    None => None
+                }
+            });
         }
     }
 }
@@ -76,11 +88,12 @@ pub fn destination_click_handler(
                     m.index = idx;
                     dice_data.use_die(which);
                     commands.entity(marble).insert(Moving::new(Vec3::new(col, row, 1.0), t.translation));
-                    println!("Moving {:?} from {} to {} with {:?}", marble, old_index, idx, which);
-                    state.set(GameState::ProcessMove).unwrap();
+                    state.set(GameState::WaitForAnimation).unwrap();
+                    println!("{:?}: {} to {} with {:?}", marble, old_index, idx, which);
                 }
             },
-            _ => selection_data.marble = click.active_marble,
+            Some(marble) => selection_data.marble = Some(marble),
+            _ => {}
         }
     }
 }
@@ -112,69 +125,4 @@ fn snap(coord: f32) -> f32 {
     } else {
         result
     }
-}
-
-/// This system spawns and/or despawns highlights based on the latest
-/// [`ClickEvent`].
-pub fn highlighter(
-    mut commands: Commands,
-    mut click_events: EventReader<ClickEvent>,
-    marbles: Query<&Transform, (With<CurrentPlayer>, With<Marble>)>,
-    highlights: Query<Entity, With<Highlight>>,
-    current_player_data: Res<CurrentPlayerData>,
-    highlight_data: Res<HighlightData>,
-) {
-    if let Some(click) = click_events.iter().last() {
-        match click.active_marble {
-            None => remove_all_highlights(commands, highlights),
-            Some(marble) => {
-                // remove highlights that are not for the currently selected marble
-                highlights.for_each(|e| {
-                    if e != marble {
-                        commands.entity(e).despawn();
-                    }
-                });
-
-                // if there are no highlights for the currently selected marble then add them
-                if highlights.iter().find(|e| *e == marble).is_none() {
-                    let transform = marbles.get(marble).unwrap();
-
-                    // clone the translation so we make sure the highlight is drawn on top
-                    let mut t = transform.translation.clone();
-                    t.z += 1.0;
-
-                    // create a sprite located at the same location as the marble entity
-                    commands.spawn_bundle(SpriteBundle{
-                        texture: highlight_data.texture.clone(),
-                        transform: Transform::from_translation(t),
-                        ..default()
-                    })
-                    .insert(Highlight(marble))
-                    ;
-
-                    // create sprites located at the possible moves for the selected marble
-                    for (board_index, _) in current_player_data.get_moves(marble) {
-                        let tile = BOARD[board_index];
-                        let (x, y) = current_player_data.player.rotate_coords((tile.0 as f32, tile.1 as f32));
-                        commands.spawn_bundle(SpriteBundle{
-                            texture: highlight_data.texture.clone(),
-                            transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, t.z),
-                            ..default()
-                        })
-                        .insert(Highlight(marble))
-                        ;
-                    }
-                }
-            }
-        }
-    }
-}
-
-/// This system removes all highlights and should be run as the exit system of
-/// the [`HumanTurn`] state.
-pub fn remove_all_highlights(
-    mut commands: Commands,
-    entities: Query<Entity, With<Highlight>>,
-) {
-    entities.for_each(|e| commands.entity(e).despawn());
 }

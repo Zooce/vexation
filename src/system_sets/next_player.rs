@@ -28,7 +28,7 @@ pub fn choose_next_player(
         }
     }
 
-    println!("Current Player: {:?}", current_player_data.player);
+    println!("{:?}", current_player_data.player);
 }
 
 pub fn next_player_setup(
