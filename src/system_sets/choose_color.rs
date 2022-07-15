@@ -90,7 +90,7 @@ fn show_mask(mut commands: Commands, mut choose_color_data: ResMut<ChooseColorDa
     }).id());
 }
 
-pub fn human_player_chosen(
+pub fn choose_color_cleanup(
     mut commands: Commands,
     mut choose_color_data: ResMut<ChooseColorData>,
 ) {
