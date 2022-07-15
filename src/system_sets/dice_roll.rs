@@ -4,7 +4,6 @@ use bevy::prelude::*;
 use crate::components::*;
 use crate::resources::*;
 use crate::utils::*;
-use rand::{Rng, thread_rng};
 
 pub fn roll_dice(
     mut dice_data: ResMut<DiceData>,
@@ -14,7 +13,7 @@ pub fn roll_dice(
     dice_data.die_1_side = Some(d1);
     dice_data.die_2_side = Some(d2);
 
-    println!("Dice: {:?} and {:?}", d1, d2);
+    println!("{:?} and {:?}", d1, d2);
 }
 
 pub fn roll_animation(
@@ -43,8 +42,7 @@ pub fn roll_animation(
             }
         }
         // rotate the dice
-        let mut rng = thread_rng();
-        transform.rotate(Quat::from_rotation_z(rng.gen::<f32>() * 0.5));
+        transform.rotate(Quat::from_rotation_z(0.25));
     }
 
     if roll_animation_timer.0.tick(time.delta()).just_finished() {
