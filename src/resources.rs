@@ -109,9 +109,16 @@ pub struct HumanPlayer {
     pub human_indicator: Entity,
 }
 
-pub struct MainMenuEntities{
+pub struct MainMenuEntities {
     pub camera: Entity,
     pub ui: Entity,
+}
+
+pub struct MainMenuAssets {
+    pub font: Handle<Font>,
+    pub normal_button: Handle<Image>,
+    pub hovered_button: Handle<Image>,
+    pub pressed_button: Handle<Image>,
 }
 
 pub struct MarbleAnimationDoneEvent(pub Player);

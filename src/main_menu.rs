@@ -1,11 +1,7 @@
 use bevy::prelude::*;
 use bevy::app::AppExit;
 
-use crate::resources::{GameState, MainMenuEntities};
-
-const NORMAL_COLOR: Color = Color::rgb(0.15, 0.15, 0.15);
-const HOVERED_COLOR: Color = Color::rgb(0.25, 0.25, 0.25);
-const PRESSED_COLOR: Color = Color::rgb(0.35, 0.75, 0.35);
+use crate::resources::{GameState, MainMenuEntities, MainMenuAssets};
 
 pub struct MainMenuPlugin;
 
@@ -40,37 +36,53 @@ pub fn create_main_menu(
     // ui camera
     let camera = commands.spawn_bundle(UiCameraBundle::default()).id();
 
-    let font = asset_server.load("FiraCode-Bold.ttf");
+    let main_menu_assets = MainMenuAssets{
+        font: asset_server.load("Kenney Thick.ttf"),
+        normal_button: asset_server.load("red_button11.png"),
+        hovered_button: asset_server.load("red_button10.png"),
+        pressed_button: asset_server.load("red_button12.png"),
+    };
 
-    use crate::utils::ui;
     let ui = commands
-        .spawn_bundle(ui::vertical_container(Color::rgba(0.0, 0.0, 0.0, 0.3).into()))
-        .with_children(|root| {
-            root
-                .spawn_bundle(ui::vertical_container(Color::NONE.into()))
-                .with_children(|button_container| {
-                    // play button
-                    button_container
-                        .spawn_bundle(ui::button_bundle(NORMAL_COLOR.into()))
-                        .with_children(|parent| {
-                            parent.spawn_bundle(ui::text_bundle("Play", font.clone(), 40.0));
-                        })
-                        .insert(PlayButton)
-                        ;
+        .spawn_bundle(NodeBundle{
+            style: Style {
+                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                flex_direction: FlexDirection::ColumnReverse,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..default()
+            },
+            color: Color::rgba(0.0, 0.0, 0.0, 0.3).into(),
+            ..default()
+        })
+        .with_children(|parent| {
+            parent
+                .spawn_bundle(TextBundle{
+                    text: Text::with_section(
+                        "Vexation",
+                        TextStyle{
+                            font: main_menu_assets.font.clone(),
+                            font_size: 50.0,
+                            color: Color::WHITE,
+                        },
+                        TextAlignment::default()
+                    ),
+                    style: Style{
+                        margin: Rect::all(Val::Px(10.0)),
+                        ..default()
+                    },
+                    ..default()
+                })
+                ;
 
-                    // quit button
-                    button_container
-                        .spawn_bundle(ui::button_bundle(NORMAL_COLOR.into()))
-                        .with_children(|parent| {
-                            parent.spawn_bundle(ui::text_bundle("Quit", font.clone(), 40.0));
-                        })
-                        .insert(QuitButton)
-                        ;
-                });
+            spawn_button(parent, &main_menu_assets, "Play", PlayButton);
+            // spawn_button(button_container, &ui_assets, "Rules", PlayButton);
+            spawn_button(parent, &main_menu_assets, "Quit", QuitButton);
         })
         .id()
         ;
 
+    commands.insert_resource(main_menu_assets);
     commands.insert_resource(MainMenuEntities{ camera, ui });
 }
 
@@ -78,16 +90,23 @@ pub fn interact_main_menu(
     mut state: ResMut<State<GameState>>,
     mut app_exit_events: EventWriter<AppExit>,
     mut interaction_query: Query<
-        (Entity, &Interaction, &mut UiColor),
+        (Entity, &Interaction, &mut UiImage, &Children),
         (Changed<Interaction>, With<Button>),
     >,
+    mut button_text_query: Query<&mut Text>,
+    main_menu_assets: Res<MainMenuAssets>,
     play_button: Query<Entity, With<PlayButton>>,
     quit_button: Query<Entity, With<QuitButton>>,
 ) {
-    for (entity, interaction, mut ui_color) in interaction_query.iter_mut() {
+    for (entity, interaction, mut ui_image, children) in interaction_query.iter_mut() {
         match *interaction {
             Interaction::Clicked => {
-                ui_color.0 = PRESSED_COLOR.into();
+                // println!("clicked");
+                for child in children.iter() {
+                    let mut text = button_text_query.get_mut(*child).unwrap();
+                    text.sections[0].style.color = Color::WHITE;
+                }
+                ui_image.0 = main_menu_assets.pressed_button.clone().into();
                 if entity == play_button.single() {
                     state.set(GameState::GameStart).unwrap(); // TODO: set game state to GameCreate
                 } else if entity == quit_button.single() {
@@ -95,10 +114,20 @@ pub fn interact_main_menu(
                 }
             }
             Interaction::Hovered => {
-                ui_color.0 = HOVERED_COLOR.into();
+                // println!("hovered");
+                for child in children.iter() {
+                    let mut text = button_text_query.get_mut(*child).unwrap();
+                    text.sections[0].style.color = Color::rgb_u8(232, 106, 23);
+                }
+                ui_image.0 = main_menu_assets.hovered_button.clone().into();
             }
             Interaction::None => {
-                ui_color.0 = NORMAL_COLOR.into();
+                // println!("normal");
+                for child in children.iter() {
+                    let mut text = button_text_query.get_mut(*child).unwrap();
+                    text.sections[0].style.color = Color::WHITE;
+                }
+                ui_image.0 = main_menu_assets.normal_button.clone().into();
             }
         }
     }
@@ -110,4 +139,43 @@ pub fn destroy_main_menu(
 ) {
     commands.entity(menu_entities.ui).despawn_recursive();
     commands.entity(menu_entities.camera).despawn();
+}
+
+fn spawn_button(
+    parent: &mut ChildBuilder,
+    ui_assets: &MainMenuAssets,
+    button_text: &str,
+    component: impl Component,
+) {
+    parent
+        // button root
+        .spawn_bundle(ButtonBundle{
+            style: Style{
+                align_self: AlignSelf::Center,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                size: Size::new(Val::Px(190.0), Val::Px(49.0)),
+                margin: Rect::all(Val::Px(10.0)),
+                ..default()
+            },
+            image: ui_assets.normal_button.clone().into(),
+            ..default()
+        })
+        .with_children(|parent| {
+            parent.spawn_bundle(TextBundle{
+                text: Text::with_section(
+                    button_text,
+                    TextStyle{
+                        font: ui_assets.font.clone(),
+                        font_size: 30.0,
+                        color: Color::WHITE,
+                    },
+                    TextAlignment::default()
+                ),
+                ..default()
+            })
+            ;
+        })
+        .insert(component)
+        ;
 }

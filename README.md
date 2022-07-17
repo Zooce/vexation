@@ -46,3 +46,13 @@ A player's marble can hop over opponents marbles but cannot hop over their own m
 ## Running the game
 
 Download or clone this repository, install [Rust](https://rust-lang.org), and running `cargo run` at the root of the directory.
+
+---
+
+# Credits
+
+Made by me, [Zooce](https://github.com/Zooce).
+
+Inspried by [marbles.world](https://github.com/voxelv/marbles) by [voxelv](https://github.com/voxelv).
+
+Some assets used from the very generous [Kenney](https://kenney.nl/).
