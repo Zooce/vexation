@@ -7,6 +7,5 @@ edition = "2021"
 
 [dependencies]
 
-# TODO: remove the "dynamic" feature when we're done so the binary can be standalone
-bevy = { version = "0.7.0", features = ["dynamic"] }
+bevy = "0.7"
 rand = "0.8"
