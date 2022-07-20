@@ -2,6 +2,10 @@
 
 use bevy::prelude::*;
 use crate::constants::*;
+use crate::events::*;
+
+#[derive(Component)]
+pub struct ButtonAction(pub ButtonActionEvent);
 
 #[derive(Component)]
 pub struct CurrentPlayer;

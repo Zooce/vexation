@@ -12,6 +12,7 @@ pub fn should_run_shared_systems(
     match state.current() {
         GameState::MainMenu |
         GameState::GameStart |
+        GameState::GameEnd |
         GameState::ChooseColor => ShouldRun::No,
         _ => ShouldRun::Yes,
     }

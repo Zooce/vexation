@@ -41,13 +41,6 @@ impl CurrentPlayerData {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
-pub enum WhichDie {
-    One,
-    Two,
-    Both,
-}
-
 #[derive(Debug)]
 pub struct DiceData {
     pub die_1: Entity,
@@ -74,7 +67,7 @@ impl DiceData {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Copy)]
 pub enum GameState {
     MainMenu,
     GameStart,
@@ -109,24 +102,31 @@ pub struct HumanPlayer {
     pub human_indicator: Entity,
 }
 
-pub struct MainMenuEntities {
-    pub camera: Entity,
-    pub ui: Entity,
-}
-
-pub struct MainMenuAssets {
-    pub font: Handle<Font>,
-    pub normal_button: Handle<Image>,
-    pub hovered_button: Handle<Image>,
-    pub pressed_button: Handle<Image>,
-}
-
 pub struct MarbleAnimationDoneEvent(pub Player);
 
 pub struct RollAnimationTimer(pub Timer);
+
+pub struct RootUiEntity(pub Entity);
 
 /// The resource for selection data.
 pub struct SelectionData {
     /// The marble that is currently selected
     pub marble: Option<Entity>,
+}
+
+pub struct UiAssets {
+    pub font: Handle<Font>,
+    pub mini_font: Handle<Font>,
+    pub normal_button: Handle<Image>,
+    pub hovered_button: Handle<Image>,
+    pub pressed_button: Handle<Image>,
+}
+
+pub struct UiPageNumber(pub usize);
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+pub enum WhichDie {
+    One,
+    Two,
+    Both,
 }

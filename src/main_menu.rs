@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 use bevy::app::AppExit;
-
-use crate::resources::{GameState, MainMenuEntities, MainMenuAssets};
+use crate::components::*;
+use crate::constants::*;
+use crate::events::*;
+use crate::resources::*;
+use crate::utils::ui::*;
 
 pub struct MainMenuPlugin;
 
@@ -9,59 +12,140 @@ impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_state(GameState::MainMenu) // the starting state
+            .add_event::<ButtonActionEvent>()
+
+            .insert_resource(UiPageNumber(0))
 
             .add_system_set(SystemSet::on_enter(GameState::MainMenu)
-                .with_system(create_main_menu)
+                .with_system(main_menu_enter)
             )
             .add_system_set(SystemSet::on_update(GameState::MainMenu)
-                .with_system(interact_main_menu)
+                .with_system(button_interactions)
+                .with_system(execute_menu_action)
+                .with_system(menu_page_renderer)
             )
             .add_system_set(SystemSet::on_exit(GameState::MainMenu)
-                .with_system(destroy_main_menu)
+                .with_system(main_menu_exit)
             )
             ;
     }
 }
 
-#[derive(Component)]
-pub struct PlayButton;
-
-#[derive(Component)]
-pub struct QuitButton;
-
-pub fn create_main_menu(
+fn main_menu_enter(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    ui_assets: Res<UiAssets>,
 ) {
-    // ui camera
-    let camera = commands.spawn_bundle(UiCameraBundle::default()).id();
+    let ui = create_main_menu(&mut commands, ui_assets);
+    commands.insert_resource(RootUiEntity(ui));
+}
 
-    let main_menu_assets = MainMenuAssets{
-        font: asset_server.load("Kenney Thick.ttf"),
-        normal_button: asset_server.load("red_button11.png"),
-        hovered_button: asset_server.load("red_button10.png"),
-        pressed_button: asset_server.load("red_button12.png"),
+fn main_menu_exit(
+    mut commands: Commands,
+    root_entity: Res<RootUiEntity>,
+) {
+    commands.entity(root_entity.0).despawn_recursive();
+    commands.remove_resource::<RootUiEntity>();
+}
+
+/// Handles UI button interactions, sending the associated [`ButtonActionEvent`]
+/// when clicked.
+fn button_interactions(
+    mut button_action_events: EventWriter<ButtonActionEvent>,
+    mut interaction_query: Query<
+        (&Interaction, &ButtonAction, &mut UiImage, &Children),
+        (Changed<Interaction>, With<Button>)
+    >,
+    mut text_query: Query<&mut Text>,
+    ui_assets: Res<UiAssets>,
+) {
+    for (interaction, action, mut ui_image, children) in interaction_query.iter_mut() {
+        let (image, text_color) = match *interaction {
+            Interaction::Clicked => {
+                button_action_events.send(action.0);
+                (ui_assets.pressed_button.clone().into(), Color::WHITE)
+            }
+            Interaction::Hovered => (ui_assets.hovered_button.clone().into(), Color::rgb_u8(232, 106, 23)),
+            Interaction::None => (ui_assets.normal_button.clone().into(), Color::WHITE),
+        };
+
+        // update button image
+        ui_image.0 = image;
+
+        // update button text color
+        for child in children.iter() {
+            let mut text = text_query.get_mut(*child).unwrap();
+            for section in text.sections.iter_mut() {
+                section.style.color = text_color;
+            }
+        }
+    }
+}
+
+fn execute_menu_action(
+    mut button_action_events: EventReader<ButtonActionEvent>,
+    mut state: ResMut<State<GameState>>,
+    mut page_number: ResMut<UiPageNumber>,
+    mut app_exit_events: EventWriter<AppExit>,
+) {
+    for action in button_action_events.iter() {
+        match *action {
+            ButtonActionEvent::StateChange(s) => state.set(s).unwrap(),
+            ButtonActionEvent::NextPage => page_number.0 += 1,
+            ButtonActionEvent::PrevPage => page_number.0 -= 1,
+            ButtonActionEvent::Quit => app_exit_events.send(AppExit),
+        }
+    }
+}
+
+/// Renders the current page in the menu if a page change occurred.
+fn menu_page_renderer(
+    page_number: Res<UiPageNumber>,
+    mut current_page_number: Local<Option<usize>>,
+    mut commands: Commands,
+    mut root_entity: ResMut<RootUiEntity>,
+    ui_assets: Res<UiAssets>,
+) {
+    // check to see if we event need to render anything
+    let render_page = match *current_page_number {
+        Some(p) if page_number.0 != p => {
+            // destroy the current page so the next one can be rendered
+            commands.entity(root_entity.0).despawn_recursive();
+            Some(page_number.0)
+        }
+        None => { // this is the first time this system has run - just set the local current page number
+            *current_page_number = Some(page_number.0);
+            None
+        }
+        _ => None,
     };
 
-    let ui = commands
-        .spawn_bundle(NodeBundle{
-            style: Style {
-                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
-                flex_direction: FlexDirection::ColumnReverse,
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                ..default()
-            },
-            color: Color::rgba(0.0, 0.0, 0.0, 0.3).into(),
-            ..default()
-        })
+    match render_page {
+        Some(p) => {
+            *current_page_number = Some(p);
+            let ui = match p {
+                0 => create_main_menu(&mut commands, ui_assets),
+                1 | 2 | 3 => create_rules_page(&mut commands, ui_assets, page_number),
+                _ => unreachable!(),
+            };
+            root_entity.0 = ui;
+        }
+        _ => {}
+    }
+}
+
+fn create_main_menu(
+    commands: &mut Commands,
+    ui_assets: Res<UiAssets>,
+) -> Entity {
+    commands
+        .spawn_bundle(vertical_node_bundle())
         .with_children(|parent| {
             parent
                 .spawn_bundle(TextBundle{
                     text: Text::with_section(
                         "Vexation",
                         TextStyle{
-                            font: main_menu_assets.font.clone(),
+                            font: ui_assets.font.clone(),
                             font_size: 50.0,
                             color: Color::WHITE,
                         },
@@ -75,107 +159,102 @@ pub fn create_main_menu(
                 })
                 ;
 
-            spawn_button(parent, &main_menu_assets, "Play", PlayButton);
-            // spawn_button(button_container, &ui_assets, "Rules", PlayButton);
-            spawn_button(parent, &main_menu_assets, "Quit", QuitButton);
+            spawn_button(parent, &ui_assets, "Play", ButtonAction(ButtonActionEvent::StateChange(GameState::GameStart)));
+            spawn_button(parent, &ui_assets, "Rules", ButtonAction(ButtonActionEvent::NextPage));
+            spawn_button(parent, &ui_assets, "Quit", ButtonAction(ButtonActionEvent::Quit));
         })
         .id()
-        ;
-
-    commands.insert_resource(main_menu_assets);
-    commands.insert_resource(MainMenuEntities{ camera, ui });
 }
 
-pub fn interact_main_menu(
-    mut state: ResMut<State<GameState>>,
-    mut app_exit_events: EventWriter<AppExit>,
-    mut interaction_query: Query<
-        (Entity, &Interaction, &mut UiImage, &Children),
-        (Changed<Interaction>, With<Button>),
-    >,
-    mut button_text_query: Query<&mut Text>,
-    main_menu_assets: Res<MainMenuAssets>,
-    play_button: Query<Entity, With<PlayButton>>,
-    quit_button: Query<Entity, With<QuitButton>>,
-) {
-    for (entity, interaction, mut ui_image, children) in interaction_query.iter_mut() {
-        match *interaction {
-            Interaction::Clicked => {
-                // println!("clicked");
-                for child in children.iter() {
-                    let mut text = button_text_query.get_mut(*child).unwrap();
-                    text.sections[0].style.color = Color::WHITE;
-                }
-                ui_image.0 = main_menu_assets.pressed_button.clone().into();
-                if entity == play_button.single() {
-                    state.set(GameState::GameStart).unwrap(); // TODO: set game state to GameCreate
-                } else if entity == quit_button.single() {
-                    app_exit_events.send(AppExit);
-                }
-            }
-            Interaction::Hovered => {
-                // println!("hovered");
-                for child in children.iter() {
-                    let mut text = button_text_query.get_mut(*child).unwrap();
-                    text.sections[0].style.color = Color::rgb_u8(232, 106, 23);
-                }
-                ui_image.0 = main_menu_assets.hovered_button.clone().into();
-            }
-            Interaction::None => {
-                // println!("normal");
-                for child in children.iter() {
-                    let mut text = button_text_query.get_mut(*child).unwrap();
-                    text.sections[0].style.color = Color::WHITE;
-                }
-                ui_image.0 = main_menu_assets.normal_button.clone().into();
-            }
-        }
-    }
-}
+const RULES_P1: &str =
+r#"- Objective -
 
-pub fn destroy_main_menu(
-    mut commands: Commands,
-    menu_entities: Res<MainMenuEntities>,
-) {
-    commands.entity(menu_entities.ui).despawn_recursive();
-    commands.entity(menu_entities.camera).despawn();
-}
+Move all your marbles counter-clockwise around the board from your BASE to your HOME row.
 
-fn spawn_button(
-    parent: &mut ChildBuilder,
-    ui_assets: &MainMenuAssets,
-    button_text: &str,
-    component: impl Component,
-) {
-    parent
-        // button root
-        .spawn_bundle(ButtonBundle{
-            style: Style{
-                align_self: AlignSelf::Center,
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                size: Size::new(Val::Px(190.0), Val::Px(49.0)),
-                margin: Rect::all(Val::Px(10.0)),
-                ..default()
-            },
-            image: ui_assets.normal_button.clone().into(),
-            ..default()
-        })
+- Movement -
+
+You can use either the value of a single die or the sum of the dice to move a marble. Once both dice values have been used to make moves, your turn is over.
+
+NOTE - The dice are rolled automatically at the beginning of your turn.
+"#;
+const RULES_P2: &str =
+r#"- Base -
+
+You must roll a 1 or a 6 to exit the BASE.
+
+- Jumping -
+
+You may jump opponents' marbles but NOT your own.
+
+- Capturing -
+
+Landing on an opponent's marble captures it, sending it back to its BASE.
+"#;
+const RULES_P3: &str =
+r#"- Center Tile -
+
+The center tile is a special space allowing a marble to skip ahead on the board.
+
+A marble can only enter using the exact sum of the dice.
+
+A marble can only enter from a corner with a different colored arrow.
+
+A marble can only exit with a die roll of 1 but can then optionally use the other die to continue thier move.
+
+A marble can only exit to the corner with the same colored arrow.
+"#;
+// TOOD: POWER-UPS
+
+fn create_rules_page(
+    commands: &mut Commands,
+    ui_assets: Res<UiAssets>,
+    page_number: Res<UiPageNumber>,
+) -> Entity {
+    commands
+        .spawn_bundle(vertical_node_bundle())
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle{
-                text: Text::with_section(
-                    button_text,
-                    TextStyle{
-                        font: ui_assets.font.clone(),
-                        font_size: 30.0,
-                        color: Color::WHITE,
+            parent
+                .spawn_bundle(TextBundle{
+                    text: Text::with_section(
+                        match page_number.0 {
+                            1 => RULES_P1,
+                            2 => RULES_P2,
+                            3 => RULES_P3,
+                            _ => unreachable!(),
+                        },
+                        TextStyle{
+                            font: ui_assets.mini_font.clone(),
+                            font_size: 20.0,
+                            color: Color::WHITE,
+                        },
+                        TextAlignment::default()
+                    ),
+                    style: Style{
+                        size: Size::new(Val::Px(WINDOW_SIZE - 10.0 * 2.0), Val::Auto),
+                        margin: Rect{
+                            left: Val::Auto,
+                            right: Val::Auto,
+                            top: Val::Px(10.0),
+                            bottom: Val::Px(10.0),
+                        },
+                        align_content: AlignContent::Center,
+                        justify_content: JustifyContent::Center,
+                        ..default()
                     },
-                    TextAlignment::default()
-                ),
-                ..default()
-            })
-            ;
+                    ..default()
+                })
+                ;
+
+            parent
+                .spawn_bundle(horizontal_node_bundle())
+                .with_children(|parent| {
+                    spawn_button(parent, &ui_assets, "Back", ButtonAction(ButtonActionEvent::PrevPage));
+                    match page_number.0 {
+                        1 | 2 => spawn_button(parent, &ui_assets, "Next", ButtonAction(ButtonActionEvent::NextPage)),
+                        _ => {}
+                    }
+                })
+                ;
         })
-        .insert(component)
-        ;
+        .id()
 }
