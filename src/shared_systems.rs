@@ -61,48 +61,58 @@ pub fn highlighter(
                 let marble = marbles.get(*selected_marble).unwrap();
 
                 // remove any "old" highlights
-                let old_highlights = highlights.iter()
+                highlights.iter()
                     .filter_map(|(e, h)| {
-                        if h.marble != *selected_marble
-                            || (h.index != marble.index && !indexes.contains(&h.index))
-                        {
+                        if h.marble != *selected_marble || !indexes.contains(&h.index) {
                             Some(e)
                         } else {
                             None
                         }
-                    });
-                for highlight in old_highlights {
-                    println!("remvoing old highlight");
-                    commands.entity(highlight).despawn();
-                }
+                    })
+                    .for_each(|h| commands.entity(h).despawn());
 
                 println!("highlighting move(s) for {:?}", selected_marble);
-                let indexes = if marble.index == BOARD.len() {
-                    // since this marble is in its base, we have to use the origin instead of its index
-                    commands.spawn_bundle(SpriteBundle{
-                        texture: highlight_data.texture.clone(),
-                        transform: Transform::from_xyz(marble.origin.x, marble.origin.y, 2.0),
-                        ..default()
-                    })
-                    .insert(Highlight{ marble: *selected_marble, index: marble.index })
-                    ;
-                    indexes.clone()
-                } else {
-                    [vec![marble.index], indexes.clone()].concat()
+                let rotated_transform_fn = |index| {
+                    let tile: (i32, i32) = BOARD[index];
+                    let (x, y) = current_player_data.player.rotate_coords((tile.0 as f32, tile.1 as f32));
+                    Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 2.0)
                 };
+                // highlight the marble
+                commands.spawn_bundle(SpriteBundle{
+                    texture: highlight_data.marble_texture.clone(),
+                    transform: if marble.index == BOARD.len() {
+                        Transform::from_xyz(marble.origin.x, marble.origin.y, 2.0)
+                    } else {
+                        rotated_transform_fn(marble.index)
+                    },
+                    ..default()
+                })
+                .insert(Highlight{ marble: *selected_marble, index: marble.index })
+                .insert(SelectedMarble);
+
+                // highlight the move tiles
                 for index in indexes {
-                    let tile = BOARD[index];
+                    let tile = BOARD[*index];
                     let (x, y) = current_player_data.player.rotate_coords((tile.0 as f32, tile.1 as f32));
                     commands.spawn_bundle(SpriteBundle{
-                        texture: highlight_data.texture.clone(),
+                        texture: highlight_data.tile_texture.clone(),
                         transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 2.0),
                         ..default()
                     })
-                    .insert(Highlight{ marble: *selected_marble, index })
+                    .insert(Highlight{ marble: *selected_marble, index: *index })
                     ;
                 }
             }
         }
+    }
+}
+
+pub fn animate_tile_highlights(
+    time: Res<Time>,
+    mut marble_transform: Query<&mut Transform, (With<Highlight>, Without<SelectedMarble>)>,
+) {
+    for mut transform in marble_transform.iter_mut() {
+        transform.rotate(Quat::from_rotation_z(0.5 * time.delta_seconds()));
     }
 }
 

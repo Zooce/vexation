@@ -42,7 +42,7 @@ pub fn roll_animation(
             }
         }
         // rotate the dice
-        transform.rotate(Quat::from_rotation_z(0.25));
+        transform.rotate(Quat::from_rotation_z(16.0 * time.delta_seconds()));
     }
 
     if roll_animation_timer.0.tick(time.delta()).just_finished() {

@@ -34,6 +34,7 @@ impl Plugin for VexationPlugin {
                 .with_run_criteria(should_run_shared_systems)
                 .with_system(animate_marble_moves)
                 .with_system(highlighter)
+                .with_system(animate_tile_highlights)
             )
 
             // choose color
@@ -244,7 +245,8 @@ pub fn create_game(
     });
     // highlight data
     commands.insert_resource(HighlightData{
-        texture: asset_server.load("tile-highlight.png"),
+        marble_texture: asset_server.load("marble-highlight.png"),
+        tile_texture: asset_server.load("tile-highlight.png"),
     });
 
     commands.insert_resource(GamePlayEntities{ camera, board });

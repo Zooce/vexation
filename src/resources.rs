@@ -88,9 +88,11 @@ pub struct GamePlayEntities {
 }
 
 /// The resource for highlight data.
-pub struct HighlightData { // TODO: should this just be HighlightTexture(Handle<Image>)
-    /// The highlight texture for the selected marble and its possible moves
-    pub texture: Handle<Image>,
+pub struct HighlightData {
+    /// the highlight texture for the selected marble
+    pub marble_texture: Handle<Image>,
+    /// The highlight texture for the selected marble's possible moves
+    pub tile_texture: Handle<Image>,
 }
 
 pub struct HighlightEvent {

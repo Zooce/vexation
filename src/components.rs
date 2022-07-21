@@ -91,6 +91,9 @@ impl From<u8> for Player {
     }
 }
 
+#[derive(Component)]
+pub struct SelectedMarble;
+
 #[cfg(test)]
 mod tests {
     use super::*;
