@@ -6,11 +6,10 @@ use crate::resources::*;
 pub fn check_for_capture(
     mut commands: Commands,
     current_player_data: Res<CurrentPlayerData>,
-    selection_data: Res<SelectionData>,
-    current_player_marbles: Query<&Marble, With<CurrentPlayer>>,
+    selected_marble: Query<(Entity, &Marble), (With<CurrentPlayer>, With<SelectedMarble>)>,
     mut opponent_marbles: Query<(Entity, &mut Marble, &Transform, &Player), Without<CurrentPlayer>>,
 ) {
-    let cur = current_player_marbles.get(selection_data.marble.unwrap()).unwrap();
+    let (e, cur) = selected_marble.single();
 
     // we don't capture in the home row
     if cur.index >= FIRST_HOME_INDEX && cur.index <= LAST_HOME_INDEX {
@@ -24,7 +23,7 @@ pub fn check_for_capture(
         .find(|(_, opp, _, p)| Player::is_same_index(current_player_data.player, cur.index, **p, opp.index))
     {
         println!("{:?} {:?} @ {} captured {:?} {:?} @ {}",
-            current_player_data.player, selection_data.marble.unwrap(), cur.index,
+            current_player_data.player, e, cur.index,
             opponent, entity, oppenent_marble.index
         );
         oppenent_marble.index = BOARD.len();
@@ -57,4 +56,12 @@ pub fn check_for_winner(
         println!("{:?} Wins!", current_player_data.player);
         state.set(GameState::GameEnd).unwrap();
     }
+}
+
+pub fn clear_selected_marble(
+    mut commands: Commands,
+    selected_marble: Query<Entity, With<SelectedMarble>>,
+) {
+    let selected_marble = selected_marble.single();
+    commands.entity(selected_marble).remove::<SelectedMarble>();
 }

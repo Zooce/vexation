@@ -95,10 +95,6 @@ pub struct HighlightData {
     pub tile_texture: Handle<Image>,
 }
 
-pub struct HighlightEvent {
-    pub data: Option<(Entity, Vec<usize>)>,
-}
-
 pub struct HumanPlayer {
     pub color: Player,
     pub human_indicator: Entity,
@@ -109,12 +105,6 @@ pub struct MarbleAnimationDoneEvent(pub Player);
 pub struct RollAnimationTimer(pub Timer);
 
 pub struct RootUiEntity(pub Entity);
-
-/// The resource for selection data.
-pub struct SelectionData {
-    /// The marble that is currently selected
-    pub marble: Option<Entity>,
-}
 
 pub struct UiAssets {
     pub font: Handle<Font>,

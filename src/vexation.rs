@@ -3,6 +3,7 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
+use crate::events::*;
 use crate::resources::*;
 use crate::shared_systems::*;
 use crate::system_sets::*;
@@ -14,8 +15,9 @@ impl Plugin for VexationPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_event::<ClickEvent>()
-            .add_event::<MarbleAnimationDoneEvent>()
             .add_event::<HighlightEvent>()
+            .add_event::<MarbleAnimationDoneEvent>()
+            .add_event::<MoveEvent>()
 
             // game play enter
             .add_system_set(SystemSet::on_enter(GameState::GameStart)
@@ -82,8 +84,9 @@ impl Plugin for VexationPlugin {
 
             // human turn
             .add_system_set(SystemSet::on_update(GameState::HumanTurn)
-                .with_system(handle_mouse_clicks)
-                .with_system(destination_click_handler)
+                .with_system(translate_mouse_input)
+                .with_system(interpret_click_event.after(translate_mouse_input))
+                .with_system(move_event_handler.after(interpret_click_event))
             )
 
             .add_system_set(SystemSet::on_update(GameState::WaitForAnimation)
@@ -94,6 +97,9 @@ impl Plugin for VexationPlugin {
             .add_system_set(SystemSet::on_enter(GameState::ProcessMove)
                 .with_system(check_for_capture)
                 .with_system(check_for_winner.after(check_for_capture))
+            )
+            .add_system_set(SystemSet::on_exit(GameState::ProcessMove)
+                .with_system(clear_selected_marble)
             )
             ;
     }
@@ -239,10 +245,6 @@ pub fn create_game(
         doubles: false,
     });
 
-    // selection data
-    commands.insert_resource(SelectionData{
-        marble: None,
-    });
     // highlight data
     commands.insert_resource(HighlightData{
         marble_texture: asset_server.load("marble-highlight.png"),
@@ -278,7 +280,6 @@ pub fn destroy_game(
     commands.remove_resource::<ChooseColorData>();
     commands.remove_resource::<CurrentPlayerData>();
     commands.remove_resource::<DiceData>();
-    commands.remove_resource::<SelectionData>();
     commands.remove_resource::<HighlightData>();
 
     for marble in marbles.iter() {

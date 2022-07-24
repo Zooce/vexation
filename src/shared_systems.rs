@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy::ecs::schedule::ShouldRun;
 use crate::components::*;
 use crate::constants::*;
+use crate::events::*;
 use crate::resources::*;
 
 pub fn should_run_shared_systems(
@@ -48,17 +49,24 @@ pub fn animate_marble_moves(
 /// [`HighlightEvent`].
 pub fn highlighter(
     mut commands: Commands,
-    marbles: Query<&Marble, With<CurrentPlayer>>,
+    marbles: Query<&Marble, With<CurrentPlayer>>, // we do this instead of using SelectedMarble because it may not have been set yet
     highlights: Query<(Entity, &Highlight)>,
     current_player_data: Res<CurrentPlayerData>,
     highlight_data: Res<HighlightData>,
     mut highlight_events: EventReader<HighlightEvent>,
 ) {
     if let Some(event) = highlight_events.iter().last() {
-        match &event.data {
+        match &event.marble {
             None => remove_all_highlights(commands, highlights),
-            Some((selected_marble, indexes)) => {
+            Some(selected_marble) => {
                 let marble = marbles.get(*selected_marble).unwrap();
+                let indexes = if let Some(index) = event.move_index {
+                    vec![current_player_data.possible_moves[index].1]
+                } else {
+                    current_player_data.get_moves(*selected_marble)
+                        .iter().map(|(index, _)| *index)
+                        .collect()
+                };
 
                 // remove any "old" highlights
                 highlights.iter()
@@ -92,14 +100,14 @@ pub fn highlighter(
 
                 // highlight the move tiles
                 for index in indexes {
-                    let tile = BOARD[*index];
+                    let tile = BOARD[index];
                     let (x, y) = current_player_data.player.rotate_coords((tile.0 as f32, tile.1 as f32));
                     commands.spawn_bundle(SpriteBundle{
                         texture: highlight_data.tile_texture.clone(),
                         transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 2.0),
                         ..default()
                     })
-                    .insert(Highlight{ marble: *selected_marble, index: *index })
+                    .insert(Highlight{ marble: *selected_marble, index })
                     ;
                 }
             }

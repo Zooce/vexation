@@ -10,9 +10,7 @@ pub fn calc_possible_moves(
     dice_data: Res<DiceData>,
     marbles: Query<(Entity, &Marble), With<CurrentPlayer>>,
     mut current_player_data: ResMut<CurrentPlayerData>,
-    mut selection_data: ResMut<SelectionData>,
 ) {
-    selection_data.marble = None; // TODO: do this in its own system ?
     let mut possible_moves = BTreeSet::new(); // so we disregard duplicates
     let dice = dice_data.sides();
     for (entity, marble) in marbles.iter() {
