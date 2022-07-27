@@ -144,3 +144,12 @@ pub fn wait_for_marble_animation(
         }
     }
 }
+
+// FIXME: there are cases where we basically flash this dimming (i.e. we undim immediately)
+pub fn dim_used_die(
+    mut dice_sprite_query: Query<&mut TextureAtlasSprite, Added<UsedDie>>,
+) {
+    for mut sprite in dice_sprite_query.iter_mut() {
+        sprite.color = Color::rgba(1.0, 1.0, 1.0, 0.4);
+    }
+}

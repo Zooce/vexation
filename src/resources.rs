@@ -52,16 +52,25 @@ pub struct DiceData {
 }
 
 impl DiceData {
-    pub fn use_die(&mut self, which: WhichDie) {
+    pub fn use_die(&mut self, which: WhichDie, commands: &mut Commands) {
         match which {
-            WhichDie::One => self.die_1_side = None,
-            WhichDie::Two => self.die_2_side = None,
+            WhichDie::One => {
+                self.die_1_side = None;
+                commands.entity(self.die_1).insert(UsedDie);
+            }
+            WhichDie::Two => {
+                self.die_2_side = None;
+                commands.entity(self.die_2).insert(UsedDie);
+            }
             WhichDie::Both => {
                 self.die_1_side = None;
                 self.die_2_side = None;
+                commands.entity(self.die_1).insert(UsedDie);
+                commands.entity(self.die_2).insert(UsedDie);
             }
         }
     }
+
     pub fn sides(&self) -> (Option<u8>, Option<u8>) {
         (self.die_1_side, self.die_2_side)
     }

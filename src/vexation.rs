@@ -37,6 +37,7 @@ impl Plugin for VexationPlugin {
                 .with_system(animate_marble_moves)
                 .with_system(highlighter)
                 .with_system(animate_tile_highlights)
+                .with_system(dim_used_die)
             )
 
             // choose color
@@ -59,6 +60,7 @@ impl Plugin for VexationPlugin {
 
             // dice roll
             .add_system_set(SystemSet::on_enter(GameState::DiceRoll)
+                .with_system(undim_dice)
                 .with_system(remove_all_highlights)
                 .with_system(roll_dice.after(remove_all_highlights))
             )

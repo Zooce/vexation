@@ -97,6 +97,9 @@ impl From<u8> for Player {
 #[derive(Component)]
 pub struct SelectedMarble;
 
+#[derive(Component)]
+pub struct UsedDie;
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -5,6 +5,16 @@ use crate::components::*;
 use crate::resources::*;
 use crate::utils::*;
 
+pub fn undim_dice(
+    mut commands: Commands,
+    mut dice_sprite_query: Query<(Entity, &mut TextureAtlasSprite), With<UsedDie>>,
+) {
+    for (die, mut sprite) in dice_sprite_query.iter_mut() {
+        commands.entity(die).remove::<UsedDie>();
+        sprite.color = Color::WHITE;
+    }
+}
+
 pub fn roll_dice(
     mut dice_data: ResMut<DiceData>,
 ) {

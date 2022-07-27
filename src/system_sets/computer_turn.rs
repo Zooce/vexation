@@ -44,7 +44,7 @@ pub fn computer_move_buffer(
         let (transform, mut marble) = marbles.get_mut(entity).unwrap();
         let old_index = marble.index; // just for logging
         marble.index = index;
-        dice_data.use_die(which);
+        dice_data.use_die(which, &mut commands);
         let destination = {
             let (c, r) = BOARD[index];
             let d = current_player_data.player.rotate_coords((c as f32, r as f32));

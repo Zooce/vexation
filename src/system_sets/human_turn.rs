@@ -99,7 +99,7 @@ pub fn move_event_handler(
         let (e, t, mut m) = marbles.single_mut();
         let old_index = m.index; // just for logging
         m.index = *idx;
-        dice_data.use_die(*which);
+        dice_data.use_die(*which, &mut commands);
         commands.entity(e).insert(Moving::new(*dest, t.translation));
         state.set(GameState::WaitForAnimation).unwrap();
         // TODO: if `idx` is also a power-up tile for the current player, initiate the power-up generator
