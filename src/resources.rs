@@ -18,10 +18,17 @@ pub struct ComputerTurnTimer(pub Timer);
 pub struct CurrentPlayerData {
     pub player: Player,
     pub possible_moves: Vec<(Entity, usize, WhichDie)>,
-    pub selected_move_index: Option<usize>,
+    selected_move_index: Option<usize>,
 }
 
 impl CurrentPlayerData {
+    pub fn new(player: Player) -> Self {
+        Self{
+            player,
+            possible_moves: Vec::new(),
+            selected_move_index: None,
+        }
+    }
     pub fn get_moves(&self, marble: Entity) -> Vec<(usize, WhichDie)> {
         self.possible_moves.iter()
             .filter_map(|(e, i, d)| {
@@ -33,11 +40,17 @@ impl CurrentPlayerData {
         }).collect()
     }
 
-    pub fn get_selected_move(&self) -> Option<(Entity, usize, WhichDie)> {
-        match self.selected_move_index {
+    pub fn select_move(&mut self, index: usize) {
+        self.selected_move_index = Some(index);
+    }
+
+    pub fn use_selected_move(&mut self) -> Option<(Entity, usize, WhichDie)> {
+        let mv = match self.selected_move_index {
             Some(index) => Some(self.possible_moves[index]),
             None => None,
-        }
+        };
+        self.selected_move_index = None;
+        mv
     }
 }
 

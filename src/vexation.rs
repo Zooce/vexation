@@ -139,11 +139,7 @@ pub fn create_game(
 
     // pick the first player randomly
     let current_player: Player = ((roll_die() - 1) % 4).into();
-    commands.insert_resource(CurrentPlayerData{
-        player: current_player.clone(),
-        possible_moves: Vec::new(),
-        selected_move_index: None,
-    });
+    commands.insert_resource(CurrentPlayerData::new(current_player.clone()));
 
     // marbles
     let red_marble = asset_server.load("red-marble.png");

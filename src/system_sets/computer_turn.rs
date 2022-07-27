@@ -20,7 +20,7 @@ pub fn computer_choose_move(
 ) {
     let mut rng = thread_rng();
     let move_index = rng.gen_range(0..current_player_data.possible_moves.len());
-    current_player_data.selected_move_index = Some(move_index);
+    current_player_data.select_move(move_index);
     let selected_marble = current_player_data.possible_moves[move_index].0;
     commands.entity(selected_marble).insert(SelectedMarble);
     highlight_events.send(HighlightEvent{ marble: Some(selected_marble), move_index: Some(move_index) });
@@ -39,8 +39,7 @@ pub fn computer_move_buffer(
     mut highlight_events: EventWriter<HighlightEvent>,
 ) {
     if computer_turn_timer.0.tick(time.delta()).just_finished() {
-        let (entity, index, which) = current_player_data.get_selected_move().unwrap();
-        current_player_data.selected_move_index = None;
+        let (entity, index, which) = current_player_data.use_selected_move().unwrap();
         let (transform, mut marble) = marbles.get_mut(entity).unwrap();
         let old_index = marble.index; // just for logging
         marble.index = index;
