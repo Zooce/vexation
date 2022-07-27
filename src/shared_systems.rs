@@ -25,10 +25,9 @@ pub fn animate_marble_moves(
     mut moving_marbles: Query<(Entity, &Moving, &Player, &mut Transform)>,
     mut animation_done_events: EventWriter<MarbleAnimationDoneEvent>,
 ) {
-    const PIXELS_PER_SEC: f32 = 750.;
     for (entity, moving, player, mut transform) in moving_marbles.iter_mut() {
-        transform.translation.x += moving.direction.x * PIXELS_PER_SEC * time.delta_seconds();
-        transform.translation.y += moving.direction.y * PIXELS_PER_SEC * time.delta_seconds();
+        transform.translation.x += moving.direction.x * moving.speed * time.delta_seconds();
+        transform.translation.y += moving.direction.y * moving.speed * time.delta_seconds();
 
         // we've arrived if the direction to the destination has flipped, meaning we've passed it
         let arrived = {

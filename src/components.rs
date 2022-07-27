@@ -36,15 +36,18 @@ pub struct Marble {
 pub struct Moving{
     pub destination: Vec3,
     pub direction: Vec2,
+    pub speed: f32,
 }
 
 impl Moving {
     /// Creates a new `Moving` component with a destination and origin.
     pub fn new(destination: Vec3, origin: Vec3) -> Self {
-        let direction = (destination - origin).normalize();
+        let direction = destination - origin;
+        let dir_norm = direction.normalize();
         Self{
             destination,
-            direction: Vec2::new(direction.x, direction.y),
+            direction: Vec2::new(dir_norm.x, dir_norm.y),
+            speed: 550.0 + direction.length(), // TODO: can we get rid of the sqrt operation?
         }
     }
 }
