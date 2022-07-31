@@ -45,17 +45,35 @@ fn main() {
 pub fn global_setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-    // we need the UI camera for the entire game so make it now
-    commands.spawn_bundle(UiCameraBundle::default());
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
+    let size = Vec2::new(160.0, 48.0);
+    let grid = (3, 1);
     commands.insert_resource(UiAssets{
         font: asset_server.load("Kenney Thick.ttf"),
         mini_font: asset_server.load("Kenney Mini.ttf"),
-        normal_button: asset_server.load("red_button11.png"),
-        hovered_button: asset_server.load("red_button10.png"),
-        pressed_button: asset_server.load("red_button12.png"),
+        title: asset_server.load("title.png"),
+        play_button: load_sprite_sheet("buttons/play_button.png", size, grid, &asset_server, &mut texture_atlases),
+        rules_button: load_sprite_sheet("buttons/rules_button.png", size, grid, &asset_server, &mut texture_atlases),
+        quit_button: load_sprite_sheet("buttons/quit_button.png", size, grid, &asset_server, &mut texture_atlases),
+        back_button: load_sprite_sheet("buttons/back_button.png", size, grid, &asset_server, &mut texture_atlases),
+        next_button: load_sprite_sheet("buttons/next_button.png", size, grid, &asset_server, &mut texture_atlases),
     });
+}
+
+fn load_sprite_sheet(
+    name: &str,
+    size: Vec2,
+    (cols, rows): (usize, usize),
+    asset_server: &Res<AssetServer>,
+    texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
+) -> Handle<TextureAtlas>
+{
+    texture_atlases.add(TextureAtlas::from_grid(
+        asset_server.load(name), size, cols, rows
+    ))
 }
 
 // TODO: consider using https://github.com/IyesGames/iyes_loopless to organize this turn-based game

@@ -18,6 +18,7 @@ impl Plugin for VexationPlugin {
             .add_event::<HighlightEvent>()
             .add_event::<MarbleAnimationDoneEvent>()
             .add_event::<MoveEvent>()
+            .add_event::<ActionEvent<GameButtonAction>>()
 
             // game play enter
             .add_system_set(SystemSet::on_enter(GameState::GameStart)
@@ -55,7 +56,8 @@ impl Plugin for VexationPlugin {
             // next player
             .add_system_set(SystemSet::on_enter(GameState::NextPlayer)
                 .with_system(choose_next_player)
-                .with_system(next_player_setup.after(choose_next_player))
+                .with_system(show_or_hide_buttons.after(choose_next_player))
+                .with_system(next_player_setup.after(show_or_hide_buttons))
             )
 
             // dice roll
@@ -72,8 +74,10 @@ impl Plugin for VexationPlugin {
             )
 
             // turn setup
-            .add_system_set(SystemSet::on_enter(GameState::TurnSetup).with_system(calc_possible_moves))
-            .add_system_set(SystemSet::on_update(GameState::TurnSetup).with_system(buffer_timer))
+            .add_system_set(SystemSet::on_enter(GameState::TurnSetup)
+                .with_system(calc_possible_moves)
+                .with_system(turn_setup_complete.after(calc_possible_moves))
+            )
 
             // computer turn
             .add_system_set(SystemSet::on_enter(GameState::ComputerTurn)
@@ -85,10 +89,21 @@ impl Plugin for VexationPlugin {
             )
 
             // human turn
+            .add_system_set(SystemSet::on_enter(GameState::HumanTurn)
+                .with_system(enable_ui)
+            )
             .add_system_set(SystemSet::on_update(GameState::HumanTurn)
+                // ui
+                .with_system(execute_button_actions.before(mouse_watcher::<GameButtonAction>))
+                .with_system(mouse_watcher::<GameButtonAction>)
+                .with_system(watch_button_state_changes.after(mouse_watcher::<GameButtonAction>))
+                // game play
                 .with_system(translate_mouse_input)
                 .with_system(interpret_click_event.after(translate_mouse_input))
                 .with_system(move_event_handler.after(interpret_click_event))
+            )
+            .add_system_set(SystemSet::on_exit(GameState::HumanTurn)
+                .with_system(disable_ui)
             )
 
             .add_system_set(SystemSet::on_update(GameState::WaitForAnimation)
@@ -113,18 +128,12 @@ pub fn create_game(
     mut state: ResMut<State<GameState>>,
     asset_server: Res<AssetServer>,
 ) {
-    // need a 2D camera so we can see things
-    let camera = commands.spawn_bundle(OrthographicCameraBundle::new_2d()).id();
-
-    // board
-    let board = commands.spawn_bundle(SpriteBundle{
-        texture: asset_server.load("board.png"),
-        ..default()
-    }).id();
-
     // insert resources
     commands.insert_resource(BufferTimer(Timer::from_seconds(1.0, false)));
-    commands.insert_resource(ComputerTurnTimer(Timer::from_seconds(1.5, false)));
+    commands.insert_resource(ComputerTurnTimers{
+        move_timer: Timer::from_seconds(COMPUTER_MOVE_TIMER_SECS, false),
+        buffer_timer: Timer::from_seconds(COMPUTER_BUFFER_TIMER_SECS, false),
+    });
     commands.insert_resource(RollAnimationTimer(Timer::from_seconds(1.5, false)));
     commands.insert_resource(ChooseColorData{
         masks: [
@@ -141,11 +150,17 @@ pub fn create_game(
     let current_player: Player = ((roll_die() - 1) % 4).into();
     commands.insert_resource(CurrentPlayerData::new(current_player.clone()));
 
+    // board
+    let board = commands.spawn_bundle(SpriteBundle{
+        texture: asset_server.load("board.png"),
+        ..default()
+    }).id();
+
     // marbles
-    let red_marble = asset_server.load("red-marble.png");
-    let green_marble = asset_server.load("green-marble.png");
-    let blue_marble = asset_server.load("blue-marble.png");
-    let yellow_marble = asset_server.load("yellow-marble.png");
+    let red_marble = asset_server.load("marbles/red-marble.png");
+    let green_marble = asset_server.load("marbles/green-marble.png");
+    let blue_marble = asset_server.load("marbles/blue-marble.png");
+    let yellow_marble = asset_server.load("marbles/yellow-marble.png");
     for (x, y) in vec![(3., 3.5), (3., 4.5), (4., 3.), (4., 4.), (4., 5.)] {
         // green marbles
         let origin = Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 1.);
@@ -249,7 +264,27 @@ pub fn create_game(
         tile_texture: asset_server.load("tile-highlight.png"),
     });
 
-    commands.insert_resource(GamePlayEntities{ camera, board });
+    // UI buttons (power-ups + turn end)
+    let ui = commands
+        .spawn_bundle(TransformBundle::default())
+        .with_children(|parent| {
+
+            let sprite_sheet = texture_atlases.add(TextureAtlas::from_grid(
+                asset_server.load("buttons/done_button.png"), Vec2::new(160.0, 48.0), 3, 1
+            ));
+            let transform = Transform::from_xyz(0.0, (-WINDOW_SIZE / 2.0) + TILE_SIZE, 5.0);
+            ui::spawn_sprite_sheet_button(
+                parent,
+                sprite_sheet,
+                transform,
+                ButtonAction(ActionEvent(GameButtonAction::Done)),
+                false,
+            );
+        })
+        .id()
+        ;
+
+    commands.insert_resource(GamePlayEntities{ board, ui });
 
     state.set(GameState::ChooseColor).unwrap();
 }
@@ -263,8 +298,8 @@ pub fn destroy_game(
     human_player: Res<HumanPlayer>,
     marbles: Query<Entity, With<Marble>>,
 ) {
-    commands.entity(game_play_entities.camera).despawn();
     commands.entity(game_play_entities.board).despawn();
+    commands.entity(game_play_entities.ui).despawn_recursive();
     commands.entity(human_player.human_indicator).despawn();
     commands.entity(dice_data.die_1).despawn();
     commands.entity(dice_data.die_2).despawn();
@@ -273,7 +308,7 @@ pub fn destroy_game(
 
     commands.remove_resource::<GamePlayEntities>();
     commands.remove_resource::<BufferTimer>();
-    commands.remove_resource::<ComputerTurnTimer>();
+    commands.remove_resource::<ComputerTurnTimers>();
     commands.remove_resource::<RollAnimationTimer>();
     commands.remove_resource::<ChooseColorData>();
     commands.remove_resource::<CurrentPlayerData>();

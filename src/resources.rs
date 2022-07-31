@@ -12,7 +12,17 @@ pub struct ChooseColorData {
     pub current_mask: Option<Entity>,
 }
 
-pub struct ComputerTurnTimer(pub Timer);
+pub struct ComputerTurnTimers {
+   pub move_timer: Timer,
+   pub buffer_timer: Timer,
+}
+
+impl ComputerTurnTimers {
+    pub fn reset(&mut self) {
+        self.move_timer.reset();
+        self.buffer_timer.reset();
+    }
+}
 
 #[derive(Debug)]
 pub struct CurrentPlayerData {
@@ -87,6 +97,15 @@ impl DiceData {
     pub fn sides(&self) -> (Option<u8>, Option<u8>) {
         (self.die_1_side, self.die_2_side)
     }
+
+    pub fn did_use_die(&self) -> bool {
+        self.die_1_side.is_none() || self.die_2_side.is_none()
+    }
+}
+
+#[derive(Clone, Copy)]
+pub enum GameButtonAction {
+    Done,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Copy)]
@@ -105,8 +124,8 @@ pub enum GameState {
 }
 
 pub struct GamePlayEntities {
-    pub camera: Entity,
     pub board: Entity,
+    pub ui: Entity,
 }
 
 /// The resource for highlight data.
@@ -122,18 +141,32 @@ pub struct HumanPlayer {
     pub human_indicator: Entity,
 }
 
+#[derive(Clone, Copy)]
+pub enum MainMenuAction {
+    StartGame,
+    NextPage,
+    PrevPage,
+    Quit,
+}
+
 pub struct MarbleAnimationDoneEvent(pub Player);
 
 pub struct RollAnimationTimer(pub Timer);
 
-pub struct RootUiEntity(pub Entity);
+pub struct RootUiEntities{
+    pub ui: Vec<Entity>,
+    pub camera: Entity,
+}
 
 pub struct UiAssets {
     pub font: Handle<Font>,
     pub mini_font: Handle<Font>,
-    pub normal_button: Handle<Image>,
-    pub hovered_button: Handle<Image>,
-    pub pressed_button: Handle<Image>,
+    pub title: Handle<Image>,
+    pub play_button: Handle<TextureAtlas>,
+    pub rules_button: Handle<TextureAtlas>,
+    pub quit_button: Handle<TextureAtlas>,
+    pub back_button: Handle<TextureAtlas>,
+    pub next_button: Handle<TextureAtlas>,
 }
 
 pub struct UiPageNumber(pub usize);

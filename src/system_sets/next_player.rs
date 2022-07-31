@@ -31,6 +31,19 @@ pub fn choose_next_player(
     println!("{:?}", current_player_data.player);
 }
 
+pub fn show_or_hide_buttons(
+    mut button_query: Query<(&mut Visibility, &mut TextureAtlasSprite, &mut ButtonState)>,
+    human_player: Res<HumanPlayer>,
+    current_player_data: Res<CurrentPlayerData>,
+) {
+    for (mut visibility, mut sprite, mut state) in button_query.iter_mut() {
+        visibility.is_visible = human_player.color == current_player_data.player;
+        sprite.color = Color::rgba(1.0, 1.0, 1.0, 0.4);
+        sprite.index = 0;
+        *state = ButtonState::None;
+    }
+}
+
 pub fn next_player_setup(
     mut state: ResMut<State<GameState>>,
     dice_data: Res<DiceData>,

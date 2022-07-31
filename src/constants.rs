@@ -1,13 +1,18 @@
 pub const TILE_SIZE: f32 = 32.;
 pub const TILE_COUNT: f32 = 17.;
+pub const WINDOW_SIZE: f32 = TILE_SIZE * TILE_COUNT;
+
+pub const BOTTOM_BUTTON_Y: f32 = (-WINDOW_SIZE / 2.0) + TILE_SIZE;
+
+pub const COMPUTER_BUFFER_TIMER_SECS: f32 = 0.75;
+pub const COMPUTER_MOVE_TIMER_SECS: f32 = 1.5;
+
 pub const START_INDEX: usize = 0;
 pub const CENTER_INDEX: usize = 53;
 pub const FIRST_HOME_INDEX: usize = 48;
 pub const LAST_HOME_INDEX: usize = 52;
 pub const CENTER_ENTRANCE_INDEXES: [usize; 3] = [5, 17, 29];
 pub const CENTER_EXIT_INDEX: usize = 41;
-
-pub const WINDOW_SIZE: f32 = TILE_SIZE * TILE_COUNT;
 
 /// Main board cell indexes - rotate clockwise for each color
 ///

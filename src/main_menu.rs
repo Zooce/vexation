@@ -4,7 +4,8 @@ use crate::components::*;
 use crate::constants::*;
 use crate::events::*;
 use crate::resources::*;
-use crate::utils::ui::*;
+use crate::shared_systems::*;
+use crate::utils::ui;
 
 pub struct MainMenuPlugin;
 
@@ -12,7 +13,7 @@ impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_state(GameState::MainMenu) // the starting state
-            .add_event::<ButtonActionEvent>()
+            .add_event::<ActionEvent<MainMenuAction>>()
 
             .insert_resource(UiPageNumber(0))
 
@@ -20,9 +21,11 @@ impl Plugin for MainMenuPlugin {
                 .with_system(main_menu_enter)
             )
             .add_system_set(SystemSet::on_update(GameState::MainMenu)
-                .with_system(button_interactions)
-                .with_system(execute_menu_action)
-                .with_system(menu_page_renderer)
+                .with_system(execute_menu_action.before(mouse_watcher::<MainMenuAction>)) // I actually want a frame delay here so we can see the button "animation"
+                .with_system(mouse_watcher::<MainMenuAction>)
+                .with_system(watch_button_state_changes.after(mouse_watcher::<MainMenuAction>))
+
+                .with_system(menu_page_renderer.after(watch_button_state_changes))
             )
             .add_system_set(SystemSet::on_exit(GameState::MainMenu)
                 .with_system(main_menu_exit)
@@ -35,64 +38,34 @@ fn main_menu_enter(
     mut commands: Commands,
     ui_assets: Res<UiAssets>,
 ) {
-    let ui = create_main_menu(&mut commands, ui_assets);
-    commands.insert_resource(RootUiEntity(ui));
+    let ui = create_main_menu(&mut commands, &ui_assets);
+    let camera = commands.spawn_bundle(UiCameraBundle::default()).id();
+    commands.insert_resource(RootUiEntities{ ui, camera });
 }
 
 fn main_menu_exit(
     mut commands: Commands,
-    root_entity: Res<RootUiEntity>,
+    root_entities: Res<RootUiEntities>,
 ) {
-    commands.entity(root_entity.0).despawn_recursive();
-    commands.remove_resource::<RootUiEntity>();
-}
-
-/// Handles UI button interactions, sending the associated [`ButtonActionEvent`]
-/// when clicked.
-fn button_interactions(
-    mut button_action_events: EventWriter<ButtonActionEvent>,
-    mut interaction_query: Query<
-        (&Interaction, &ButtonAction, &mut UiImage, &Children),
-        (Changed<Interaction>, With<Button>)
-    >,
-    mut text_query: Query<&mut Text>,
-    ui_assets: Res<UiAssets>,
-) {
-    for (interaction, action, mut ui_image, children) in interaction_query.iter_mut() {
-        let (image, text_color) = match *interaction {
-            Interaction::Clicked => {
-                button_action_events.send(action.0);
-                (ui_assets.pressed_button.clone().into(), Color::WHITE)
-            }
-            Interaction::Hovered => (ui_assets.hovered_button.clone().into(), Color::rgb_u8(232, 106, 23)),
-            Interaction::None => (ui_assets.normal_button.clone().into(), Color::WHITE),
-        };
-
-        // update button image
-        ui_image.0 = image;
-
-        // update button text color
-        for child in children.iter() {
-            let mut text = text_query.get_mut(*child).unwrap();
-            for section in text.sections.iter_mut() {
-                section.style.color = text_color;
-            }
-        }
+    for entity in &root_entities.ui {
+        commands.entity(*entity).despawn_recursive();
     }
+    commands.entity(root_entities.camera).despawn();
+    commands.remove_resource::<RootUiEntities>();
 }
 
 fn execute_menu_action(
-    mut button_action_events: EventReader<ButtonActionEvent>,
+    mut action_events: EventReader<ActionEvent<MainMenuAction>>,
     mut state: ResMut<State<GameState>>,
     mut page_number: ResMut<UiPageNumber>,
     mut app_exit_events: EventWriter<AppExit>,
 ) {
-    for action in button_action_events.iter() {
-        match *action {
-            ButtonActionEvent::StateChange(s) => state.set(s).unwrap(),
-            ButtonActionEvent::NextPage => page_number.0 += 1,
-            ButtonActionEvent::PrevPage => page_number.0 -= 1,
-            ButtonActionEvent::Quit => app_exit_events.send(AppExit),
+    for action in action_events.iter() {
+        match action.0 {
+            MainMenuAction::StartGame => state.set(GameState::GameStart).unwrap(),
+            MainMenuAction::NextPage => page_number.0 += 1,
+            MainMenuAction::PrevPage => page_number.0 -= 1,
+            MainMenuAction::Quit => app_exit_events.send(AppExit),
         }
     }
 }
@@ -102,14 +75,16 @@ fn menu_page_renderer(
     page_number: Res<UiPageNumber>,
     mut current_page_number: Local<Option<usize>>,
     mut commands: Commands,
-    mut root_entity: ResMut<RootUiEntity>,
+    mut root_entities: ResMut<RootUiEntities>,
     ui_assets: Res<UiAssets>,
 ) {
     // check to see if we event need to render anything
     let render_page = match *current_page_number {
         Some(p) if page_number.0 != p => {
             // destroy the current page so the next one can be rendered
-            commands.entity(root_entity.0).despawn_recursive();
+            for entity in &root_entities.ui {
+                commands.entity(*entity).despawn_recursive();
+            }
             Some(page_number.0)
         }
         None => { // this is the first time this system has run - just set the local current page number
@@ -123,11 +98,11 @@ fn menu_page_renderer(
         Some(p) => {
             *current_page_number = Some(p);
             let ui = match p {
-                0 => create_main_menu(&mut commands, ui_assets),
+                0 => create_main_menu(&mut commands, &ui_assets),
                 1 | 2 | 3 => create_rules_page(&mut commands, ui_assets, page_number),
                 _ => unreachable!(),
             };
-            root_entity.0 = ui;
+            root_entities.ui = ui;
         }
         _ => {}
     }
@@ -135,35 +110,53 @@ fn menu_page_renderer(
 
 fn create_main_menu(
     commands: &mut Commands,
-    ui_assets: Res<UiAssets>,
-) -> Entity {
-    commands
-        .spawn_bundle(vertical_node_bundle())
+    ui_assets: &Res<UiAssets>,
+) -> Vec<Entity> {
+    let root = commands
+        .spawn_bundle(TransformBundle::default())
         .with_children(|parent| {
+            // title
+            let y_title = 100.0;
             parent
-                .spawn_bundle(TextBundle{
-                    text: Text::with_section(
-                        "Vexation",
-                        TextStyle{
-                            font: ui_assets.font.clone(),
-                            font_size: 50.0,
-                            color: Color::WHITE,
-                        },
-                        TextAlignment::default()
-                    ),
-                    style: Style{
-                        margin: Rect::all(Val::Px(10.0)),
-                        ..default()
-                    },
+                .spawn_bundle(SpriteBundle{
+                    texture: ui_assets.title.clone(),
+                    transform: Transform::from_xyz(0.0, y_title, 1.0),
                     ..default()
-                })
-                ;
+                });
 
-            spawn_button(parent, &ui_assets, "Play", ButtonAction(ButtonActionEvent::StateChange(GameState::GameStart)));
-            spawn_button(parent, &ui_assets, "Rules", ButtonAction(ButtonActionEvent::NextPage));
-            spawn_button(parent, &ui_assets, "Quit", ButtonAction(ButtonActionEvent::Quit));
+            // buttons
+            let mut transform = Transform::from_xyz(0.0, y_title - 100.0, 1.0);
+            ui::spawn_sprite_sheet_button(
+                parent,
+                ui_assets.play_button.clone(),
+                transform.clone(),
+                ButtonAction(ActionEvent(MainMenuAction::StartGame)),
+                true,
+            );
+
+            let y_offset = 48.0 + 20.0; // 48 = height of a button, 20 = spacing between buttons
+            transform.translation -= Vec3::new(0.0, y_offset, 0.0);
+            ui::spawn_sprite_sheet_button(
+                parent,
+                ui_assets.rules_button.clone(),
+                transform.clone(),
+                ButtonAction(ActionEvent(MainMenuAction::NextPage)),
+                true,
+            );
+
+            transform.translation -= Vec3::new(0.0, y_offset, 0.0);
+            ui::spawn_sprite_sheet_button(
+                parent,
+                ui_assets.quit_button.clone(),
+                transform.clone(),
+                ButtonAction(ActionEvent(MainMenuAction::Quit)),
+                true,
+            );
         })
         .id()
+        ;
+
+    vec![root]
 }
 
 const RULES_P1: &str =
@@ -209,52 +202,64 @@ fn create_rules_page(
     commands: &mut Commands,
     ui_assets: Res<UiAssets>,
     page_number: Res<UiPageNumber>,
-) -> Entity {
-    commands
-        .spawn_bundle(vertical_node_bundle())
-        .with_children(|parent| {
-            parent
-                .spawn_bundle(TextBundle{
-                    text: Text::with_section(
-                        match page_number.0 {
-                            1 => RULES_P1,
-                            2 => RULES_P2,
-                            3 => RULES_P3,
-                            _ => unreachable!(),
-                        },
-                        TextStyle{
-                            font: ui_assets.mini_font.clone(),
-                            font_size: 20.0,
-                            color: Color::WHITE,
-                        },
-                        TextAlignment::default()
-                    ),
-                    style: Style{
-                        size: Size::new(Val::Px(WINDOW_SIZE - 10.0 * 2.0), Val::Auto),
-                        margin: Rect{
-                            left: Val::Auto,
-                            right: Val::Auto,
-                            top: Val::Px(10.0),
-                            bottom: Val::Px(10.0),
-                        },
-                        align_content: AlignContent::Center,
-                        justify_content: JustifyContent::Center,
-                        ..default()
-                    },
+) -> Vec<Entity> {
+    let text = commands
+        .spawn_bundle(TextBundle{
+            text: Text::with_section(
+                match page_number.0 {
+                    1 => RULES_P1,
+                    2 => RULES_P2,
+                    3 => RULES_P3,
+                    _ => unreachable!(),
+                },
+                TextStyle{
+                    font: ui_assets.mini_font.clone(),
+                    font_size: 24.0,
+                    color: Color::WHITE,
+                },
+                TextAlignment::default()
+            ),
+            style: Style{
+                size: Size::new(Val::Px(WINDOW_SIZE - 10.0 * 2.0), Val::Auto),
+                align_self: AlignSelf::FlexEnd,
+                position: Rect{
+                    left: Val::Px(10.0),
                     ..default()
-                })
-                ;
-
-            parent
-                .spawn_bundle(horizontal_node_bundle())
-                .with_children(|parent| {
-                    spawn_button(parent, &ui_assets, "Back", ButtonAction(ButtonActionEvent::PrevPage));
-                    match page_number.0 {
-                        1 | 2 => spawn_button(parent, &ui_assets, "Next", ButtonAction(ButtonActionEvent::NextPage)),
-                        _ => {}
-                    }
-                })
-                ;
+                },
+                ..default()
+            },
+            ..default()
         })
         .id()
+        ;
+
+    let buttons = commands
+        .spawn_bundle(TransformBundle::default())
+        .with_children(|parent| {
+            let x_offset = match page_number.0 {
+                1 | 2 => {
+                    let x_offset = (160.0 / 2.0) + 20.0;
+                    ui::spawn_sprite_sheet_button(
+                        parent,
+                        ui_assets.next_button.clone(),
+                        Transform::from_xyz(x_offset, BOTTOM_BUTTON_Y, 5.0),
+                        ButtonAction(ActionEvent(MainMenuAction::NextPage)),
+                        true,
+                    );
+                    Some(-x_offset)
+                }
+                _ => None,
+            };
+            ui::spawn_sprite_sheet_button(
+                parent,
+                ui_assets.back_button.clone(),
+                Transform::from_xyz(x_offset.unwrap_or_default(), BOTTOM_BUTTON_Y, 5.0),
+                ButtonAction(ActionEvent(MainMenuAction::PrevPage)),
+                true
+            );
+        })
+        .id()
+        ;
+
+    vec![text, buttons]
 }

@@ -5,7 +5,15 @@ use crate::constants::*;
 use crate::events::*;
 
 #[derive(Component)]
-pub struct ButtonAction(pub ButtonActionEvent);
+pub struct ButtonAction<T>(pub ActionEvent<T>);
+
+#[derive(Component, Clone, Copy, Debug)]
+pub enum ButtonState {
+    None,
+    Hovered,
+    Pressed,
+    PressedNotHovered,
+}
 
 #[derive(Component)]
 pub struct CurrentPlayer;

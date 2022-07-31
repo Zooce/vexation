@@ -6,6 +6,43 @@ use crate::components::*;
 use crate::constants::*;
 use crate::events::*;
 use crate::resources::*;
+use crate::shared_systems::*;
+
+pub fn enable_ui(
+    mouse_button_inputs: Res<Input<MouseButton>>,
+    texture_atlases: Res<Assets<TextureAtlas>>,
+    windows: Res<Windows>,
+    mut button_query: Query<(&mut ButtonState, &mut TextureAtlasSprite, &Transform, &Handle<TextureAtlas>)>,
+) {
+    let cursor_pos = windows.get_primary().unwrap().cursor_position();
+
+    for (mut button_state, mut button_sprite, button_transform, atlas_handle) in button_query.iter_mut() {
+        if let Some(cursor_pos) = cursor_pos {
+            if is_cursor_over_button(cursor_pos, button_transform.translation, &texture_atlases, atlas_handle, &button_sprite) {
+                if mouse_button_inputs.pressed(MouseButton::Left) {
+                    *button_state = ButtonState::Pressed;
+                } else {
+                    *button_state = ButtonState::Hovered
+                }
+            } else {
+                *button_state = ButtonState::None;
+            }
+        } else {
+            *button_state = ButtonState::None;
+        }
+        button_sprite.color = Color::WHITE;
+    }
+}
+
+pub fn disable_ui(
+    mut button_query: Query<(&mut TextureAtlasSprite, &mut ButtonState)>,
+) {
+    for (mut sprite, mut state) in button_query.iter_mut() {
+        sprite.color = Color::rgba(1.0, 1.0, 1.0, 0.4);
+        sprite.index = 0;
+        *state = ButtonState::None;
+    }
+}
 
 pub fn translate_mouse_input(
     windows: Res<Windows>,
@@ -34,7 +71,6 @@ pub fn interpret_click_event(
     selected_marble: Query<Entity, (With<Marble>, With<SelectedMarble>)>,
 ) {
     if let Some(click_event) = click_events.iter().last() {
-        println!("interpret click event: {:?}", click_event.0);
         // interpret click as marble selection
         if let Some(marble) = marbles_query.iter().find_map(|(e, t)| {
                 let found = click_event.0.x > t.translation.x - TILE_SIZE / 2.0 &&
@@ -46,14 +82,10 @@ pub fn interpret_click_event(
         {
             if let Ok(old_marble) = selected_marble.get_single() {
                 if old_marble != marble {
-                    println!("clicked different marble");
                     commands.entity(old_marble).remove::<SelectedMarble>();
                 } else {
-                    println!("clicked same marble");
                     return; // ignore clicks on a marble that is already selected
                 }
-            } else {
-                println!("clicked new marble");
             }
             commands.entity(marble).insert(SelectedMarble);
             highlight_events.send(HighlightEvent{ marble: Some(marble), move_index: None });
@@ -75,10 +107,8 @@ pub fn interpret_click_event(
                 _ => None,
             };
             if let Some((idx, which)) = selected_move {
-                println!("clicked destination");
                 move_events.send(MoveEvent((idx, which, Vec3::new(col, row, 1.0))));
             } else {
-                println!("clicked empty space");
                 commands.entity(marble).remove::<SelectedMarble>();
             }
 
@@ -104,6 +134,22 @@ pub fn move_event_handler(
         state.set(GameState::WaitForAnimation).unwrap();
         // TODO: if `idx` is also a power-up tile for the current player, initiate the power-up generator
         println!("{:?}: {} to {} with {:?}", e, old_index, idx, which);
+    }
+}
+
+pub fn execute_button_actions(
+    mut action_events: EventReader<ActionEvent<GameButtonAction>>,
+    mut state: ResMut<State<GameState>>,
+    dice_data: Res<DiceData>,
+) {
+    for action in action_events.iter() {
+        match action.0 {
+            GameButtonAction::Done => if dice_data.doubles {
+                state.set(GameState::DiceRoll).unwrap();
+            } else {
+                state.set(GameState::NextPlayer).unwrap();
+            }
+        }
     }
 }
 

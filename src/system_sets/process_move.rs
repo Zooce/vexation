@@ -33,7 +33,6 @@ pub fn check_for_capture(
 
 pub fn check_for_winner(
     mut state: ResMut<State<GameState>>,
-    dice_data: Res<DiceData>,
     marbles: Query<&Marble, With<CurrentPlayer>>,
     current_player_data: Res<CurrentPlayerData>,
 ) {
@@ -42,15 +41,7 @@ pub fn check_for_winner(
         .is_some()
     {
         // not a winner
-        match (dice_data.die_1_side, dice_data.die_2_side) {
-            (Some(_), None) | (None, Some(_)) => state.set(GameState::TurnSetup).unwrap(),
-            (None, None) => if dice_data.doubles {
-                state.set(GameState::DiceRoll).unwrap();
-            } else {
-                state.set(GameState::NextPlayer).unwrap();
-            }
-            _ => unreachable!(),
-        }
+        state.set(GameState::TurnSetup).unwrap();
     } else {
         // winner
         println!("{:?} Wins!", current_player_data.player);

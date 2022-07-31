@@ -13,6 +13,10 @@ pub fn calc_possible_moves(
 ) {
     let mut possible_moves = BTreeSet::new(); // so we disregard duplicates
     let dice = dice_data.sides();
+    if dice == (None, None) {
+        current_player_data.possible_moves = vec![]; // no moves
+        return;
+    }
     for (entity, marble) in marbles.iter() {
         // exit base
         if marble.index == BOARD.len() {
@@ -48,25 +52,12 @@ pub fn calc_possible_moves(
         .collect();
 }
 
-pub fn buffer_timer(
-    time: Res<Time>,
-    mut timer: ResMut<BufferTimer>,
-    current_player_data: ResMut<CurrentPlayerData>,
+pub fn turn_setup_complete(
     mut state: ResMut<State<GameState>>,
     human_player: Res<HumanPlayer>,
-    dice_data: Res<DiceData>,
+    current_player_data: Res<CurrentPlayerData>,
 ) {
-    if current_player_data.possible_moves.is_empty() {
-        let used_a_die = dice_data.die_1_side.is_none() || dice_data.die_2_side.is_none();
-        if used_a_die || timer.0.tick(time.delta()).just_finished() {
-            timer.0.reset();
-            if dice_data.doubles {
-                state.set(GameState::DiceRoll).unwrap();
-            } else {
-                state.set(GameState::NextPlayer).unwrap();
-            }
-        }
-    } else if human_player.color == current_player_data.player {
+    if human_player.color == current_player_data.player {
         state.set(GameState::HumanTurn).unwrap();
     } else {
         state.set(GameState::ComputerTurn).unwrap();
