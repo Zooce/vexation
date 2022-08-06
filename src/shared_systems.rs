@@ -1,7 +1,6 @@
 // TODO: Bring only what we're actually using into scope - I'm bringing in everything help me code faster.
 
 use bevy::prelude::*;
-use bevy::sprite::Rect;
 use bevy::ecs::schedule::ShouldRun;
 use crate::components::*;
 use crate::constants::*;
@@ -156,24 +155,17 @@ pub fn dim_used_die(
 }
 
 pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
-    texture_atlases: Res<Assets<TextureAtlas>>,
     mouse_button_inputs: Res<Input<MouseButton>>,
     mut cursor_moved_events: EventReader<CursorMoved>,
-    mut button_query: Query<(&mut ButtonState, &ButtonAction<T>, &TextureAtlasSprite, &Transform, &Handle<TextureAtlas>)>,
+    mut button_query: Query<(&mut ButtonState, &ButtonAction<T>, &Transform)>,
     mut action_events: EventWriter<ActionEvent<T>>,
 ) {
     let cursor_move_event = cursor_moved_events.iter().last();
 
-    let check_bounds = |handle, sprite: &TextureAtlasSprite, event: &CursorMoved, transform: &Transform| -> bool {
-        let atlas = texture_atlases.get(handle).unwrap();
-        let bounds = atlas.textures[sprite.index];
-        is_in_bounds(event.position, transform.translation, bounds)
-    };
-
-    for (mut button_state, action, sprite, transform, handle) in button_query.iter_mut() {
+    for (mut button_state, action, transform) in button_query.iter_mut() {
         match (*button_state, cursor_move_event) {
             (ButtonState::None, Some(move_event)) => {
-                if check_bounds(handle, sprite, move_event, transform) {
+                if is_in_bounds(move_event.position, transform.translation) {
                     *button_state = ButtonState::Hovered;
                 }
             }
@@ -181,7 +173,7 @@ pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
                 if mouse_button_inputs.just_pressed(MouseButton::Left) {
                     *button_state = ButtonState::Pressed;
                 } else if let Some(move_event) = moved {
-                    if !check_bounds(handle, sprite, move_event, transform) {
+                    if !is_in_bounds(move_event.position, transform.translation) {
                         *button_state = ButtonState::None;
                     }
                 }
@@ -191,7 +183,7 @@ pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
                     *button_state = ButtonState::Hovered;
                     action_events.send(action.0)
                 } else if let Some(move_event) = moved {
-                    if !check_bounds(handle, sprite, move_event, transform) {
+                    if !is_in_bounds(move_event.position, transform.translation) {
                         *button_state = ButtonState::PressedNotHovered;
                     }
                 }
@@ -200,35 +192,42 @@ pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
                 if mouse_button_inputs.just_released(MouseButton::Left) {
                     *button_state = ButtonState::None;
                 } else if let Some(move_event) = moved {
-                    if check_bounds(handle, sprite, move_event, transform) {
+                    if is_in_bounds(move_event.position, transform.translation) {
                         *button_state = ButtonState::Pressed;
                     }
                 }
             }
-            _ => {} // *button_state = ButtonState::None,
+            _ => {}
         }
     }
 }
 
-
-fn is_in_bounds(cursor_pos: Vec2, button_pos: Vec3, bounds: Rect) -> bool {
+pub fn is_in_bounds(cursor_pos: Vec2, button_pos: Vec3) -> bool {
     let (x, y) = (cursor_pos.x - WINDOW_SIZE / 2.0, cursor_pos.y - WINDOW_SIZE / 2.0);
-    x > button_pos.x - bounds.width() / 2.0 &&
-    x < button_pos.x + bounds.width() / 2.0 &&
-    y > button_pos.y - bounds.height() / 2.0 &&
-    y < button_pos.y + bounds.height() / 2.0
+    x > button_pos.x - UI_BUTTON_WIDTH / 2.0 &&
+    x < button_pos.x + UI_BUTTON_WIDTH / 2.0 &&
+    y > button_pos.y - UI_BUTTON_HEIGHT / 2.0 &&
+    y < button_pos.y + UI_BUTTON_HEIGHT / 2.0
 }
 
-pub fn is_cursor_over_button(
-    cursor_pos: Vec2,
-    button_pos: Vec3,
-    texture_atlases: &Res<Assets<TextureAtlas>>,
-    atlas_handle: &Handle<TextureAtlas>,
-    button_sprite: &TextureAtlasSprite,
-) -> bool {
-    let atlas = texture_atlases.get(atlas_handle).unwrap();
-    let bounds = atlas.textures[button_sprite.index];
-    is_in_bounds(cursor_pos, button_pos, bounds)
+pub fn get_button_state(
+    cursor_pos: Option<Vec2>, 
+    button_pos: Vec3, 
+    mouse_pressed: bool
+) -> ButtonState {
+    if let Some(cursor_pos) = cursor_pos {
+        if is_in_bounds(cursor_pos, button_pos) {
+            if mouse_pressed {
+                ButtonState::Pressed
+            } else {
+                ButtonState::Hovered
+            }
+        } else {
+            ButtonState::None
+        }
+    } else {
+        ButtonState::None
+    }
 }
 
 pub fn watch_button_state_changes(

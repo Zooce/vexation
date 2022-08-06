@@ -10,26 +10,14 @@ use crate::shared_systems::*;
 
 pub fn enable_ui(
     mouse_button_inputs: Res<Input<MouseButton>>,
-    texture_atlases: Res<Assets<TextureAtlas>>,
     windows: Res<Windows>,
-    mut button_query: Query<(&mut ButtonState, &mut TextureAtlasSprite, &Transform, &Handle<TextureAtlas>)>,
+    mut button_query: Query<(&mut ButtonState, &mut TextureAtlasSprite, &Transform)>,
 ) {
     let cursor_pos = windows.get_primary().unwrap().cursor_position();
+    let mouse_pressed = mouse_button_inputs.pressed(MouseButton::Left);
 
-    for (mut button_state, mut button_sprite, button_transform, atlas_handle) in button_query.iter_mut() {
-        if let Some(cursor_pos) = cursor_pos {
-            if is_cursor_over_button(cursor_pos, button_transform.translation, &texture_atlases, atlas_handle, &button_sprite) {
-                if mouse_button_inputs.pressed(MouseButton::Left) {
-                    *button_state = ButtonState::Pressed;
-                } else {
-                    *button_state = ButtonState::Hovered
-                }
-            } else {
-                *button_state = ButtonState::None;
-            }
-        } else {
-            *button_state = ButtonState::None;
-        }
+    for (mut button_state, mut button_sprite, button_transform) in button_query.iter_mut() {
+        *button_state = get_button_state(cursor_pos, button_transform.translation, mouse_pressed);
         button_sprite.color = Color::WHITE;
     }
 }

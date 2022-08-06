@@ -3,6 +3,8 @@ pub const TILE_COUNT: f32 = 17.;
 pub const WINDOW_SIZE: f32 = TILE_SIZE * TILE_COUNT;
 
 pub const BOTTOM_BUTTON_Y: f32 = (-WINDOW_SIZE / 2.0) + TILE_SIZE;
+pub const UI_BUTTON_WIDTH: f32 = 160.0;
+pub const UI_BUTTON_HEIGHT: f32 = 48.0;
 
 pub const COMPUTER_BUFFER_TIMER_SECS: f32 = 0.75;
 pub const COMPUTER_MOVE_TIMER_SECS: f32 = 1.5;

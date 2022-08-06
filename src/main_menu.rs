@@ -37,8 +37,12 @@ impl Plugin for MainMenuPlugin {
 fn main_menu_enter(
     mut commands: Commands,
     ui_assets: Res<UiAssets>,
+    windows: Res<Windows>,
+    mouse_button_input: Res<Input<MouseButton>>,
 ) {
-    let ui = create_main_menu(&mut commands, &ui_assets);
+    let cursor_pos = windows.get_primary().unwrap().cursor_position();
+    let mouse_pressed = mouse_button_input.pressed(MouseButton::Left);
+    let ui = create_main_menu(&mut commands, &ui_assets, cursor_pos, mouse_pressed);
     let camera = commands.spawn_bundle(UiCameraBundle::default()).id();
     commands.insert_resource(RootUiEntities{ ui, camera });
 }
@@ -77,6 +81,8 @@ fn menu_page_renderer(
     mut commands: Commands,
     mut root_entities: ResMut<RootUiEntities>,
     ui_assets: Res<UiAssets>,
+    windows: Res<Windows>,
+    mouse_button_input: Res<Input<MouseButton>>,
 ) {
     // check to see if we event need to render anything
     let render_page = match *current_page_number {
@@ -94,12 +100,14 @@ fn menu_page_renderer(
         _ => None,
     };
 
+    let cursor_pos = windows.get_primary().unwrap().cursor_position();
+    let mouse_pressed = mouse_button_input.pressed(MouseButton::Left);
     match render_page {
         Some(p) => {
             *current_page_number = Some(p);
             let ui = match p {
-                0 => create_main_menu(&mut commands, &ui_assets),
-                1 | 2 | 3 => create_rules_page(&mut commands, ui_assets, page_number),
+                0 => create_main_menu(&mut commands, &ui_assets, cursor_pos, mouse_pressed),
+                1 | 2 | 3 => create_rules_page(&mut commands, ui_assets, page_number, cursor_pos, mouse_pressed),
                 _ => unreachable!(),
             };
             root_entities.ui = ui;
@@ -111,6 +119,8 @@ fn menu_page_renderer(
 fn create_main_menu(
     commands: &mut Commands,
     ui_assets: &Res<UiAssets>,
+    cursor_pos: Option<Vec2>,
+    mouse_pressed: bool,
 ) -> Vec<Entity> {
     let root = commands
         .spawn_bundle(TransformBundle::default())
@@ -132,6 +142,7 @@ fn create_main_menu(
                 transform.clone(),
                 ButtonAction(ActionEvent(MainMenuAction::StartGame)),
                 true,
+                get_button_state(cursor_pos, transform.translation, mouse_pressed),
             );
 
             let y_offset = 48.0 + 20.0; // 48 = height of a button, 20 = spacing between buttons
@@ -142,6 +153,7 @@ fn create_main_menu(
                 transform.clone(),
                 ButtonAction(ActionEvent(MainMenuAction::NextPage)),
                 true,
+                get_button_state(cursor_pos, transform.translation, mouse_pressed),
             );
 
             transform.translation -= Vec3::new(0.0, y_offset, 0.0);
@@ -151,6 +163,7 @@ fn create_main_menu(
                 transform.clone(),
                 ButtonAction(ActionEvent(MainMenuAction::Quit)),
                 true,
+                get_button_state(cursor_pos, transform.translation, mouse_pressed),
             );
         })
         .id()
@@ -202,6 +215,8 @@ fn create_rules_page(
     commands: &mut Commands,
     ui_assets: Res<UiAssets>,
     page_number: Res<UiPageNumber>,
+    cursor_pos: Option<Vec2>,
+    mouse_pressed: bool,
 ) -> Vec<Entity> {
     let text = commands
         .spawn_bundle(TextBundle{
@@ -239,23 +254,27 @@ fn create_rules_page(
             let x_offset = match page_number.0 {
                 1 | 2 => {
                     let x_offset = (160.0 / 2.0) + 20.0;
+                    let transform = Transform::from_xyz(x_offset, BOTTOM_BUTTON_Y, 5.0);
                     ui::spawn_sprite_sheet_button(
                         parent,
                         ui_assets.next_button.clone(),
-                        Transform::from_xyz(x_offset, BOTTOM_BUTTON_Y, 5.0),
+                        transform.clone(),
                         ButtonAction(ActionEvent(MainMenuAction::NextPage)),
                         true,
+                        get_button_state(cursor_pos, transform.translation, mouse_pressed),
                     );
                     Some(-x_offset)
                 }
                 _ => None,
             };
+            let transform = Transform::from_xyz(x_offset.unwrap_or_default(), BOTTOM_BUTTON_Y, 5.0);
             ui::spawn_sprite_sheet_button(
                 parent,
                 ui_assets.back_button.clone(),
-                Transform::from_xyz(x_offset.unwrap_or_default(), BOTTOM_BUTTON_Y, 5.0),
+                transform.clone(), 
                 ButtonAction(ActionEvent(MainMenuAction::PrevPage)),
-                true
+                true,
+                get_button_state(cursor_pos, transform.translation, mouse_pressed),
             );
         })
         .id()

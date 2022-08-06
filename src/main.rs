@@ -49,7 +49,7 @@ pub fn global_setup(
 ) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
-    let size = Vec2::new(160.0, 48.0);
+    let size = Vec2::new(UI_BUTTON_WIDTH, UI_BUTTON_HEIGHT);
     let grid = (3, 1);
     commands.insert_resource(UiAssets{
         font: asset_server.load("Kenney Thick.ttf"),
