@@ -1,6 +1,7 @@
 // TODO: Bring only what we're actually using into scope - I'm bringing in everything help me code faster.
 
 use bevy::prelude::*;
+use bevy::app::AppExit;
 use bevy::input::mouse::{MouseButtonInput, MouseButton};
 use crate::components::*;
 use crate::constants::*;
@@ -12,11 +13,18 @@ pub fn enable_ui(
     mouse_button_inputs: Res<Input<MouseButton>>,
     windows: Res<Windows>,
     mut button_query: Query<(&mut ButtonState, &mut TextureAtlasSprite, &Transform)>,
+    mut app_exit_events: EventWriter<AppExit>, // FIXME: workaround for https://github.com/bevyengine/bevy/commit/07d576987a7f2bdcabc97fefcc043e19e1a30222
 ) {
-    let cursor_pos = windows.get_primary().unwrap().cursor_position();
+    let cursor_pos = match windows.get_primary() {
+        Some(w) => w.cursor_position(),
+        None => {
+            app_exit_events.send(AppExit);
+            return;
+        }
+    };
     let mouse_pressed = mouse_button_inputs.pressed(MouseButton::Left);
 
-    for (mut button_state, mut button_sprite, button_transform) in button_query.iter_mut() {
+    for (mut button_state, mut button_sprite, button_transform) in &mut button_query {
         *button_state = get_button_state(cursor_pos, button_transform.translation, mouse_pressed);
         button_sprite.color = Color::WHITE;
     }
@@ -25,7 +33,7 @@ pub fn enable_ui(
 pub fn disable_ui(
     mut button_query: Query<(&mut TextureAtlasSprite, &mut ButtonState)>,
 ) {
-    for (mut sprite, mut state) in button_query.iter_mut() {
+    for (mut sprite, mut state) in &mut button_query {
         sprite.color = Color::rgba(1.0, 1.0, 1.0, 0.4);
         sprite.index = 0;
         *state = ButtonState::None;
@@ -36,12 +44,19 @@ pub fn translate_mouse_input(
     windows: Res<Windows>,
     mut mouse_button_input_events: EventReader<MouseButtonInput>,
     mut click_events: EventWriter<ClickEvent>,
+    mut app_exit_events: EventWriter<AppExit>, // FIXME: workaround for https://github.com/bevyengine/bevy/commit/07d576987a7f2bdcabc97fefcc043e19e1a30222
 ) {
     if mouse_button_input_events.iter()
         .filter(|e| e.button == MouseButton::Left && e.state.is_pressed())
         .last().is_some()
     {
-        if let Some(cursor) = windows.get_primary().unwrap().cursor_position() {
+        if let Some(cursor) = match windows.get_primary() {
+            Some(w) => w.cursor_position(),
+            None => {
+                app_exit_events.send(AppExit);
+                return;
+            }
+        } {
             let (x, y) = (cursor.x - WINDOW_SIZE / 2.0, cursor.y - WINDOW_SIZE / 2.0);
             // TODO: ignore this click if it's on a power-up button
             click_events.send(ClickEvent(Vec2::new(x, y)));

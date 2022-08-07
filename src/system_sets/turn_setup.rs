@@ -17,7 +17,7 @@ pub fn calc_possible_moves(
         current_player_data.possible_moves = vec![]; // no moves
         return;
     }
-    for (entity, marble) in marbles.iter() {
+    for (entity, marble) in &marbles {
         // exit base
         if marble.index == BOARD.len() {
             base_exit_rules(dice, entity, &mut possible_moves);

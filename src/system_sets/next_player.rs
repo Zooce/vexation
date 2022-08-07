@@ -19,7 +19,7 @@ pub fn choose_next_player(
     };
 
     // update the marbles accordingly
-    for (marble, color, current_player) in marbles.iter() {
+    for (marble, color, current_player) in &marbles {
         if current_player.is_some() {
             commands.entity(marble).remove::<CurrentPlayer>();
         }
@@ -36,7 +36,7 @@ pub fn show_or_hide_buttons(
     human_player: Res<HumanPlayer>,
     current_player_data: Res<CurrentPlayerData>,
 ) {
-    for (mut visibility, mut sprite, mut state) in button_query.iter_mut() {
+    for (mut visibility, mut sprite, mut state) in &mut button_query {
         visibility.is_visible = human_player.color == current_player_data.player;
         sprite.color = Color::rgba(1.0, 1.0, 1.0, 0.4);
         sprite.index = 0;

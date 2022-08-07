@@ -21,12 +21,12 @@ impl Plugin for VexationPlugin {
             .add_event::<ActionEvent<GameButtonAction>>()
 
             // game play enter
-            .add_system_set(SystemSet::on_enter(GameState::GameStart)
+            .add_system_set(SystemSet::on_update(GameState::GameStart)
                 .with_system(create_game)
             )
 
             // game play exit
-            .add_system_set(SystemSet::on_enter(GameState::GameEnd)
+            .add_system_set(SystemSet::on_update(GameState::GameEnd)
                 .with_system(destroy_game)
             )
 
@@ -54,7 +54,7 @@ impl Plugin for VexationPlugin {
             )
 
             // next player
-            .add_system_set(SystemSet::on_enter(GameState::NextPlayer)
+            .add_system_set(SystemSet::on_update(GameState::NextPlayer)
                 .with_system(choose_next_player)
                 .with_system(show_or_hide_buttons.after(choose_next_player))
                 .with_system(next_player_setup.after(show_or_hide_buttons))
@@ -74,7 +74,7 @@ impl Plugin for VexationPlugin {
             )
 
             // turn setup
-            .add_system_set(SystemSet::on_enter(GameState::TurnSetup)
+            .add_system_set(SystemSet::on_update(GameState::TurnSetup)
                 .with_system(calc_possible_moves)
                 .with_system(turn_setup_complete.after(calc_possible_moves))
             )
@@ -111,7 +111,7 @@ impl Plugin for VexationPlugin {
             )
 
             // process move
-            .add_system_set(SystemSet::on_enter(GameState::ProcessMove)
+            .add_system_set(SystemSet::on_update(GameState::ProcessMove)
                 .with_system(check_for_capture)
                 .with_system(check_for_winner.after(check_for_capture))
             )
@@ -266,7 +266,7 @@ pub fn create_game(
 
     // UI buttons (power-ups + turn end)
     let ui = commands
-        .spawn_bundle(TransformBundle::default())
+        .spawn_bundle(SpatialBundle::default())
         .with_children(|parent| {
 
             let sprite_sheet = texture_atlases.add(TextureAtlas::from_grid(
@@ -316,7 +316,7 @@ pub fn destroy_game(
     commands.remove_resource::<DiceData>();
     commands.remove_resource::<HighlightData>();
 
-    for marble in marbles.iter() {
+    for marble in &marbles {
         commands.entity(marble).despawn();
     }
 

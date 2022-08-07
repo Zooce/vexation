@@ -1,6 +1,7 @@
 // TODO: Bring only what we're actually using into scope - I'm bringing in everything help me code faster.
 
 use bevy::prelude::*;
+use bevy::render::texture::ImageSettings;
 use bevy::window::PresentMode;
 
 mod components;
@@ -21,6 +22,7 @@ use vexation::VexationPlugin;
 fn main() {
     App::new()
         // resources
+        .insert_resource(ImageSettings::default_nearest())
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
         .insert_resource(WindowDescriptor {
             title: "Vexation".to_string(),
@@ -47,7 +49,7 @@ pub fn global_setup(
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(Camera2dBundle::default());
 
     let size = Vec2::new(UI_BUTTON_WIDTH, UI_BUTTON_HEIGHT);
     let grid = (3, 1);

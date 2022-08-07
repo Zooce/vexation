@@ -35,7 +35,7 @@ pub fn roll_animation(
     const DIE_MOVE_SPEED: f32 = 500.;
 
     // https://github.com/bevyengine/bevy/blob/latest/examples/2d/sprite_sheet.rs
-    for (mut die, mut transform, mut sprite) in query.iter_mut() {
+    for (mut die, mut transform, mut sprite) in &mut query {
         // advance the sprite sheet
         if die.timer.tick(time.delta()).just_finished() {
             sprite.index = (roll_die() - 1) as usize;

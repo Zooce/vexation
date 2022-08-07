@@ -39,12 +39,18 @@ fn main_menu_enter(
     ui_assets: Res<UiAssets>,
     windows: Res<Windows>,
     mouse_button_input: Res<Input<MouseButton>>,
+    mut app_exit_events: EventWriter<AppExit>, // FIXME: workaround for https://github.com/bevyengine/bevy/commit/07d576987a7f2bdcabc97fefcc043e19e1a30222
 ) {
-    let cursor_pos = windows.get_primary().unwrap().cursor_position();
+    let cursor_pos = match windows.get_primary() {
+        Some(w) => w.cursor_position(),
+        None => {
+            app_exit_events.send(AppExit);
+            return;
+        }
+    };
     let mouse_pressed = mouse_button_input.pressed(MouseButton::Left);
     let ui = create_main_menu(&mut commands, &ui_assets, cursor_pos, mouse_pressed);
-    let camera = commands.spawn_bundle(UiCameraBundle::default()).id();
-    commands.insert_resource(RootUiEntities{ ui, camera });
+    commands.insert_resource(RootUiEntities{ ui });
 }
 
 fn main_menu_exit(
@@ -54,7 +60,6 @@ fn main_menu_exit(
     for entity in &root_entities.ui {
         commands.entity(*entity).despawn_recursive();
     }
-    commands.entity(root_entities.camera).despawn();
     commands.remove_resource::<RootUiEntities>();
 }
 
@@ -83,6 +88,7 @@ fn menu_page_renderer(
     ui_assets: Res<UiAssets>,
     windows: Res<Windows>,
     mouse_button_input: Res<Input<MouseButton>>,
+    mut app_exit_events: EventWriter<AppExit>, // FIXME: workaround for https://github.com/bevyengine/bevy/commit/07d576987a7f2bdcabc97fefcc043e19e1a30222
 ) {
     // check to see if we event need to render anything
     let render_page = match *current_page_number {
@@ -100,7 +106,13 @@ fn menu_page_renderer(
         _ => None,
     };
 
-    let cursor_pos = windows.get_primary().unwrap().cursor_position();
+    let cursor_pos = match windows.get_primary() {
+        Some(w) => w.cursor_position(),
+        None => {
+            app_exit_events.send(AppExit);
+            return;
+        }
+    };
     let mouse_pressed = mouse_button_input.pressed(MouseButton::Left);
     match render_page {
         Some(p) => {
@@ -123,7 +135,7 @@ fn create_main_menu(
     mouse_pressed: bool,
 ) -> Vec<Entity> {
     let root = commands
-        .spawn_bundle(TransformBundle::default())
+        .spawn_bundle(SpatialBundle::default())
         .with_children(|parent| {
             // title
             let y_title = 100.0;
@@ -220,7 +232,7 @@ fn create_rules_page(
 ) -> Vec<Entity> {
     let text = commands
         .spawn_bundle(TextBundle{
-            text: Text::with_section(
+            text: Text::from_section(
                 match page_number.0 {
                     1 => RULES_P1,
                     2 => RULES_P2,
@@ -231,13 +243,12 @@ fn create_rules_page(
                     font: ui_assets.mini_font.clone(),
                     font_size: 24.0,
                     color: Color::WHITE,
-                },
-                TextAlignment::default()
+                }
             ),
             style: Style{
                 size: Size::new(Val::Px(WINDOW_SIZE - 10.0 * 2.0), Val::Auto),
                 align_self: AlignSelf::FlexEnd,
-                position: Rect{
+                position: UiRect{
                     left: Val::Px(10.0),
                     ..default()
                 },
@@ -249,7 +260,7 @@ fn create_rules_page(
         ;
 
     let buttons = commands
-        .spawn_bundle(TransformBundle::default())
+        .spawn_bundle(SpatialBundle::default())
         .with_children(|parent| {
             let x_offset = match page_number.0 {
                 1 | 2 => {
@@ -271,7 +282,7 @@ fn create_rules_page(
             ui::spawn_sprite_sheet_button(
                 parent,
                 ui_assets.back_button.clone(),
-                transform.clone(), 
+                transform.clone(),
                 ButtonAction(ActionEvent(MainMenuAction::PrevPage)),
                 true,
                 get_button_state(cursor_pos, transform.translation, mouse_pressed),

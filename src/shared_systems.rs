@@ -25,7 +25,7 @@ pub fn animate_marble_moves(
     mut moving_marbles: Query<(Entity, &Moving, &Player, &mut Transform)>,
     mut animation_done_events: EventWriter<MarbleAnimationDoneEvent>,
 ) {
-    for (entity, moving, player, mut transform) in moving_marbles.iter_mut() {
+    for (entity, moving, player, mut transform) in &mut moving_marbles {
         transform.translation.x += moving.direction.x * moving.speed * time.delta_seconds();
         transform.translation.y += moving.direction.y * moving.speed * time.delta_seconds();
 
@@ -118,7 +118,7 @@ pub fn animate_tile_highlights(
     time: Res<Time>,
     mut marble_transform: Query<&mut Transform, (With<Highlight>, Without<SelectedMarble>)>,
 ) {
-    for mut transform in marble_transform.iter_mut() {
+    for mut transform in &mut marble_transform {
         transform.rotate(Quat::from_rotation_z(0.5 * time.delta_seconds()));
     }
 }
@@ -149,7 +149,7 @@ pub fn wait_for_marble_animation(
 pub fn dim_used_die(
     mut dice_sprite_query: Query<&mut TextureAtlasSprite, Added<UsedDie>>,
 ) {
-    for mut sprite in dice_sprite_query.iter_mut() {
+    for mut sprite in &mut dice_sprite_query {
         sprite.color = Color::rgba(1.0, 1.0, 1.0, 0.4);
     }
 }
@@ -162,7 +162,7 @@ pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
 ) {
     let cursor_move_event = cursor_moved_events.iter().last();
 
-    for (mut button_state, action, transform) in button_query.iter_mut() {
+    for (mut button_state, action, transform) in &mut button_query {
         match (*button_state, cursor_move_event) {
             (ButtonState::None, Some(move_event)) => {
                 if is_in_bounds(move_event.position, transform.translation) {
@@ -211,8 +211,8 @@ pub fn is_in_bounds(cursor_pos: Vec2, button_pos: Vec3) -> bool {
 }
 
 pub fn get_button_state(
-    cursor_pos: Option<Vec2>, 
-    button_pos: Vec3, 
+    cursor_pos: Option<Vec2>,
+    button_pos: Vec3,
     mouse_pressed: bool
 ) -> ButtonState {
     if let Some(cursor_pos) = cursor_pos {
@@ -233,7 +233,7 @@ pub fn get_button_state(
 pub fn watch_button_state_changes(
     mut button_query: Query<(&mut TextureAtlasSprite, &ButtonState), Changed<ButtonState>>
 ) {
-    for (mut sprite, state) in button_query.iter_mut() {
+    for (mut sprite, state) in &mut button_query {
         match *state {
             ButtonState::None => sprite.index = 0,
             ButtonState::Hovered => sprite.index = 1,

@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::app::AppExit;
 use bevy::window::CursorMoved;
 use crate::components::*;
 use crate::constants::*;
@@ -55,9 +56,16 @@ pub fn mouse_click_handler(
     windows: Res<Windows>,
     mouse_buttons: Res<Input<MouseButton>>,
     asset_server: Res<AssetServer>,
+    mut app_exit_events: EventWriter<AppExit>, // FIXME: workaround for https://github.com/bevyengine/bevy/commit/07d576987a7f2bdcabc97fefcc043e19e1a30222
 ) {
     if mouse_buttons.just_pressed(MouseButton::Left) {
-        let cursor = windows.get_primary().unwrap().cursor_position().unwrap();
+        let cursor = match windows.get_primary() {
+            Some(w) => w.cursor_position().unwrap(),
+            None => {
+                app_exit_events.send(AppExit);
+                return;
+            }
+        };
         if let Some(color) = position_to_color(cursor) {
             let human_indicator = commands.spawn_bundle(SpriteBundle{
                 texture: asset_server.load("human-indicator.png"),

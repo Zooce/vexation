@@ -155,7 +155,6 @@ pub struct RollAnimationTimer(pub Timer);
 
 pub struct RootUiEntities{
     pub ui: Vec<Entity>,
-    pub camera: Entity,
 }
 
 pub struct UiAssets {

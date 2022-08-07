@@ -21,7 +21,6 @@ pub mod ui {
         is_visible: bool,
         button_state: ButtonState,
     ) {
-        println!("spawning sprite sheet @ {}", transform.translation);
         parent
             .spawn_bundle(SpriteSheetBundle{
                 sprite: TextureAtlasSprite {
