@@ -29,6 +29,9 @@ pub struct CurrentPlayerData {
     pub player: Player,
     pub possible_moves: Vec<(Entity, usize, WhichDie)>,
     selected_move_index: Option<usize>,
+    // TODO:
+    // pub new_turn: bool,
+    // pub empty_moves_count: usize,
 }
 
 impl CurrentPlayerData {
@@ -62,6 +65,19 @@ impl CurrentPlayerData {
         self.selected_move_index = None;
         mv
     }
+
+    // TODO:
+    // pub fn set_possible_moves(&mut self, moves: Vec<(Entity, usize, WhichDie)>) {
+    //     self.possible_moves = moves;
+    //     if self.new_turn {
+    //         self.new_turn = false;
+    //         self.empty_moves_count = if self.possible_moves.is_empty() {
+    //             self.empty_moves_count + 1
+    //         } else {
+    //             0
+    //         };
+    //     }
+    // }
 }
 
 #[derive(Debug)]

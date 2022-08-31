@@ -18,6 +18,8 @@ pub fn choose_next_player(
         Player::Yellow => Player::Red,
     };
 
+    // TODO: current_player_data.new_turn = true;
+
     // update the marbles accordingly
     for (marble, color, current_player) in &marbles {
         if current_player.is_some() {

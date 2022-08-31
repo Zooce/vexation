@@ -21,6 +21,7 @@ pub fn check_for_capture(
         .filter(|(_, opp, _, _)| opp.index < FIRST_HOME_INDEX || opp.index == CENTER_INDEX)
         // find an opponent marble at the same index as the marble just moved by the current player
         .find(|(_, opp, _, p)| Player::is_same_index(current_player_data.player, cur.index, **p, opp.index))
+        // TODO: only include non-deflecting marbles
     {
         println!("{:?} {:?} @ {} captured {:?} {:?} @ {}",
             current_player_data.player, e, cur.index,
@@ -30,6 +31,8 @@ pub fn check_for_capture(
         commands.entity(entity).insert(Moving::new(oppenent_marble.origin, transform.translation));
     }
 }
+
+// TODO: system for checking if marble landed on a power-up star or center tile
 
 pub fn check_for_winner(
     mut state: ResMut<State<GameState>>,

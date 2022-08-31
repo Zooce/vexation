@@ -37,12 +37,14 @@ pub fn calc_possible_moves(
     // filter out moves that violate the self-hop rules
     // - marbles of the same color cannot capture each other
     // - marbles of the same color cannot jump over each other
+    // TODO: filter out moves that land on opponents who are currently "evading"
     current_player_data.possible_moves = possible_moves.into_iter()
         .filter_map(|(entity, path, which)| {
             match marbles.iter()
                 // no need to compare the same marbles
                 .filter(|(e, _)| *e != entity)
                 // look for a same color marble along the path of this move
+                // TODO: ignore this check if "self jump" power-up is currently enabled
                 .find(|(_, other_marble)| path.iter().find(|i| other_marble.index == **i).is_some())
             {
                 Some(_) => None, // we found a marble along the path of this move, so it's no good
@@ -50,6 +52,12 @@ pub fn calc_possible_moves(
             }
         })
         .collect();
+
+    // TODO:
+    // current_player_data.set_possible_moves(possible_moves);
+    // if current_player_data.empty_moves_count == 3 {
+    //     gen_power_up_events.send(Generate);
+    // }
 }
 
 pub fn turn_setup_complete(
