@@ -1,5 +1,6 @@
 use bevy::ecs::entity::Entity;
 use bevy::math::{Vec2, Vec3};
+use crate::components::Player;
 use crate::resources::WhichDie;
 
 /// An `ActionEvent` that is sent when a button is clicked. The type `T` defines
@@ -8,6 +9,8 @@ use crate::resources::WhichDie;
 pub struct ActionEvent<T>(pub T);
 
 pub struct ClickEvent(pub Vec2);
+
+pub struct GeneratePowerUpEvent(pub Player);
 
 pub struct HighlightEvent{
     pub marble: Option<Entity>,

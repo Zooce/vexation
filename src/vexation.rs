@@ -13,6 +13,7 @@ impl Plugin for VexationPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_event::<ClickEvent>()
+            .add_event::<GeneratePowerUpEvent>()
             .add_event::<HighlightEvent>()
             .add_event::<MarbleAnimationDoneEvent>()
             .add_event::<MoveEvent>()
@@ -111,7 +112,8 @@ impl Plugin for VexationPlugin {
             // process move
             .add_system_set(SystemSet::on_update(GameState::ProcessMove)
                 .with_system(check_for_capture)
-                .with_system(check_for_winner.after(check_for_capture))
+                .with_system(check_for_power_up.after(check_for_capture))
+                .with_system(check_for_winner.after(check_for_power_up))
             )
             .add_system_set(SystemSet::on_exit(GameState::ProcessMove)
                 .with_system(clear_selected_marble)

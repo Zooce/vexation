@@ -39,13 +39,13 @@ First, the dice are automatically rolled for the current player. The player can 
 
 ## Marble Movement and Captures
 
-A player's marble can hop over opponents marbles but cannot hop over their own marbles. If a marble lands exacly on an opponent's marble the opponent's marble is considered "captured" and is moved back to its base.
+A player's marble can hop over opponents marbles but cannot hop over their own marbles. If a marble lands exactly on an opponent's marble the opponent's marble is considered "captured" and is moved back to its base.
 
 ---
 
 ## Running the game
 
-Download or clone this repository, install [Rust](https://rust-lang.org), and running `cargo run` at the root of the directory.
+Download or clone this repository, install [Rust](https://rust-lang.org), and running `cargo run` at the root of the directory. Optionally use the `--features bevy/dynamic` flag to speed things up a bit if you have nightly installed.
 
 ---
 
@@ -53,6 +53,6 @@ Download or clone this repository, install [Rust](https://rust-lang.org), and ru
 
 Made by me, [Zooce](https://github.com/Zooce).
 
-Inspried by [marbles.world](https://github.com/voxelv/marbles) by [voxelv](https://github.com/voxelv).
+Inspired by [marbles.world](https://github.com/voxelv/marbles) by [voxelv](https://github.com/voxelv).
 
 Some assets used from the very generous [Kenney](https://kenney.nl/).
