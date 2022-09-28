@@ -15,6 +15,7 @@ pub const FIRST_HOME_INDEX: usize = 48;
 pub const LAST_HOME_INDEX: usize = 52;
 pub const CENTER_ENTRANCE_INDEXES: [usize; 3] = [5, 17, 29];
 pub const CENTER_EXIT_INDEX: usize = 41;
+// POWERUP: add array for power-up indexes (also need to update the board texture)
 
 /// Main board cell indexes - rotate clockwise for each color
 ///

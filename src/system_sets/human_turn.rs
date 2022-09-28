@@ -1,5 +1,3 @@
-// TODO: Bring only what we're actually using into scope - I'm bringing in everything help me code faster.
-
 use bevy::prelude::*;
 use bevy::app::AppExit;
 use bevy::input::mouse::{MouseButtonInput, MouseButton};
@@ -58,7 +56,7 @@ pub fn translate_mouse_input(
             }
         } {
             let (x, y) = (cursor.x - WINDOW_SIZE / 2.0, cursor.y - WINDOW_SIZE / 2.0);
-            // TODO: ignore this click if it's on a power-up button
+            // POWERUP: ignore this click if it's on a power-up button
             click_events.send(ClickEvent(Vec2::new(x, y)));
         }
     }
@@ -135,7 +133,7 @@ pub fn move_event_handler(
         dice_data.use_die(*which, &mut commands);
         commands.entity(e).insert(Moving::new(*dest, t.translation));
         state.set(GameState::WaitForAnimation).unwrap();
-        // TODO: if `idx` is also a power-up tile for the current player, initiate the power-up generator
+        // POWERUP: if `idx` is also a power-up tile for the current player, initiate the power-up generator
         println!("{:?}: {} to {} with {:?}", e, old_index, idx, which);
     }
 }

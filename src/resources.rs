@@ -1,5 +1,3 @@
-// TODO: Bring only what we're actually using into scope - I'm bringing in everything help me code faster.
-
 use bevy::prelude::*;
 use crate::components::*;
 
@@ -29,7 +27,7 @@ pub struct CurrentPlayerData {
     pub player: Player,
     pub possible_moves: Vec<(Entity, usize, WhichDie)>,
     selected_move_index: Option<usize>,
-    // TODO:
+    // POWERUP: keep track of empty moves
     // pub new_turn: bool,
     // pub empty_moves_count: usize,
 }
@@ -66,7 +64,7 @@ impl CurrentPlayerData {
         mv
     }
 
-    // TODO:
+    // POWERUP: keep track of empty moves
     // pub fn set_possible_moves(&mut self, moves: Vec<(Entity, usize, WhichDie)>) {
     //     self.possible_moves = moves;
     //     if self.new_turn {

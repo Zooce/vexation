@@ -1,5 +1,3 @@
-// TODO: Bring only what we're actually using into scope - I'm bringing in everything help me code faster.
-
 use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;

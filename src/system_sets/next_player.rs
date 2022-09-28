@@ -1,5 +1,3 @@
-// TODO: Bring only what we're actually using into scope - I'm bringing in everything help me code faster.
-
 use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
@@ -18,7 +16,8 @@ pub fn choose_next_player(
         Player::Yellow => Player::Red,
     };
 
-    // TODO: current_player_data.new_turn = true;
+    // POWERUP: keep track of new turns for empty moves
+    // current_player_data.new_turn = true;
 
     // update the marbles accordingly
     for (marble, color, current_player) in &marbles {
