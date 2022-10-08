@@ -75,7 +75,8 @@ impl Plugin for VexationPlugin {
             // turn setup
             .add_system_set(SystemSet::on_update(GameState::TurnSetup)
                 .with_system(calc_possible_moves)
-                .with_system(turn_setup_complete.after(calc_possible_moves))
+                .with_system(check_empty_moves.after(calc_possible_moves))
+                .with_system(turn_setup_complete.after(check_empty_moves))
             )
 
             // computer turn
@@ -146,9 +147,18 @@ pub fn create_game(
         current_mask: None,
     });
 
+    commands.insert_resource(GameData{
+        players: [
+            PlayerData::new(Player::Red),
+            PlayerData::new(Player::Green),
+            PlayerData::new(Player::Blue),
+            PlayerData::new(Player::Yellow),
+        ],
+    });
+
     // pick the first player randomly
     let current_player: Player = ((roll_die() - 1) % 4).into();
-    commands.insert_resource(CurrentPlayerData::new(current_player.clone()));
+    commands.insert_resource(CurrentPlayerData::new(current_player));
 
     // board
     let board = commands.spawn_bundle(SpriteBundle{
@@ -161,13 +171,13 @@ pub fn create_game(
     let green_marble = asset_server.load("marbles/green-marble.png");
     let blue_marble = asset_server.load("marbles/blue-marble.png");
     let yellow_marble = asset_server.load("marbles/yellow-marble.png");
-    for (x, y) in vec![(3., 3.5), (3., 4.5), (4., 3.), (4., 4.), (4., 5.)] {
+    for (x, y) in &[(3., 3.5), (3., 4.5), (4., 3.), (4., 4.), (4., 5.)] {
         // green marbles
         let origin = Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 1.);
         let mut green = commands
             .spawn_bundle(SpriteBundle{
                 texture: green_marble.clone(),
-                transform: origin.clone(),
+                transform: origin,
                 ..default()
             });
         green

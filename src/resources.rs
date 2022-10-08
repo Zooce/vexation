@@ -27,9 +27,6 @@ pub struct CurrentPlayerData {
     pub player: Player,
     pub possible_moves: Vec<(Entity, usize, WhichDie)>,
     selected_move_index: Option<usize>,
-    // POWERUP: keep track of empty moves
-    // pub new_turn: bool,
-    // pub empty_moves_count: usize,
 }
 
 impl CurrentPlayerData {
@@ -63,19 +60,6 @@ impl CurrentPlayerData {
         self.selected_move_index = None;
         mv
     }
-
-    // POWERUP: keep track of empty moves
-    // pub fn set_possible_moves(&mut self, moves: Vec<(Entity, usize, WhichDie)>) {
-    //     self.possible_moves = moves;
-    //     if self.new_turn {
-    //         self.new_turn = false;
-    //         self.empty_moves_count = if self.possible_moves.is_empty() {
-    //             self.empty_moves_count + 1
-    //         } else {
-    //             0
-    //         };
-    //     }
-    // }
 }
 
 #[derive(Debug)]
@@ -120,6 +104,37 @@ impl DiceData {
 #[derive(Clone, Copy)]
 pub enum GameButtonAction {
     Done,
+}
+
+// POWERUP: this needs some thought - currently just a placeholder
+pub enum PowerUp {
+    RollAgain,
+    EvadeCapture,
+    DeflectCapture,
+    SelfJump,
+    HomeRun,
+    DoubleDice,
+}
+
+pub struct PlayerData {
+    pub player: Player,
+    pub consecutive_empty_moves: u8,
+    pub power_ups: Vec<PowerUp>,
+}
+
+impl PlayerData {
+    pub fn new(player: Player) -> Self {
+        Self{
+            player,
+            consecutive_empty_moves: 0,
+            power_ups: vec![],
+        }
+    }
+}
+
+/// The data keeping track of the current state of the game.
+pub struct GameData {
+    pub players: [PlayerData; 4],
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Copy)]

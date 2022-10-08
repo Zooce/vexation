@@ -31,16 +31,8 @@ pub fn mouse_hover_handler(
 }
 
 fn position_to_color(pos: Vec2) -> Option<Player> {
-    let lr = if pos.x < WINDOW_SIZE / 2. {
-        0
-    } else {
-        1
-    };
-    let bt = if pos.y < WINDOW_SIZE / 2. {
-        0
-    } else  {
-        1
-    };
+    let lr = (pos.x >= WINDOW_SIZE / 2.).into();
+    let bt = (pos.y >= WINDOW_SIZE / 2.).into();
     match (lr, bt) {
         (0, 0) => Some(Player::Yellow),
         (0, 1) => Some(Player::Red),

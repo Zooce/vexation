@@ -114,17 +114,14 @@ fn menu_page_renderer(
         }
     };
     let mouse_pressed = mouse_button_input.pressed(MouseButton::Left);
-    match render_page {
-        Some(p) => {
-            *current_page_number = Some(p);
-            let ui = match p {
-                0 => create_main_menu(&mut commands, &ui_assets, cursor_pos, mouse_pressed),
-                1 | 2 | 3 => create_rules_page(&mut commands, ui_assets, page_number, cursor_pos, mouse_pressed),
-                _ => unreachable!(),
-            };
-            root_entities.ui = ui;
-        }
-        _ => {}
+    if let Some(p) = render_page {
+        *current_page_number = render_page;
+        let ui = match p {
+            0 => create_main_menu(&mut commands, &ui_assets, cursor_pos, mouse_pressed),
+            1 | 2 | 3 => create_rules_page(&mut commands, ui_assets, page_number, cursor_pos, mouse_pressed),
+            _ => unreachable!(),
+        };
+        root_entities.ui = ui;
     }
 }
 
@@ -151,7 +148,7 @@ fn create_main_menu(
             ui::spawn_sprite_sheet_button(
                 parent,
                 ui_assets.play_button.clone(),
-                transform.clone(),
+                transform,
                 ButtonAction(ActionEvent(MainMenuAction::StartGame)),
                 true,
                 get_button_state(cursor_pos, transform.translation, mouse_pressed),
@@ -162,7 +159,7 @@ fn create_main_menu(
             ui::spawn_sprite_sheet_button(
                 parent,
                 ui_assets.rules_button.clone(),
-                transform.clone(),
+                transform,
                 ButtonAction(ActionEvent(MainMenuAction::NextPage)),
                 true,
                 get_button_state(cursor_pos, transform.translation, mouse_pressed),
@@ -172,7 +169,7 @@ fn create_main_menu(
             ui::spawn_sprite_sheet_button(
                 parent,
                 ui_assets.quit_button.clone(),
-                transform.clone(),
+                transform,
                 ButtonAction(ActionEvent(MainMenuAction::Quit)),
                 true,
                 get_button_state(cursor_pos, transform.translation, mouse_pressed),
@@ -269,7 +266,7 @@ fn create_rules_page(
                     ui::spawn_sprite_sheet_button(
                         parent,
                         ui_assets.next_button.clone(),
-                        transform.clone(),
+                        transform,
                         ButtonAction(ActionEvent(MainMenuAction::NextPage)),
                         true,
                         get_button_state(cursor_pos, transform.translation, mouse_pressed),
@@ -282,7 +279,7 @@ fn create_rules_page(
             ui::spawn_sprite_sheet_button(
                 parent,
                 ui_assets.back_button.clone(),
-                transform.clone(),
+                transform,
                 ButtonAction(ActionEvent(MainMenuAction::PrevPage)),
                 true,
                 get_button_state(cursor_pos, transform.translation, mouse_pressed),

@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
+use crate::events::GeneratePowerUpEvent;
 use crate::resources::*;
 use std::collections::BTreeSet;
 
@@ -43,19 +44,37 @@ pub fn calc_possible_moves(
                 .filter(|(e, _)| *e != entity)
                 // look for a same color marble along the path of this move
                 // POWERUP: ignore this check if "self jump" power-up is currently enabled
-                .find(|(_, other_marble)| path.iter().find(|i| other_marble.index == **i).is_some())
+                .find(|(_, other_marble)| path.iter().any(|i| other_marble.index == *i))
             {
                 Some(_) => None, // we found a marble along the path of this move, so it's no good
                 None => Some((entity, *path.last().unwrap(), which))
             }
         })
         .collect();
+}
 
-    // POWERUP: generate power-up for 3 empty moves in a row
-    // current_player_data.set_possible_moves(possible_moves);
-    // if current_player_data.empty_moves_count == 3 {
-    //     gen_power_up_events.send(Generate);
-    // }
+pub fn check_empty_moves(
+    mut game_data: ResMut<GameData>,
+    current_player_data: Res<CurrentPlayerData>,
+    dice_data: Res<DiceData>,
+    mut power_up_events: EventWriter<GeneratePowerUpEvent>,
+) {
+    if dice_data.did_use_die() { return; }
+    let mut player_data = &mut game_data.players[match current_player_data.player {
+        Player::Red => 0,
+        Player::Green => 1,
+        Player::Blue => 2,
+        Player::Yellow => 3,
+    }];
+    player_data.consecutive_empty_moves = if current_player_data.possible_moves.is_empty() {
+        player_data.consecutive_empty_moves + 1
+    } else {
+        0
+    };
+    if player_data.consecutive_empty_moves == 3 {
+        player_data.consecutive_empty_moves = 0;
+        power_up_events.send(GeneratePowerUpEvent(current_player_data.player));
+    }
 }
 
 pub fn turn_setup_complete(
@@ -170,7 +189,7 @@ fn basic_rules(
                 // ...the marble was not at the end of the home row (this means the path will only be [CENTER_INDEX]) AND...
                 && marble.index != LAST_HOME_INDEX
                 // ...the path doesn't go through the home row
-                && path.iter().find(|i| **i >= FIRST_HOME_INDEX && **i <= LAST_HOME_INDEX).is_none())
+                && !path.iter().any(|i| *i >= FIRST_HOME_INDEX && *i <= LAST_HOME_INDEX))
     }).collect();
 
     possible_moves.append(&mut basic_moves);

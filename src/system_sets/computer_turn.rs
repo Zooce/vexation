@@ -20,7 +20,6 @@ pub fn computer_choose_move(
 ) {
     computer_turn_timers.reset();
     if current_player_data.possible_moves.is_empty() {
-        println!("no moves for computer player");
         return;
     }
     let mut rng = thread_rng();
@@ -29,7 +28,6 @@ pub fn computer_choose_move(
     let selected_marble = current_player_data.possible_moves[move_index].0;
     commands.entity(selected_marble).insert(SelectedMarble);
     highlight_events.send(HighlightEvent{ marble: Some(selected_marble), move_index: Some(move_index) });
-    println!("computer selected move index {}", move_index);
 }
 
 pub fn computer_move_buffer(

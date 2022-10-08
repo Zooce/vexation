@@ -34,7 +34,6 @@ pub fn animate_marble_moves(
         };
 
         if arrived {
-            println!("{:?} animation complete", entity);
             transform.translation = moving.destination; // just to make sure it's perfect
             commands.entity(entity).remove::<Moving>();
             animation_done_events.send(MarbleAnimationDoneEvent(*player));
@@ -76,7 +75,6 @@ pub fn highlighter(
                     })
                     .for_each(|h| commands.entity(h).despawn());
 
-                println!("highlighting move(s) for {:?}", selected_marble);
                 let rotated_transform_fn = |index| {
                     let tile: (i32, i32) = BOARD[index];
                     let (x, y) = current_player_data.player.rotate_coords((tile.0 as f32, tile.1 as f32));
@@ -127,7 +125,6 @@ pub fn remove_all_highlights(
     mut commands: Commands,
     highlights: Query<(Entity, &Highlight)>,
 ) {
-    println!("removing all highlights");
     highlights.for_each(|(e, _)| commands.entity(e).despawn());
 }
 

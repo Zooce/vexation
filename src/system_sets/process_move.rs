@@ -52,8 +52,7 @@ pub fn check_for_winner(
     current_player_data: Res<CurrentPlayerData>,
 ) {
     if marbles.iter()
-        .find(|m| !(FIRST_HOME_INDEX..=LAST_HOME_INDEX).contains(&m.index))
-        .is_some()
+        .any(|m| !(FIRST_HOME_INDEX..=LAST_HOME_INDEX).contains(&m.index))
     {
         // not a winner
         state.set(GameState::TurnSetup).unwrap();
