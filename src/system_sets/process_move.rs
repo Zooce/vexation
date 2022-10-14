@@ -41,7 +41,6 @@ pub fn check_for_power_up(
 ) {
     let marble = selected_marble.single();
     if POWER_UP_INDEXES.contains(&marble.index) {
-        println!("generating power-up event for {:?}", current_player_data.player);
         generate_power_up_events.send(GeneratePowerUpEvent(current_player_data.player));
     }
 }

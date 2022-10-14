@@ -38,6 +38,7 @@ impl Plugin for VexationPlugin {
                 .with_system(highlighter)
                 .with_system(animate_tile_highlights)
                 .with_system(dim_used_die)
+                .with_system(generate_power_up)
             )
 
             // choose color

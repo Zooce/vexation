@@ -237,3 +237,17 @@ pub fn watch_button_state_changes(
         }
     }
 }
+
+pub fn generate_power_up(
+    mut power_up_events: EventReader<GeneratePowerUpEvent>,
+    mut game_data: ResMut<GameData>,
+) {
+    for event in power_up_events.iter() {
+        println!("generating power up for {:?}", event.0);
+        // pick random power-up
+        // add power-up to player's list
+        // mark current player to wait for animation
+        // spawn power-up sprite in player's next empty power-up box
+        // mark power-up for animation
+    }
+}
