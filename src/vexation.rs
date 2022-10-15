@@ -290,7 +290,7 @@ pub fn create_game(
                 transform,
                 ButtonAction(ActionEvent(GameButtonAction::Done)),
                 false,
-                ButtonState::None,
+                ButtonState::NotHovered,
             );
         })
         .id()

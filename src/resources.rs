@@ -3,6 +3,7 @@ use crate::components::*;
 
 pub struct BufferTimer(pub Timer);
 
+// choose_color.rs
 #[derive(Debug)]
 pub struct ChooseColorData {
     pub masks: [Handle<Image>;4],
@@ -10,6 +11,7 @@ pub struct ChooseColorData {
     pub current_mask: Option<Entity>,
 }
 
+// computer_turn.rs
 pub struct ComputerTurnTimers {
    pub move_timer: Timer,
    pub buffer_timer: Timer,
@@ -101,6 +103,7 @@ impl DiceData {
     }
 }
 
+// human_turn.rs
 #[derive(Clone, Copy)]
 pub enum GameButtonAction {
     Done,
@@ -152,11 +155,13 @@ pub enum GameState {
     GameEnd,
 }
 
+// vexation.rs
 pub struct GamePlayEntities {
     pub board: Entity,
     pub ui: Entity,
 }
 
+// shared_systems.rs
 /// The resource for highlight data.
 pub struct HighlightData {
     /// the highlight texture for the selected marble
@@ -170,6 +175,7 @@ pub struct HumanPlayer {
     pub human_indicator: Entity,
 }
 
+// main_menu.rs
 #[derive(Clone, Copy)]
 pub enum MainMenuAction {
     StartGame,
@@ -180,12 +186,15 @@ pub enum MainMenuAction {
 
 pub struct MarbleAnimationDoneEvent(pub Player);
 
+// dice_roll.rs
 pub struct RollAnimationTimer(pub Timer);
 
+// main_menu.rs
 pub struct RootUiEntities{
     pub ui: Vec<Entity>,
 }
 
+// main_menu.rs
 pub struct UiAssets {
     pub font: Handle<Font>,
     pub mini_font: Handle<Font>,
@@ -197,6 +206,7 @@ pub struct UiAssets {
     pub next_button: Handle<TextureAtlas>,
 }
 
+// main_menu.rs
 pub struct UiPageNumber(pub usize);
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]

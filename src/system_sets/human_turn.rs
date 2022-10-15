@@ -34,7 +34,7 @@ pub fn disable_ui(
     for (mut sprite, mut state) in &mut button_query {
         sprite.color = Color::rgba(1.0, 1.0, 1.0, 0.4);
         sprite.index = 0;
-        *state = ButtonState::None;
+        *state = ButtonState::NotHovered;
     }
 }
 

@@ -8,6 +8,7 @@ use crate::resources::WhichDie;
 #[derive(Clone, Copy)]
 pub struct ActionEvent<T>(pub T);
 
+// human_turn.rs
 pub struct ClickEvent(pub Vec2);
 
 pub struct GeneratePowerUpEvent(pub Player);
@@ -19,4 +20,5 @@ pub struct HighlightEvent{
     pub move_index: Option<usize>,
 }
 
+// human_turn.rs
 pub struct MoveEvent(pub (usize, WhichDie, Vec3));

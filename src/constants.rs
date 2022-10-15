@@ -1,20 +1,27 @@
 pub const TILE_SIZE: f32 = 32.;
-pub const TILE_COUNT: f32 = 17.;
+const TILE_COUNT: f32 = 17.;
 pub const WINDOW_SIZE: f32 = TILE_SIZE * TILE_COUNT;
 
+// main_menu.rs
 pub const BOTTOM_BUTTON_Y: f32 = (-WINDOW_SIZE / 2.0) + TILE_SIZE;
 pub const UI_BUTTON_WIDTH: f32 = 160.0;
 pub const UI_BUTTON_HEIGHT: f32 = 48.0;
 
+// vexation.rs
 pub const COMPUTER_BUFFER_TIMER_SECS: f32 = 0.75;
+// vexation.rs
 pub const COMPUTER_MOVE_TIMER_SECS: f32 = 1.5;
 
+// turn_setup.rs
 pub const START_INDEX: usize = 0;
 pub const CENTER_INDEX: usize = 53;
 pub const FIRST_HOME_INDEX: usize = 48;
 pub const LAST_HOME_INDEX: usize = 52;
+// turn_setup.rs
 pub const CENTER_ENTRANCE_INDEXES: [usize; 3] = [5, 17, 29];
+// turn_setup.rs
 pub const CENTER_EXIT_INDEX: usize = 41;
+// process_move.rs
 pub const POWER_UP_INDEXES: [usize; 5] = [3, 15, 27, 39, 53];
 
 /// Main board cell indexes - rotate clockwise for each color

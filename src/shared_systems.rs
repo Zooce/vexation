@@ -159,7 +159,7 @@ pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
 
     for (mut button_state, action, transform) in &mut button_query {
         match (*button_state, cursor_move_event) {
-            (ButtonState::None, Some(move_event)) => {
+            (ButtonState::NotHovered, Some(move_event)) => {
                 if is_in_bounds(move_event.position, transform.translation) {
                     *button_state = ButtonState::Hovered;
                 }
@@ -169,7 +169,7 @@ pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
                     *button_state = ButtonState::Pressed;
                 } else if let Some(move_event) = moved {
                     if !is_in_bounds(move_event.position, transform.translation) {
-                        *button_state = ButtonState::None;
+                        *button_state = ButtonState::NotHovered;
                     }
                 }
             }
@@ -185,7 +185,7 @@ pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
             }
             (ButtonState::PressedNotHovered, moved) => {
                 if mouse_button_inputs.just_released(MouseButton::Left) {
-                    *button_state = ButtonState::None;
+                    *button_state = ButtonState::NotHovered;
                 } else if let Some(move_event) = moved {
                     if is_in_bounds(move_event.position, transform.translation) {
                         *button_state = ButtonState::Pressed;
@@ -197,7 +197,8 @@ pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
     }
 }
 
-pub fn is_in_bounds(cursor_pos: Vec2, button_pos: Vec3) -> bool {
+/// This is a helper function used specifically in this file.
+fn is_in_bounds(cursor_pos: Vec2, button_pos: Vec3) -> bool {
     let (x, y) = (cursor_pos.x - WINDOW_SIZE / 2.0, cursor_pos.y - WINDOW_SIZE / 2.0);
     x > button_pos.x - UI_BUTTON_WIDTH / 2.0 &&
     x < button_pos.x + UI_BUTTON_WIDTH / 2.0 &&
@@ -205,6 +206,7 @@ pub fn is_in_bounds(cursor_pos: Vec2, button_pos: Vec3) -> bool {
     y < button_pos.y + UI_BUTTON_HEIGHT / 2.0
 }
 
+/// This is a helper function used to get the state of a button.
 pub fn get_button_state(
     cursor_pos: Option<Vec2>,
     button_pos: Vec3,
@@ -218,10 +220,10 @@ pub fn get_button_state(
                 ButtonState::Hovered
             }
         } else {
-            ButtonState::None
+            ButtonState::NotHovered
         }
     } else {
-        ButtonState::None
+        ButtonState::NotHovered
     }
 }
 
@@ -230,7 +232,7 @@ pub fn watch_button_state_changes(
 ) {
     for (mut sprite, state) in &mut button_query {
         match *state {
-            ButtonState::None => sprite.index = 0,
+            ButtonState::NotHovered => sprite.index = 0,
             ButtonState::Hovered => sprite.index = 1,
             ButtonState::Pressed => sprite.index = 2,
             _ => {}

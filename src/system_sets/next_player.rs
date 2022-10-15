@@ -38,7 +38,7 @@ pub fn show_or_hide_buttons(
         visibility.is_visible = human_player.color == current_player_data.player;
         sprite.color = Color::rgba(1.0, 1.0, 1.0, 0.4);
         sprite.index = 0;
-        *state = ButtonState::None;
+        *state = ButtonState::NotHovered;
     }
 }
 

@@ -1,6 +1,7 @@
 use rand::{Rng, thread_rng};
 use rand::distributions::Uniform;
 
+// dice_roll.rs
 pub fn roll_die() -> u8 {
     let mut rng = thread_rng();
     let die = Uniform::new_inclusive(1u8, 6u8);
@@ -13,6 +14,8 @@ pub mod ui {
 
     // TODO: create a builder for this sprite sheet button stuff
 
+    // main_menu.rs
+    // vexation.rs
     pub fn spawn_sprite_sheet_button<T: Send + Sync + 'static>(
         parent: &mut ChildBuilder,
         texture_atlas: Handle<TextureAtlas>,
@@ -25,7 +28,7 @@ pub mod ui {
             .spawn_bundle(SpriteSheetBundle{
                 sprite: TextureAtlasSprite {
                     index: match button_state {
-                        ButtonState::None => 0,
+                        ButtonState::NotHovered => 0,
                         ButtonState::Hovered => 1,
                         ButtonState::Pressed | ButtonState::PressedNotHovered => 2,
                     },

@@ -7,7 +7,7 @@ pub struct ButtonAction<T>(pub ActionEvent<T>);
 
 #[derive(Component, Clone, Copy, Debug)]
 pub enum ButtonState {
-    None,
+    NotHovered,
     Hovered,
     Pressed,
     PressedNotHovered,
@@ -22,6 +22,7 @@ pub struct Die {
     pub timer: Timer,
 }
 
+// shared_systems.rs
 /// Used to mark the highlight sprites when a marble is selected, so we can
 /// later remove them when a marble is no longer selected.
 #[derive(Component)]
@@ -39,7 +40,7 @@ pub struct Marble {
 }
 
 #[derive(Component, Debug)]
-pub struct Moving{
+pub struct Moving {
     pub destination: Vec3,
     pub direction: Vec2,
     pub speed: f32,
