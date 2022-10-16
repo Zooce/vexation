@@ -7,7 +7,39 @@ use crate::events::*;
 use crate::resources::*;
 use crate::shared_systems::*;
 
-pub fn enable_ui(
+struct ClickEvent(pub Vec2);
+
+struct MoveEvent(pub (usize, WhichDie, Vec3));
+
+pub struct HumanTurnPlugin;
+
+impl Plugin for HumanTurnPlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_event::<ClickEvent>()
+            .add_event::<MoveEvent>()
+            
+            .add_system_set(SystemSet::on_enter(GameState::HumanTurn)
+                .with_system(enable_ui)
+            )
+            .add_system_set(SystemSet::on_update(GameState::HumanTurn)
+                // ui
+                .with_system(execute_button_actions.before(mouse_watcher::<GameButtonAction>))
+                .with_system(mouse_watcher::<GameButtonAction>)
+                .with_system(watch_button_state_changes.after(mouse_watcher::<GameButtonAction>))
+                // game play
+                .with_system(translate_mouse_input)
+                .with_system(interpret_click_event.after(translate_mouse_input))
+                .with_system(move_event_handler.after(interpret_click_event))
+            )
+            .add_system_set(SystemSet::on_exit(GameState::HumanTurn)
+                .with_system(disable_ui)
+            )
+            ;
+    }
+}
+
+fn enable_ui(
     mouse_button_inputs: Res<Input<MouseButton>>,
     windows: Res<Windows>,
     mut button_query: Query<(&mut ButtonState, &mut TextureAtlasSprite, &Transform)>,
@@ -28,7 +60,7 @@ pub fn enable_ui(
     }
 }
 
-pub fn disable_ui(
+fn disable_ui(
     mut button_query: Query<(&mut TextureAtlasSprite, &mut ButtonState)>,
 ) {
     for (mut sprite, mut state) in &mut button_query {
@@ -38,7 +70,7 @@ pub fn disable_ui(
     }
 }
 
-pub fn translate_mouse_input(
+fn translate_mouse_input(
     windows: Res<Windows>,
     mut mouse_button_input_events: EventReader<MouseButtonInput>,
     mut click_events: EventWriter<ClickEvent>,
@@ -62,7 +94,7 @@ pub fn translate_mouse_input(
     }
 }
 
-pub fn interpret_click_event(
+fn interpret_click_event(
     mut commands: Commands,
     mut highlight_events: EventWriter<HighlightEvent>,
     mut move_events: EventWriter<MoveEvent>,
@@ -119,7 +151,7 @@ pub fn interpret_click_event(
     }
 }
 
-pub fn move_event_handler(
+fn move_event_handler(
     mut commands: Commands,
     mut move_events: EventReader<MoveEvent>,
     mut marbles: Query<(Entity, &Transform, &mut Marble), With<SelectedMarble>>,
@@ -138,7 +170,7 @@ pub fn move_event_handler(
     }
 }
 
-pub fn execute_button_actions(
+fn execute_button_actions(
     mut action_events: EventReader<ActionEvent<GameButtonAction>>,
     mut state: ResMut<State<GameState>>,
     dice_data: Res<DiceData>,

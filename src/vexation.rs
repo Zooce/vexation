@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
 use crate::events::*;
+use crate::human_turn::HumanTurnPlugin;
 use crate::resources::*;
 use crate::shared_systems::*;
 use crate::system_sets::*;
@@ -12,11 +13,9 @@ pub struct VexationPlugin;
 impl Plugin for VexationPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_event::<ClickEvent>()
             .add_event::<GeneratePowerUpEvent>()
             .add_event::<HighlightEvent>()
             .add_event::<MarbleAnimationDoneEvent>()
-            .add_event::<MoveEvent>()
             .add_event::<ActionEvent<GameButtonAction>>()
 
             // game play enter
@@ -89,24 +88,6 @@ impl Plugin for VexationPlugin {
                 .with_system(computer_move_buffer)
             )
 
-            // human turn
-            .add_system_set(SystemSet::on_enter(GameState::HumanTurn)
-                .with_system(enable_ui)
-            )
-            .add_system_set(SystemSet::on_update(GameState::HumanTurn)
-                // ui
-                .with_system(execute_button_actions.before(mouse_watcher::<GameButtonAction>))
-                .with_system(mouse_watcher::<GameButtonAction>)
-                .with_system(watch_button_state_changes.after(mouse_watcher::<GameButtonAction>))
-                // game play
-                .with_system(translate_mouse_input)
-                .with_system(interpret_click_event.after(translate_mouse_input))
-                .with_system(move_event_handler.after(interpret_click_event))
-            )
-            .add_system_set(SystemSet::on_exit(GameState::HumanTurn)
-                .with_system(disable_ui)
-            )
-
             .add_system_set(SystemSet::on_update(GameState::WaitForAnimation)
                 .with_system(wait_for_marble_animation)
             )
@@ -120,6 +101,8 @@ impl Plugin for VexationPlugin {
             .add_system_set(SystemSet::on_exit(GameState::ProcessMove)
                 .with_system(clear_selected_marble)
             )
+
+            .add_plugin(HumanTurnPlugin)
             ;
     }
 }

@@ -103,7 +103,6 @@ impl DiceData {
     }
 }
 
-// human_turn.rs
 #[derive(Clone, Copy)]
 pub enum GameButtonAction {
     Done,

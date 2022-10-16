@@ -1,15 +1,10 @@
 use bevy::ecs::entity::Entity;
-use bevy::math::{Vec2, Vec3};
 use crate::components::Player;
-use crate::resources::WhichDie;
 
 /// An `ActionEvent` that is sent when a button is clicked. The type `T` defines
 /// what those actions really are.
 #[derive(Clone, Copy)]
 pub struct ActionEvent<T>(pub T);
-
-// human_turn.rs
-pub struct ClickEvent(pub Vec2);
 
 pub struct GeneratePowerUpEvent(pub Player);
 
@@ -20,5 +15,3 @@ pub struct HighlightEvent{
     pub move_index: Option<usize>,
 }
 
-// human_turn.rs
-pub struct MoveEvent(pub (usize, WhichDie, Vec3));

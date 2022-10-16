@@ -5,6 +5,7 @@ use bevy::window::PresentMode;
 mod components;
 mod constants;
 mod events;
+mod human_turn;
 mod main_menu;
 mod resources;
 mod shared_systems;
