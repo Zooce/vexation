@@ -2,8 +2,6 @@ pub const TILE_SIZE: f32 = 32.;
 const TILE_COUNT: f32 = 17.;
 pub const WINDOW_SIZE: f32 = TILE_SIZE * TILE_COUNT;
 
-// main_menu.rs
-pub const BOTTOM_BUTTON_Y: f32 = (-WINDOW_SIZE / 2.0) + TILE_SIZE;
 pub const UI_BUTTON_WIDTH: f32 = 160.0;
 pub const UI_BUTTON_HEIGHT: f32 = 48.0;
 

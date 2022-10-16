@@ -7,6 +7,31 @@ use crate::resources::*;
 use crate::shared_systems::*;
 use crate::utils::ui;
 
+#[derive(Clone, Copy)]
+enum MainMenuAction {
+    StartGame,
+    NextPage,
+    PrevPage,
+    Quit,
+}
+
+struct RootUiEntities{
+    pub ui: Vec<Entity>,
+}
+
+struct UiAssets {
+    // pub font: Handle<Font>,
+    pub mini_font: Handle<Font>,
+    pub title: Handle<Image>,
+    pub play_button: Handle<TextureAtlas>,
+    pub rules_button: Handle<TextureAtlas>,
+    pub quit_button: Handle<TextureAtlas>,
+    pub back_button: Handle<TextureAtlas>,
+    pub next_button: Handle<TextureAtlas>,
+}
+
+struct UiPageNumber(pub usize);
+
 pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
@@ -16,6 +41,8 @@ impl Plugin for MainMenuPlugin {
             .add_event::<ActionEvent<MainMenuAction>>()
 
             .insert_resource(UiPageNumber(0))
+
+            .add_startup_system(setup)
 
             .add_system_set(SystemSet::on_enter(GameState::MainMenu)
                 .with_system(main_menu_enter)
@@ -32,6 +59,38 @@ impl Plugin for MainMenuPlugin {
             )
             ;
     }
+}
+
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+) {
+    let size = Vec2::new(UI_BUTTON_WIDTH, UI_BUTTON_HEIGHT);
+    let grid = (3, 1);
+    commands.insert_resource(UiAssets{
+        // font: asset_server.load("Kenney Thick.ttf"),
+        mini_font: asset_server.load("Kenney Mini.ttf"),
+        title: asset_server.load("title.png"),
+        play_button: load_sprite_sheet("buttons/play_button.png", size, grid, &asset_server, &mut texture_atlases),
+        rules_button: load_sprite_sheet("buttons/rules_button.png", size, grid, &asset_server, &mut texture_atlases),
+        quit_button: load_sprite_sheet("buttons/quit_button.png", size, grid, &asset_server, &mut texture_atlases),
+        back_button: load_sprite_sheet("buttons/back_button.png", size, grid, &asset_server, &mut texture_atlases),
+        next_button: load_sprite_sheet("buttons/next_button.png", size, grid, &asset_server, &mut texture_atlases),
+    });
+}
+
+fn load_sprite_sheet(
+    name: &str,
+    size: Vec2,
+    (cols, rows): (usize, usize),
+    asset_server: &Res<AssetServer>,
+    texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
+) -> Handle<TextureAtlas>
+{
+    texture_atlases.add(TextureAtlas::from_grid(
+        asset_server.load(name), size, cols, rows
+    ))
 }
 
 fn main_menu_enter(
@@ -259,6 +318,7 @@ fn create_rules_page(
     let buttons = commands
         .spawn_bundle(SpatialBundle::default())
         .with_children(|parent| {
+            const BOTTOM_BUTTON_Y: f32 = (-WINDOW_SIZE / 2.0) + TILE_SIZE;
             let x_offset = match page_number.0 {
                 1 | 2 => {
                     let x_offset = (160.0 / 2.0) + 20.0;

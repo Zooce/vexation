@@ -175,39 +175,10 @@ pub struct HumanPlayer {
     pub human_indicator: Entity,
 }
 
-// main_menu.rs
-#[derive(Clone, Copy)]
-pub enum MainMenuAction {
-    StartGame,
-    NextPage,
-    PrevPage,
-    Quit,
-}
-
 pub struct MarbleAnimationDoneEvent(pub Player);
 
 // dice_roll.rs
 pub struct RollAnimationTimer(pub Timer);
-
-// main_menu.rs
-pub struct RootUiEntities{
-    pub ui: Vec<Entity>,
-}
-
-// main_menu.rs
-pub struct UiAssets {
-    pub font: Handle<Font>,
-    pub mini_font: Handle<Font>,
-    pub title: Handle<Image>,
-    pub play_button: Handle<TextureAtlas>,
-    pub rules_button: Handle<TextureAtlas>,
-    pub quit_button: Handle<TextureAtlas>,
-    pub back_button: Handle<TextureAtlas>,
-    pub next_button: Handle<TextureAtlas>,
-}
-
-// main_menu.rs
-pub struct UiPageNumber(pub usize);
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub enum WhichDie {

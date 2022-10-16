@@ -14,7 +14,6 @@ mod vexation;
 
 use constants::*;
 use main_menu::*;
-use resources::*;
 use vexation::VexationPlugin;
 
 fn main() {
@@ -31,7 +30,7 @@ fn main() {
             ..default()
         })
 
-        .add_startup_system(global_setup)
+        .add_startup_system(setup)
 
         // plugins
         .add_plugins(DefaultPlugins)
@@ -42,38 +41,8 @@ fn main() {
         .run();
 }
 
-pub fn global_setup(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-) {
+pub fn setup(mut commands: Commands) {
     commands.spawn_bundle(Camera2dBundle::default());
-
-    let size = Vec2::new(UI_BUTTON_WIDTH, UI_BUTTON_HEIGHT);
-    let grid = (3, 1);
-    commands.insert_resource(UiAssets{
-        font: asset_server.load("Kenney Thick.ttf"),
-        mini_font: asset_server.load("Kenney Mini.ttf"),
-        title: asset_server.load("title.png"),
-        play_button: load_sprite_sheet("buttons/play_button.png", size, grid, &asset_server, &mut texture_atlases),
-        rules_button: load_sprite_sheet("buttons/rules_button.png", size, grid, &asset_server, &mut texture_atlases),
-        quit_button: load_sprite_sheet("buttons/quit_button.png", size, grid, &asset_server, &mut texture_atlases),
-        back_button: load_sprite_sheet("buttons/back_button.png", size, grid, &asset_server, &mut texture_atlases),
-        next_button: load_sprite_sheet("buttons/next_button.png", size, grid, &asset_server, &mut texture_atlases),
-    });
-}
-
-fn load_sprite_sheet(
-    name: &str,
-    size: Vec2,
-    (cols, rows): (usize, usize),
-    asset_server: &Res<AssetServer>,
-    texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
-) -> Handle<TextureAtlas>
-{
-    texture_atlases.add(TextureAtlas::from_grid(
-        asset_server.load(name), size, cols, rows
-    ))
 }
 
 // TODO: consider using https://github.com/IyesGames/iyes_loopless to organize this turn-based game
