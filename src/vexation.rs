@@ -133,7 +133,7 @@ pub fn create_game(
 
     // pick the first player randomly
     let mut rng = thread_rng();
-    let die = Uniform::new_inclusive(1u8, 4u8);
+    let die = Uniform::new_inclusive(0u8, 3u8);
     let current_player: Player = rng.sample(die).into();
     commands.insert_resource(CurrentPlayerData::new(current_player));
 
