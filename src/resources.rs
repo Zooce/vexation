@@ -3,14 +3,6 @@ use crate::components::*;
 
 pub struct BufferTimer(pub Timer);
 
-// choose_color.rs
-#[derive(Debug)]
-pub struct ChooseColorData {
-    pub masks: [Handle<Image>;4],
-    pub current_color: Option<Player>,
-    pub current_mask: Option<Entity>,
-}
-
 // computer_turn.rs
 pub struct ComputerTurnTimers {
    pub move_timer: Timer,

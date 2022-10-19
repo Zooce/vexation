@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
 use crate::events::*;
+use crate::choose_color::ChooseColorPlugin;
 use crate::dice_roll::DiceRollPlugin;
 use crate::human_turn::HumanTurnPlugin;
 use crate::resources::*;
@@ -43,18 +44,6 @@ impl Plugin for VexationPlugin {
                 .with_system(generate_power_up)
             )
 
-            // choose color
-            .add_system_set(SystemSet::on_enter(GameState::ChooseColor)
-                .with_system(clear_mouse_events)
-            )
-            .add_system_set(SystemSet::on_update(GameState::ChooseColor)
-                .with_system(mouse_hover_handler)
-                .with_system(mouse_click_handler)
-            )
-            .add_system_set(SystemSet::on_exit(GameState::ChooseColor)
-                .with_system(choose_color_cleanup)
-            )
-
             // next player
             .add_system_set(SystemSet::on_update(GameState::NextPlayer)
                 .with_system(choose_next_player)
@@ -92,6 +81,7 @@ impl Plugin for VexationPlugin {
                 .with_system(clear_selected_marble)
             )
 
+            .add_plugin(ChooseColorPlugin)
             .add_plugin(DiceRollPlugin)
             .add_plugin(HumanTurnPlugin)
             ;
@@ -111,17 +101,6 @@ pub fn create_game(
         buffer_timer: Timer::from_seconds(COMPUTER_BUFFER_TIMER_SECS, false),
     });
     commands.insert_resource(RollAnimationTimer(Timer::from_seconds(1.5, false)));
-    commands.insert_resource(ChooseColorData{
-        masks: [
-            asset_server.load("red-mask.png"),
-            asset_server.load("green-mask.png"),
-            asset_server.load("blue-mask.png"),
-            asset_server.load("yellow-mask.png"),
-        ],
-        current_color: None,
-        current_mask: None,
-    });
-
     commands.insert_resource(GameData{
         players: [
             PlayerData::new(Player::Red),
@@ -298,7 +277,6 @@ pub fn destroy_game(
     commands.remove_resource::<BufferTimer>();
     commands.remove_resource::<ComputerTurnTimers>();
     commands.remove_resource::<RollAnimationTimer>();
-    commands.remove_resource::<ChooseColorData>();
     commands.remove_resource::<CurrentPlayerData>();
     commands.remove_resource::<DiceData>();
     commands.remove_resource::<HighlightData>();

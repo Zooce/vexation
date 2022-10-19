@@ -5,6 +5,7 @@ use bevy::window::PresentMode;
 mod components;
 mod constants;
 mod events;
+mod choose_color;
 mod dice_roll;
 mod human_turn;
 mod main_menu;

@@ -5,15 +5,52 @@ use crate::components::*;
 use crate::constants::*;
 use crate::resources::*;
 
-/// This system runs when we enter the ChooseColor state to clear out mouse
-/// button clicks that carry over from the main menu.
-pub fn clear_mouse_events(
-    mut mouse_buttons: ResMut<Input<MouseButton>>,
-) {
-    mouse_buttons.clear();
+pub struct ChooseColorPlugin;
+
+impl Plugin for ChooseColorPlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_system_set(SystemSet::on_enter(GameState::ChooseColor)
+                .with_system(choose_color_setup)
+            )
+            .add_system_set(SystemSet::on_update(GameState::ChooseColor)
+                .with_system(mouse_hover_handler)
+                .with_system(mouse_click_handler)
+            )
+            .add_system_set(SystemSet::on_exit(GameState::ChooseColor)
+                .with_system(choose_color_cleanup)
+            )
+            ;
+    }
 }
 
-pub fn mouse_hover_handler(
+#[derive(Debug)]
+struct ChooseColorData {
+    pub masks: [Handle<Image>;4],
+    pub current_color: Option<Player>,
+    pub current_mask: Option<Entity>,
+}
+
+fn choose_color_setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut mouse_buttons: ResMut<Input<MouseButton>>,
+) {
+    // clear out mouse button clicks that carry over from the main menu
+    mouse_buttons.clear();
+    commands.insert_resource(ChooseColorData{
+        masks: [
+            asset_server.load("red-mask.png"),
+            asset_server.load("green-mask.png"),
+            asset_server.load("blue-mask.png"),
+            asset_server.load("yellow-mask.png"),
+        ],
+        current_color: None,
+        current_mask: None,
+    });
+}
+
+fn mouse_hover_handler(
     commands: Commands,
     mut cursor_moved: EventReader<CursorMoved>,
     mut choose_color_data: ResMut<ChooseColorData>,
@@ -42,7 +79,7 @@ fn position_to_color(pos: Vec2) -> Option<Player> {
     }
 }
 
-pub fn mouse_click_handler(
+fn mouse_click_handler(
     mut commands: Commands,
     mut state: ResMut<State<GameState>>,
     windows: Res<Windows>,
@@ -89,7 +126,7 @@ fn show_mask(mut commands: Commands, mut choose_color_data: ResMut<ChooseColorDa
     }).id());
 }
 
-pub fn choose_color_cleanup(
+fn choose_color_cleanup(
     mut commands: Commands,
     mut choose_color_data: ResMut<ChooseColorData>,
 ) {
@@ -97,4 +134,5 @@ pub fn choose_color_cleanup(
         commands.entity(mask).despawn();
         choose_color_data.current_mask = None;
     }
+    commands.remove_resource::<ChooseColorData>();
 }
