@@ -2,11 +2,14 @@ use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
 use crate::events::*;
+use crate::dice_roll::DiceRollPlugin;
 use crate::human_turn::HumanTurnPlugin;
 use crate::resources::*;
 use crate::shared_systems::*;
 use crate::system_sets::*;
 use crate::utils::*;
+use rand::{Rng, thread_rng};
+use rand::distributions::Uniform;
 
 pub struct VexationPlugin;
 
@@ -59,19 +62,6 @@ impl Plugin for VexationPlugin {
                 .with_system(next_player_setup.after(show_or_hide_buttons))
             )
 
-            // dice roll
-            .add_system_set(SystemSet::on_enter(GameState::DiceRoll)
-                .with_system(undim_dice)
-                .with_system(remove_all_highlights)
-                .with_system(roll_dice.after(remove_all_highlights))
-            )
-            .add_system_set(SystemSet::on_update(GameState::DiceRoll)
-                .with_system(roll_animation)
-            )
-            .add_system_set(SystemSet::on_exit(GameState::DiceRoll)
-                .with_system(stop_roll_animation)
-            )
-
             // turn setup
             .add_system_set(SystemSet::on_update(GameState::TurnSetup)
                 .with_system(calc_possible_moves)
@@ -102,6 +92,7 @@ impl Plugin for VexationPlugin {
                 .with_system(clear_selected_marble)
             )
 
+            .add_plugin(DiceRollPlugin)
             .add_plugin(HumanTurnPlugin)
             ;
     }
@@ -141,7 +132,9 @@ pub fn create_game(
     });
 
     // pick the first player randomly
-    let current_player: Player = ((roll_die() - 1) % 4).into();
+    let mut rng = thread_rng();
+    let die = Uniform::new_inclusive(1u8, 4u8);
+    let current_player: Player = rng.sample(die).into();
     commands.insert_resource(CurrentPlayerData::new(current_player));
 
     // board

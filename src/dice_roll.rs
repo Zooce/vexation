@@ -1,9 +1,32 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::resources::*;
-use crate::utils::*;
+use crate::shared_systems::*;
+use rand::{Rng, thread_rng};
+use rand::distributions::Uniform;
 
-pub fn undim_dice(
+pub struct DiceRollPlugin;
+
+impl Plugin for DiceRollPlugin {
+    fn build(&self, app: &mut App) {
+        app  
+            // dice roll
+            .add_system_set(SystemSet::on_enter(GameState::DiceRoll)
+                .with_system(undim_dice)
+                .with_system(remove_all_highlights)
+                .with_system(roll_dice.after(remove_all_highlights))
+            )
+            .add_system_set(SystemSet::on_update(GameState::DiceRoll)
+                .with_system(roll_animation)
+            )
+            .add_system_set(SystemSet::on_exit(GameState::DiceRoll)
+                .with_system(stop_roll_animation)
+            )
+        ;
+    }
+}
+
+fn undim_dice(
     mut commands: Commands,
     mut dice_sprite_query: Query<(Entity, &mut TextureAtlasSprite), With<UsedDie>>,
 ) {
@@ -13,7 +36,13 @@ pub fn undim_dice(
     }
 }
 
-pub fn roll_dice(
+fn roll_die() -> u8 {
+    let mut rng = thread_rng();
+    let die = Uniform::new_inclusive(1u8, 6u8);
+    rng.sample(die)
+}
+
+fn roll_dice(
     mut dice_data: ResMut<DiceData>,
 ) {
     let (d1, d2) = (roll_die(), roll_die());
@@ -24,7 +53,7 @@ pub fn roll_dice(
     println!("{:?} and {:?}", d1, d2);
 }
 
-pub fn roll_animation(
+fn roll_animation(
     time: Res<Time>,
     mut roll_animation_timer: ResMut<RollAnimationTimer>,
     mut query: Query<(&mut Die, &mut Transform, &mut TextureAtlasSprite)>,
@@ -61,7 +90,7 @@ pub fn roll_animation(
     // TODO: create a 'roll buffer' timer so after the 'roll timer' stops, we have a second to see what the dice roll was before letting the player pick a move
 }
 
-pub fn stop_roll_animation(
+fn stop_roll_animation(
     mut query: Query<(&mut TextureAtlasSprite, &mut Transform)>,
     dice_data: Res<DiceData>,
 ) {
