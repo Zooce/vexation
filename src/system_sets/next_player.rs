@@ -7,6 +7,7 @@ pub fn choose_next_player(
     mut commands: Commands,
     mut current_player_data: ResMut<CurrentPlayerData>,
     marbles: Query<(Entity, &Player, Option<&CurrentPlayer>), With<Marble>>,
+    game_data: Res<GameData>,
 ) {
     // move clockwise to the next player
     current_player_data.player = match current_player_data.player {
@@ -26,7 +27,7 @@ pub fn choose_next_player(
         }
     }
 
-    println!("{:?}", current_player_data.player);
+    println!("{:?} : {:?}", current_player_data.player, game_data.players.get(&current_player_data.player).unwrap());
 }
 
 pub fn show_or_hide_buttons(

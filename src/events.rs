@@ -15,3 +15,11 @@ pub struct HighlightEvent{
     pub move_index: Option<usize>,
 }
 
+// POWERUP: add power bar event
+#[derive(Debug)]
+pub enum PowerBarEvent {
+    Capture{captor: Player, captive: Player},
+    Deflection{deflector: Player, deflected: Player},
+    Index(Player, usize),
+}
+

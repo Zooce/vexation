@@ -240,6 +240,30 @@ pub fn watch_button_state_changes(
     }
 }
 
+// POWERUP: add update power bar system - recieves power bar events
+pub fn update_power_bars(
+    mut power_bar_events: EventReader<PowerBarEvent>,
+    mut game_data: ResMut<GameData>,
+) {
+    for event in power_bar_events.iter() {
+        println!("recieved {:?}", event);
+        match event {
+            PowerBarEvent::Capture{ captor, captive } => {
+                game_data.players.get_mut(captor).unwrap().update_power(3.0);
+                game_data.players.get_mut(captive).unwrap().update_power(-3.0);
+            },
+            PowerBarEvent::Deflection{ deflector, deflected } => {},
+            PowerBarEvent::Index(player, index) => {
+                // FIXME: these numbers are completely wacky
+                game_data.players.get_mut(player).unwrap().update_power(match index {
+                    0..=47 => 10.0/48.0,
+                    _ => 20.0/48.0,
+                });
+            }
+        }
+    }
+}
+
 pub fn generate_power_up(
     mut power_up_events: EventReader<GeneratePowerUpEvent>,
     mut game_data: ResMut<GameData>,

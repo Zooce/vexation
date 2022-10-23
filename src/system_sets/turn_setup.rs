@@ -60,12 +60,7 @@ pub fn check_empty_moves(
     mut power_up_events: EventWriter<GeneratePowerUpEvent>,
 ) {
     if dice_data.did_use_die() { return; }
-    let mut player_data = &mut game_data.players[match current_player_data.player {
-        Player::Red => 0,
-        Player::Green => 1,
-        Player::Blue => 2,
-        Player::Yellow => 3,
-    }];
+    let mut player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
     player_data.consecutive_empty_moves = if current_player_data.possible_moves.is_empty() {
         player_data.consecutive_empty_moves + 1
     } else {

@@ -59,7 +59,7 @@ impl Moving {
     }
 }
 
-#[derive(Component, Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Component, Debug, Eq, PartialEq, Hash, Clone, Copy)]
 pub enum Player {
     Red,
     Green,

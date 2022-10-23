@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
@@ -21,6 +23,7 @@ impl Plugin for VexationPlugin {
             .add_event::<HighlightEvent>()
             .add_event::<MarbleAnimationDoneEvent>()
             .add_event::<ActionEvent<GameButtonAction>>()
+            .add_event::<PowerBarEvent>()
 
             // game play enter
             .add_system_set(SystemSet::on_update(GameState::GameStart)
@@ -42,6 +45,7 @@ impl Plugin for VexationPlugin {
                 .with_system(animate_tile_highlights)
                 .with_system(dim_used_die)
                 .with_system(generate_power_up)
+                .with_system(update_power_bars)
             )
 
             // next player
@@ -73,9 +77,10 @@ impl Plugin for VexationPlugin {
 
             // process move
             .add_system_set(SystemSet::on_update(GameState::ProcessMove)
-                .with_system(check_for_capture)
-                .with_system(check_for_power_up.after(check_for_capture))
-                .with_system(check_for_winner.after(check_for_power_up))
+                .with_system(check_for_capture.before(check_for_winner))
+                .with_system(process_index.before(check_for_winner))
+                .with_system(check_for_power_up.before(check_for_winner))
+                .with_system(check_for_winner)
             )
             .add_system_set(SystemSet::on_exit(GameState::ProcessMove)
                 .with_system(clear_selected_marble)
@@ -102,12 +107,12 @@ pub fn create_game(
     });
     commands.insert_resource(RollAnimationTimer(Timer::from_seconds(1.5, false)));
     commands.insert_resource(GameData{
-        players: [
-            PlayerData::new(Player::Red),
-            PlayerData::new(Player::Green),
-            PlayerData::new(Player::Blue),
-            PlayerData::new(Player::Yellow),
-        ],
+        players: HashMap::from([
+            (Player::Red, PlayerData::default()),
+            (Player::Green, PlayerData::default()),
+            (Player::Blue, PlayerData::default()),
+            (Player::Yellow, PlayerData::default()),
+        ]),
     });
 
     // pick the first player randomly

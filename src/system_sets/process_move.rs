@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
 use crate::events::GeneratePowerUpEvent;
+use crate::events::PowerBarEvent;
 use crate::resources::*;
 
 pub fn check_for_capture(
@@ -9,6 +10,7 @@ pub fn check_for_capture(
     current_player_data: Res<CurrentPlayerData>,
     selected_marble: Query<(Entity, &Marble), (With<CurrentPlayer>, With<SelectedMarble>)>,
     mut opponent_marbles: Query<(Entity, &mut Marble, &Transform, &Player), Without<CurrentPlayer>>,
+    mut power_bar_events: EventWriter<PowerBarEvent>,
 ) {
     // TODO: the `e` is only here for logging - remove this later
     let (e, cur) = selected_marble.single();
@@ -31,7 +33,20 @@ pub fn check_for_capture(
         );
         opponent_marble.index = BOARD.len();
         commands.entity(entity).insert(Moving::new(opponent_marble.origin, transform.translation));
+        power_bar_events.send(PowerBarEvent::Capture{ captor: current_player_data.player, captive: *opponent }); 
     }
+}
+
+// POWERUP: add deflection check system (essentially a reverse capture)
+
+// POWERUP: add process index system - generates index power bar event
+pub fn process_index(
+    mut power_bar_events: EventWriter<PowerBarEvent>,
+    current_player_data: Res<CurrentPlayerData>,
+    selected_marble: Query<&Marble, (With<CurrentPlayer>, With<SelectedMarble>)>,
+) {
+    let marble = selected_marble.single();
+    power_bar_events.send(PowerBarEvent::Index(current_player_data.player, marble.index));
 }
 
 pub fn check_for_power_up(

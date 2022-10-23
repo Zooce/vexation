@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use bevy::prelude::*;
 use crate::components::*;
 
@@ -101,6 +103,7 @@ pub enum GameButtonAction {
 }
 
 // POWERUP: this needs some thought - currently just a placeholder
+#[derive(Debug)]
 pub enum PowerUp {
     RollAgain,
     EvadeCapture,
@@ -110,25 +113,23 @@ pub enum PowerUp {
     DoubleDice,
 }
 
+#[derive(Debug, Default)]
 pub struct PlayerData {
-    pub player: Player,
     pub consecutive_empty_moves: u8,
+    pub power: f32,
     pub power_ups: Vec<PowerUp>,
 }
 
 impl PlayerData {
-    pub fn new(player: Player) -> Self {
-        Self{
-            player,
-            consecutive_empty_moves: 0,
-            power_ups: vec![],
-        }
+    pub fn update_power(&mut self, delta: f32) {
+        self.power += delta;
+        println!("power {} ({delta})", self.power);
     }
 }
 
 /// The data keeping track of the current state of the game.
 pub struct GameData {
-    pub players: [PlayerData; 4],
+    pub players: HashMap<Player, PlayerData>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Copy)]

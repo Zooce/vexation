@@ -5,8 +5,8 @@
   "elements": [
     {
       "type": "rectangle",
-      "version": 3295,
-      "versionNonce": 665439565,
+      "version": 3296,
+      "versionNonce": 596558685,
       "isDeleted": false,
       "id": "0nVOpw9I7pNkX7FBjOvWu",
       "fillStyle": "hachure",
@@ -17,7 +17,7 @@
       "angle": 0,
       "x": 567,
       "y": 342.5,
-      "strokeColor": "#000000",
+      "strokeColor": "#5f3dc4",
       "backgroundColor": "transparent",
       "width": 147,
       "height": 59,
@@ -154,14 +154,14 @@
           "type": "arrow"
         }
       ],
-      "updated": 1660544995229,
+      "updated": 1666507519676,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 3559,
-      "versionNonce": 1718296709,
+      "version": 3560,
+      "versionNonce": 876047603,
       "isDeleted": false,
       "id": "yO02wGDnltjiLNwxSTcHM",
       "fillStyle": "hachure",
@@ -172,7 +172,7 @@
       "angle": 0,
       "x": 572,
       "y": 348,
-      "strokeColor": "#000000",
+      "strokeColor": "#5f3dc4",
       "backgroundColor": "transparent",
       "width": 137,
       "height": 48,
@@ -180,7 +180,7 @@
       "groupIds": [],
       "strokeSharpness": "sharp",
       "boundElements": [],
-      "updated": 1660462006440,
+      "updated": 1666507519676,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -4568,8 +4568,8 @@
     },
     {
       "type": "text",
-      "version": 3966,
-      "versionNonce": 868719423,
+      "version": 3982,
+      "versionNonce": 11206067,
       "isDeleted": false,
       "id": "pMkIO4hFnZclzgb2skGAb",
       "fillStyle": "hachure",
@@ -4588,17 +4588,17 @@
       "groupIds": [],
       "strokeSharpness": "sharp",
       "boundElements": [],
-      "updated": 1666502034896,
+      "updated": 1666505661732,
       "link": null,
       "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
-      "text": "update power\npoints",
+      "text": "update power\nbars",
       "baseline": 41,
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "sGKiwXltVyN5sxIj0LYVY",
-      "originalText": "update power points"
+      "originalText": "update power bars"
     },
     {
       "type": "arrow",
