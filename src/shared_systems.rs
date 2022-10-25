@@ -253,12 +253,32 @@ pub fn update_power_bars(
                 game_data.players.get_mut(captive).unwrap().update_power(-3.0);
             },
             PowerBarEvent::Deflection{ deflector, deflected } => {},
-            PowerBarEvent::Index(player, index) => {
-                // FIXME: these numbers are completely wacky
-                game_data.players.get_mut(player).unwrap().update_power(match index {
-                    0..=47 => 10.0/48.0,
-                    _ => 20.0/48.0,
-                });
+            PowerBarEvent::Index{player, index, prev_index} => {
+                let distance = if *index == CENTER_INDEX {
+                    // home (54)  -> center (53) = 7
+                    // prev_index -> center (53) = (17 or 29) - prev_index + 1
+                    match *prev_index {
+                        54 => 7,
+                        _ if (6..=17).contains(prev_index) => 17 - prev_index + 1,
+                        _ if (18..=29).contains(prev_index) => 29 - prev_index + 1,
+                        _ => unreachable!(),
+                    }
+                } else {
+                    // home (54)   -> index = index + 1
+                    // center (53) -> index = index + 1 - 41 
+                    // prev_index  -> index = index - prev_index
+                    match *prev_index {
+                        54 => index + 1,
+                        CENTER_INDEX => index + 1 - 41,
+                        _ => index - prev_index,
+                    }
+                } as f32;
+                let points = match index {
+                    0..=47 => 1.0,
+                    _ => 2.0,
+                } * 10.0 * distance / 48.0;
+                println!("distance: {distance}, points: {points}");
+                game_data.players.get_mut(player).unwrap().update_power(points);
             }
         }
     }
@@ -277,3 +297,4 @@ pub fn generate_power_up(
         // mark power-up for animation
     }
 }
+

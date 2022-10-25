@@ -20,6 +20,6 @@ pub struct HighlightEvent{
 pub enum PowerBarEvent {
     Capture{captor: Player, captive: Player},
     Deflection{deflector: Player, deflected: Player},
-    Index(Player, usize),
+    Index{player: Player, index: usize, prev_index: usize},
 }
 

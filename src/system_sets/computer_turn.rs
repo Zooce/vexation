@@ -54,8 +54,8 @@ pub fn computer_move_buffer(
     if timer_finished {
         if let Some((entity, index, which)) = current_player_data.use_selected_move() {
             let (transform, mut marble) = marbles.get_mut(entity).unwrap();
-            let old_index = marble.index; // just for logging
-            marble.index = index;
+            // TODO: need to share this logic with human player somehow..
+            marble.update_index(index);
             dice_data.use_die(which, &mut commands);
             let destination = {
                 let (c, r) = BOARD[index];
@@ -65,7 +65,7 @@ pub fn computer_move_buffer(
             commands.entity(entity).insert(Moving::new(destination, transform.translation));
             highlight_events.send(HighlightEvent{ marble: None, move_index: None });
             state.set(GameState::WaitForAnimation).unwrap();
-            println!("{:?}: from {} to {} with {:?}", entity, old_index, index, which);
+            println!("{:?}: from {} to {} with {:?}", entity, marble.prev_index, marble.index, which);
         } else if dice_data.doubles {
             state.set(GameState::DiceRoll).unwrap();
         } else {

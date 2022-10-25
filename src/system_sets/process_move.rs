@@ -46,7 +46,11 @@ pub fn process_index(
     selected_marble: Query<&Marble, (With<CurrentPlayer>, With<SelectedMarble>)>,
 ) {
     let marble = selected_marble.single();
-    power_bar_events.send(PowerBarEvent::Index(current_player_data.player, marble.index));
+    power_bar_events.send(PowerBarEvent::Index{
+        player: current_player_data.player,
+        index: marble.index,
+        prev_index: marble.prev_index
+    });
 }
 
 pub fn check_for_power_up(

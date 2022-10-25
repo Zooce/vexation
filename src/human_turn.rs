@@ -160,13 +160,11 @@ fn move_event_handler(
 ) {
     if let Some(MoveEvent((idx, which, dest))) = move_events.iter().last() {
         let (e, t, mut m) = marbles.single_mut();
-        let old_index = m.index; // just for logging
-        m.index = *idx;
+        m.update_index(*idx);
         dice_data.use_die(*which, &mut commands);
         commands.entity(e).insert(Moving::new(*dest, t.translation));
         state.set(GameState::WaitForAnimation).unwrap();
-        // POWERUP: if `idx` is also a power-up tile for the current player, initiate the power-up generator
-        println!("{:?}: {} to {} with {:?}", e, old_index, idx, which);
+        println!("{:?}: {} to {} with {:?}", e, m.prev_index, m.index, which);
     }
 }
 

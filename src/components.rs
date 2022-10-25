@@ -35,8 +35,25 @@ pub struct Highlight{
 pub struct Marble {
     /// This is a index into the `BOARD` (i.e. which space this marble is located).
     pub index: usize,
+    /// The previous index where this marble was.
+    pub prev_index: usize,
     /// Where this marble started in their base.
     pub origin: Vec3,
+}
+
+impl Marble {
+    pub fn new(origin: Vec3) -> Self {
+        Self {
+            index: BOARD.len(),
+            prev_index: BOARD.len(),
+            origin,
+        }
+    }
+
+    pub fn update_index(&mut self, new_index: usize) {
+        self.prev_index = self.index;
+        self.index = new_index;
+    }
 }
 
 #[derive(Component, Debug)]

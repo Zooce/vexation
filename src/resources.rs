@@ -113,17 +113,38 @@ pub enum PowerUp {
     DoubleDice,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct PlayerData {
     pub consecutive_empty_moves: u8,
     pub power: f32,
+    pub multiplier: f32,
     pub power_ups: Vec<PowerUp>,
+}
+
+impl Default for PlayerData {
+    fn default() -> Self {
+        Self {
+            consecutive_empty_moves: 0,
+            power: 0.0,
+            multiplier: 1.0,
+            power_ups: vec![],
+        }
+    }
 }
 
 impl PlayerData {
     pub fn update_power(&mut self, delta: f32) {
-        self.power += delta;
-        println!("power {} ({delta})", self.power);
+        let new_power = (self.power + delta).clamp(0.0, 30.0);
+        if new_power >= 10.0 * self.multiplier {
+            println!("TODO: power up!");
+            self.multiplier += 1.0;
+        } else if new_power < 10.0 * (self.multiplier - 1.0) {
+            println!("TODO: power down!");
+            self.multiplier -= 1.0;
+        }
+        self.power = new_power;
+        self.multiplier.clamp(0.0, 3.0);
+        // TODO: return an enum for power up or power down or nothing
     }
 }
 

@@ -142,7 +142,7 @@ pub fn create_game(
                 ..default()
             });
         green
-            .insert(Marble{ index: BOARD.len(), origin: origin.translation })
+            .insert(Marble::new(origin.translation))
             .insert(Player::Green)
             ;
         if current_player == Player::Green {
@@ -157,7 +157,7 @@ pub fn create_game(
                 ..default()
             });
         yellow
-            .insert(Marble{ index: BOARD.len(), origin: origin.translation })
+            .insert(Marble::new(origin.translation))
             .insert(Player::Yellow)
             ;
         if current_player == Player::Yellow {
@@ -172,7 +172,7 @@ pub fn create_game(
                 ..default()
             });
         red
-            .insert(Marble{ index: BOARD.len(), origin: origin.translation })
+            .insert(Marble::new(origin.translation))
             .insert(Player::Red)
             ;
         if current_player == Player::Red {
@@ -187,7 +187,7 @@ pub fn create_game(
                 ..default()
             });
         blue
-            .insert(Marble{ index: BOARD.len(), origin: origin.translation })
+            .insert(Marble::new(origin.translation))
             .insert(Player::Blue)
             ;
         if current_player == Player::Blue {
