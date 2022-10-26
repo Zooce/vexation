@@ -50,7 +50,7 @@ fn roll_dice(
     dice_data.die_1_side = Some(d1);
     dice_data.die_2_side = Some(d2);
 
-    println!("{:?} and {:?}", d1, d2);
+    println!("dice1 = {:?}, dice2 = {:?}", d1, d2);
 }
 
 fn roll_animation(

@@ -27,7 +27,7 @@ pub fn choose_next_player(
         }
     }
 
-    println!("{:?} : {:?}", current_player_data.player, game_data.players.get(&current_player_data.player).unwrap());
+    println!("player = {:?}, data = {:?}", current_player_data.player, game_data.players.get(&current_player_data.player).unwrap());
 }
 
 pub fn show_or_hide_buttons(

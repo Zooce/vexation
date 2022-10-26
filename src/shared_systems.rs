@@ -244,21 +244,25 @@ pub fn watch_button_state_changes(
 pub fn update_power_bars(
     mut power_bar_events: EventReader<PowerBarEvent>,
     mut game_data: ResMut<GameData>,
+    mut power_up_events: EventWriter<GeneratePowerUpEvent>,
 ) {
     for event in power_bar_events.iter() {
-        println!("recieved {:?}", event);
-        match event {
+        println!("event = {:?}", event);
+        for (player, power_level) in match event {
             PowerBarEvent::Capture{ captor, captive } => {
-                game_data.players.get_mut(captor).unwrap().update_power(3.0);
-                game_data.players.get_mut(captive).unwrap().update_power(-3.0);
+                vec![
+                    (captor, game_data.players.get_mut(captor).unwrap().update_power(3.0)),
+                    (captive, game_data.players.get_mut(captive).unwrap().update_power(-3.0)),
+                ]
             },
-            PowerBarEvent::Deflection{ deflector, deflected } => {},
+            PowerBarEvent::Deflection{ deflector, deflected } => vec![],
             PowerBarEvent::Index{player, index, prev_index} => {
                 let distance = if *index == CENTER_INDEX {
                     // home (54)  -> center (53) = 7
-                    // prev_index -> center (53) = (17 or 29) - prev_index + 1
+                    // prev_index -> center (53) = (5 or 17 or 29) - prev_index + 1
                     match *prev_index {
                         54 => 7,
+                        _ if (0..=5).contains(prev_index) => 5 - prev_index + 1,
                         _ if (6..=17).contains(prev_index) => 17 - prev_index + 1,
                         _ if (18..=29).contains(prev_index) => 29 - prev_index + 1,
                         _ => unreachable!(),
@@ -277,8 +281,11 @@ pub fn update_power_bars(
                     0..=47 => 1.0,
                     _ => 2.0,
                 } * 10.0 * distance / 48.0;
-                println!("distance: {distance}, points: {points}");
-                game_data.players.get_mut(player).unwrap().update_power(points);
+                vec![(player, game_data.players.get_mut(player).unwrap().update_power(points))]
+            }
+        } {
+            if let Some(power_level) = power_level {
+                power_up_events.send(GeneratePowerUpEvent(*player, power_level));
             }
         }
     }
@@ -289,7 +296,7 @@ pub fn generate_power_up(
     mut game_data: ResMut<GameData>,
 ) {
     for event in power_up_events.iter() {
-        println!("generating power up for {:?}", event.0);
+        println!("event = {event:?}");
         // pick random power-up
         // add power-up to player's list
         // mark current player to wait for animation

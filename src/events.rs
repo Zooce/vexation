@@ -1,12 +1,14 @@
 use bevy::ecs::entity::Entity;
 use crate::components::Player;
+use crate::resources::PowerLevel;
 
 /// An `ActionEvent` that is sent when a button is clicked. The type `T` defines
 /// what those actions really are.
 #[derive(Clone, Copy)]
 pub struct ActionEvent<T>(pub T);
 
-pub struct GeneratePowerUpEvent(pub Player);
+#[derive(Debug)]
+pub struct GeneratePowerUpEvent(pub Player, pub PowerLevel);
 
 pub struct HighlightEvent{
     pub marble: Option<Entity>,

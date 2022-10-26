@@ -68,7 +68,7 @@ pub fn check_empty_moves(
     };
     if player_data.consecutive_empty_moves == 3 {
         player_data.consecutive_empty_moves = 0;
-        power_up_events.send(GeneratePowerUpEvent(current_player_data.player));
+        power_up_events.send(GeneratePowerUpEvent(current_player_data.player, PowerLevel::PowerUp));
     }
 }
 
@@ -222,7 +222,7 @@ mod test {
     #[test]
     fn test_basic_moves() {
         let dice = (Some(5), Some(5));
-        let marble = Marble{ index: 43, origin: Vec3::ZERO };
+        let marble = Marble{ index: 43, prev_index: 42, origin: Vec3::ZERO };
         let mut moves = BTreeSet::new();
         basic_rules(dice, Entity::from_raw(12), &marble, &mut moves);
         let mut iter = moves.iter();
@@ -231,7 +231,7 @@ mod test {
         assert_eq!(vec![44, 45, 46, 47, 48], iter.next().unwrap().1);
 
         let dice = (Some(4), Some(1));
-        let marble = Marble{ index: 52, origin: Vec3::ZERO };
+        let marble = Marble{ index: 52, prev_index: 52, origin: Vec3::ZERO };
         moves = BTreeSet::new();
         basic_rules(dice, Entity::from_raw(13), &marble, &mut moves);
         assert_eq!(0, moves.len());

@@ -65,7 +65,7 @@ pub fn computer_move_buffer(
             commands.entity(entity).insert(Moving::new(destination, transform.translation));
             highlight_events.send(HighlightEvent{ marble: None, move_index: None });
             state.set(GameState::WaitForAnimation).unwrap();
-            println!("{:?}: from {} to {} with {:?}", entity, marble.prev_index, marble.index, which);
+            println!("entity = {:?}, from = {}, to = {}, with = {:?}", entity, marble.prev_index, marble.index, which);
         } else if dice_data.doubles {
             state.set(GameState::DiceRoll).unwrap();
         } else {

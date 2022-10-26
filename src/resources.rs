@@ -121,6 +121,12 @@ pub struct PlayerData {
     pub power_ups: Vec<PowerUp>,
 }
 
+#[derive(Debug)]
+pub enum PowerLevel {
+    PowerUp,
+    PowerDown,
+}
+
 impl Default for PlayerData {
     fn default() -> Self {
         Self {
@@ -133,18 +139,20 @@ impl Default for PlayerData {
 }
 
 impl PlayerData {
-    pub fn update_power(&mut self, delta: f32) {
+    pub fn update_power(&mut self, delta: f32) -> Option<PowerLevel> {
         let new_power = (self.power + delta).clamp(0.0, 30.0);
-        if new_power >= 10.0 * self.multiplier {
-            println!("TODO: power up!");
+        let pl = if new_power >= 10.0 * self.multiplier {
             self.multiplier += 1.0;
+            Some(PowerLevel::PowerUp)
         } else if new_power < 10.0 * (self.multiplier - 1.0) {
-            println!("TODO: power down!");
             self.multiplier -= 1.0;
-        }
+            Some(PowerLevel::PowerDown)
+        } else {
+            None
+        };
         self.power = new_power;
         self.multiplier.clamp(0.0, 3.0);
-        // TODO: return an enum for power up or power down or nothing
+        pl
     }
 }
 

@@ -164,7 +164,7 @@ fn move_event_handler(
         dice_data.use_die(*which, &mut commands);
         commands.entity(e).insert(Moving::new(*dest, t.translation));
         state.set(GameState::WaitForAnimation).unwrap();
-        println!("{:?}: {} to {} with {:?}", e, m.prev_index, m.index, which);
+        println!("entity = {:?}, from = {}, to = {} with = {:?}", e, m.prev_index, m.index, which);
     }
 }
 

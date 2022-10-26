@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
-use crate::events::GeneratePowerUpEvent;
 use crate::events::PowerBarEvent;
 use crate::resources::*;
 
@@ -27,7 +26,7 @@ pub fn check_for_capture(
         .find(|(_, opp, _, p)| Player::is_same_index(current_player_data.player, cur.index, **p, opp.index))
         // POWERUP: only include non-deflecting marbles
     {
-        println!("{:?} {:?} @ {} captured {:?} {:?} @ {}",
+        println!("captor = {:?}, entity = {:?}, index = {}, captive = {:?}, entity = {:?}, index = {}",
             current_player_data.player, e, cur.index,
             opponent, entity, opponent_marble.index
         );
@@ -65,7 +64,7 @@ pub fn check_for_winner(
         state.set(GameState::TurnSetup).unwrap();
     } else {
         // winner
-        println!("{:?} Wins!", current_player_data.player);
+        println!("winner = {:?}", current_player_data.player);
         state.set(GameState::GameEnd).unwrap();
     }
 }
