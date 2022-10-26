@@ -53,17 +53,6 @@ pub fn process_index(
     });
 }
 
-pub fn check_for_power_up(
-    current_player_data: Res<CurrentPlayerData>,
-    selected_marble: Query<&Marble, With<SelectedMarble>>,
-    mut generate_power_up_events: EventWriter<GeneratePowerUpEvent>,
-) {
-    let marble = selected_marble.single();
-    if POWER_UP_INDEXES.contains(&marble.index) {
-        generate_power_up_events.send(GeneratePowerUpEvent(current_player_data.player));
-    }
-}
-
 pub fn check_for_winner(
     mut state: ResMut<State<GameState>>,
     marbles: Query<&Marble, With<CurrentPlayer>>,

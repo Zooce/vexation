@@ -79,7 +79,6 @@ impl Plugin for VexationPlugin {
             .add_system_set(SystemSet::on_update(GameState::ProcessMove)
                 .with_system(check_for_capture.before(check_for_winner))
                 .with_system(process_index.before(check_for_winner))
-                .with_system(check_for_power_up.before(check_for_winner))
                 .with_system(check_for_winner)
             )
             .add_system_set(SystemSet::on_exit(GameState::ProcessMove)

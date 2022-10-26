@@ -19,8 +19,6 @@ pub const LAST_HOME_INDEX: usize = 52;
 pub const CENTER_ENTRANCE_INDEXES: [usize; 3] = [5, 17, 29];
 // turn_setup.rs
 pub const CENTER_EXIT_INDEX: usize = 41;
-// process_move.rs
-pub const POWER_UP_INDEXES: [usize; 5] = [3, 15, 27, 39, 53];
 
 /// Main board cell indexes - rotate clockwise for each color
 ///
