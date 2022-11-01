@@ -7,6 +7,7 @@ use crate::events::*;
 use crate::choose_color::ChooseColorPlugin;
 use crate::dice_roll::DiceRollPlugin;
 use crate::human_turn::HumanTurnPlugin;
+use crate::power::*;
 use crate::resources::*;
 use crate::shared_systems::*;
 use crate::system_sets::*;

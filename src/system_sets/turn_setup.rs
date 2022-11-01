@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
-use crate::events::GeneratePowerUpEvent;
+use crate::power::*;
 use crate::resources::*;
 use std::collections::BTreeSet;
 
@@ -68,7 +68,7 @@ pub fn check_empty_moves(
     };
     if player_data.consecutive_empty_moves == 3 {
         player_data.consecutive_empty_moves = 0;
-        power_up_events.send(GeneratePowerUpEvent(current_player_data.player, PowerLevel::PowerUp));
+        power_up_events.send(GeneratePowerUpEvent(current_player_data.player, PowerChange::Up));
     }
 }
 

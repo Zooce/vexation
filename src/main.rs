@@ -9,6 +9,7 @@ mod choose_color;
 mod dice_roll;
 mod human_turn;
 mod main_menu;
+mod power;
 mod resources;
 mod shared_systems;
 mod system_sets;

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use bevy::prelude::*;
 use crate::components::*;
+use crate::power::PowerUp;
 
 pub struct BufferTimer(pub Timer);
 
@@ -102,29 +103,12 @@ pub enum GameButtonAction {
     Done,
 }
 
-// POWERUP: this needs some thought - currently just a placeholder
-#[derive(Debug)]
-pub enum PowerUp {
-    RollAgain,
-    EvadeCapture,
-    DeflectCapture,
-    SelfJump,
-    HomeRun,
-    DoubleDice,
-}
-
 #[derive(Debug)]
 pub struct PlayerData {
     pub consecutive_empty_moves: u8,
     pub power: f32,
     pub multiplier: f32,
     pub power_ups: Vec<PowerUp>,
-}
-
-#[derive(Debug)]
-pub enum PowerLevel {
-    PowerUp,
-    PowerDown,
 }
 
 impl Default for PlayerData {
@@ -135,24 +119,6 @@ impl Default for PlayerData {
             multiplier: 1.0,
             power_ups: vec![],
         }
-    }
-}
-
-impl PlayerData {
-    pub fn update_power(&mut self, delta: f32) -> Option<PowerLevel> {
-        let new_power = (self.power + delta).clamp(0.0, 30.0);
-        let pl = if new_power >= 10.0 * self.multiplier {
-            self.multiplier += 1.0;
-            Some(PowerLevel::PowerUp)
-        } else if new_power < 10.0 * (self.multiplier - 1.0) {
-            self.multiplier -= 1.0;
-            Some(PowerLevel::PowerDown)
-        } else {
-            None
-        };
-        self.power = new_power;
-        self.multiplier.clamp(0.0, 3.0);
-        pl
     }
 }
 

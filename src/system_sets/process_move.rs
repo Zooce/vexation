@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
-use crate::events::PowerBarEvent;
+use crate::power::PowerBarEvent;
 use crate::resources::*;
 
 pub fn check_for_capture(
