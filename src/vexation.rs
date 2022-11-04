@@ -7,7 +7,7 @@ use crate::events::*;
 use crate::choose_color::ChooseColorPlugin;
 use crate::dice_roll::DiceRollPlugin;
 use crate::human_turn::HumanTurnPlugin;
-use crate::power::*;
+use crate::power::PowerUpPlugin;
 use crate::resources::*;
 use crate::shared_systems::*;
 use crate::system_sets::*;
@@ -20,11 +20,9 @@ pub struct VexationPlugin;
 impl Plugin for VexationPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_event::<GeneratePowerUpEvent>()
             .add_event::<HighlightEvent>()
             .add_event::<MarbleAnimationDoneEvent>()
             .add_event::<ActionEvent<GameButtonAction>>()
-            .add_event::<PowerBarEvent>()
 
             // game play enter
             .add_system_set(SystemSet::on_update(GameState::GameStart)
@@ -45,9 +43,8 @@ impl Plugin for VexationPlugin {
                 .with_system(highlighter)
                 .with_system(animate_tile_highlights)
                 .with_system(dim_used_die)
-                .with_system(generate_power_up)
-                .with_system(update_power_bars)
             )
+            .add_plugin(PowerUpPlugin)
 
             // next player
             .add_system_set(SystemSet::on_update(GameState::NextPlayer)
