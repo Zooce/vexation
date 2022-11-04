@@ -1,17 +1,5 @@
 use bevy::prelude::*;
 use crate::constants::*;
-use crate::events::*;
-
-#[derive(Component)]
-pub struct ButtonAction<T>(pub ActionEvent<T>);
-
-#[derive(Component, Clone, Copy, Debug)]
-pub enum ButtonState {
-    NotHovered,
-    Hovered,
-    Pressed,
-    PressedNotHovered,
-}
 
 #[derive(Component)]
 pub struct CurrentPlayer;

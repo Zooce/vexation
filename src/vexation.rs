@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use bevy::prelude::*;
+use crate::buttons::*;
 use crate::components::*;
 use crate::constants::*;
 use crate::events::*;
@@ -12,7 +13,6 @@ use crate::process::ProcessMovePlugin;
 use crate::resources::*;
 use crate::shared_systems::*;
 use crate::system_sets::*;
-use crate::utils::*;
 use rand::{Rng, thread_rng};
 use rand::distributions::Uniform;
 
@@ -233,7 +233,7 @@ pub fn create_game(
                 asset_server.load("buttons/done_button.png"), Vec2::new(160.0, 48.0), 3, 1
             ));
             let transform = Transform::from_xyz(0.0, (-WINDOW_SIZE / 2.0) + TILE_SIZE, 5.0);
-            ui::spawn_sprite_sheet_button(
+            spawn_sprite_sheet_button(
                 parent,
                 sprite_sheet,
                 transform,

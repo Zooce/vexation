@@ -1,11 +1,8 @@
 use bevy::prelude::*;
 use bevy::app::AppExit;
-use crate::components::*;
+use crate::buttons::*;
 use crate::constants::*;
-use crate::events::*;
 use crate::resources::*;
-use crate::shared_systems::*;
-use crate::utils::ui;
 
 #[derive(Clone, Copy)]
 enum MainMenuAction {
@@ -48,7 +45,9 @@ impl Plugin for MainMenuPlugin {
                 .with_system(main_menu_enter)
             )
             .add_system_set(SystemSet::on_update(GameState::MainMenu)
-                .with_system(execute_menu_action.before(mouse_watcher::<MainMenuAction>)) // I actually want a frame delay here so we can see the button "animation"
+                // I'm executing button actions first because I want a frame
+                // delay here so we can see the button animation
+                .with_system(execute_menu_action.before(mouse_watcher::<MainMenuAction>))
                 .with_system(mouse_watcher::<MainMenuAction>)
                 .with_system(watch_button_state_changes.after(mouse_watcher::<MainMenuAction>))
 
@@ -204,7 +203,7 @@ fn create_main_menu(
 
             // buttons
             let mut transform = Transform::from_xyz(0.0, y_title - 100.0, 1.0);
-            ui::spawn_sprite_sheet_button(
+            spawn_sprite_sheet_button(
                 parent,
                 ui_assets.play_button.clone(),
                 transform,
@@ -215,7 +214,7 @@ fn create_main_menu(
 
             let y_offset = 48.0 + 20.0; // 48 = height of a button, 20 = spacing between buttons
             transform.translation -= Vec3::new(0.0, y_offset, 0.0);
-            ui::spawn_sprite_sheet_button(
+            spawn_sprite_sheet_button(
                 parent,
                 ui_assets.rules_button.clone(),
                 transform,
@@ -225,7 +224,7 @@ fn create_main_menu(
             );
 
             transform.translation -= Vec3::new(0.0, y_offset, 0.0);
-            ui::spawn_sprite_sheet_button(
+            spawn_sprite_sheet_button(
                 parent,
                 ui_assets.quit_button.clone(),
                 transform,
@@ -323,7 +322,7 @@ fn create_rules_page(
                 1 | 2 => {
                     let x_offset = (160.0 / 2.0) + 20.0;
                     let transform = Transform::from_xyz(x_offset, BOTTOM_BUTTON_Y, 5.0);
-                    ui::spawn_sprite_sheet_button(
+                    spawn_sprite_sheet_button(
                         parent,
                         ui_assets.next_button.clone(),
                         transform,
@@ -336,7 +335,7 @@ fn create_rules_page(
                 _ => None,
             };
             let transform = Transform::from_xyz(x_offset.unwrap_or_default(), BOTTOM_BUTTON_Y, 5.0);
-            ui::spawn_sprite_sheet_button(
+            spawn_sprite_sheet_button(
                 parent,
                 ui_assets.back_button.clone(),
                 transform,

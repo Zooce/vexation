@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy::render::texture::ImageSettings;
 use bevy::window::PresentMode;
 
+mod buttons;
 mod components;
 mod constants;
 mod events;
@@ -14,7 +15,6 @@ mod process;
 mod resources;
 mod shared_systems;
 mod system_sets;
-mod utils;
 mod vexation;
 
 use constants::*;
