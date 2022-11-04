@@ -8,6 +8,7 @@ use crate::choose_color::ChooseColorPlugin;
 use crate::dice_roll::DiceRollPlugin;
 use crate::human_turn::HumanTurnPlugin;
 use crate::power::PowerUpPlugin;
+use crate::process::ProcessMovePlugin;
 use crate::resources::*;
 use crate::shared_systems::*;
 use crate::system_sets::*;
@@ -73,19 +74,10 @@ impl Plugin for VexationPlugin {
                 .with_system(wait_for_marble_animation)
             )
 
-            // process move
-            .add_system_set(SystemSet::on_update(GameState::ProcessMove)
-                .with_system(check_for_capture.before(check_for_winner))
-                .with_system(process_index.before(check_for_winner))
-                .with_system(check_for_winner)
-            )
-            .add_system_set(SystemSet::on_exit(GameState::ProcessMove)
-                .with_system(clear_selected_marble)
-            )
-
             .add_plugin(ChooseColorPlugin)
             .add_plugin(DiceRollPlugin)
             .add_plugin(HumanTurnPlugin)
+            .add_plugin(ProcessMovePlugin)
             ;
     }
 }
