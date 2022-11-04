@@ -24,7 +24,7 @@ impl Plugin for ProcessMovePlugin {
 fn check_for_capture(
     mut commands: Commands,
     current_player_data: Res<CurrentPlayerData>,
-    selected_marble: Query<(&Marble), (With<CurrentPlayer>, With<SelectedMarble>)>,
+    selected_marble: Query<&Marble, (With<CurrentPlayer>, With<SelectedMarble>)>,
     mut opponent_marbles: Query<(Entity, &mut Marble, &Transform, &Player), Without<CurrentPlayer>>,
     mut power_bar_events: EventWriter<PowerBarEvent>,
 ) {

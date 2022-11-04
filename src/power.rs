@@ -22,9 +22,12 @@ pub enum PowerChange {
     Down,
 }
 
+const MAX_POWER: f32 = 30.0;
+
 impl PlayerData {
     pub fn update_power(&mut self, delta: f32) -> Option<PowerChange> {
-        let new_power = (self.power + delta).clamp(0.0, 30.0);
+        if self.power == MAX_POWER && delta.is_sign_positive() { return None; }
+        let new_power = (self.power + delta).clamp(0.0, MAX_POWER);
         let pl = if new_power >= 10.0 * self.multiplier {
             self.multiplier += 1.0;
             Some(PowerChange::Up)
@@ -35,7 +38,7 @@ impl PlayerData {
             None
         };
         self.power = new_power;
-        self.multiplier = self.multiplier.clamp(0.0, 3.0);
+        self.multiplier = self.multiplier.clamp(0.0, 3.0); // TODO: not sure if this is necessary
         pl
     }
 }
