@@ -57,8 +57,8 @@ impl From<usize> for PowerUp {
             0 => PowerUp::RollAgain,
             1 => PowerUp::DoubleDice,
             2 => PowerUp::EvadeCapture,
-            4 => PowerUp::SelfJump,
-            5 => PowerUp::HomeRun,
+            3 => PowerUp::SelfJump,
+            4 => PowerUp::HomeRun,
             _ => unreachable!(),
         }
     }
@@ -66,7 +66,7 @@ impl From<usize> for PowerUp {
 
 struct PowerUpDistribution(pub WeightedIndex<usize>);
 
-const POWER_UP_WEIGHTS: [usize; 6] = [4, 4, 3, 3, 2, 1];
+const POWER_UP_WEIGHTS: [usize; 6] = [4, 4, 3, 2, 1];
 
 pub struct PowerUpPlugin;
 
