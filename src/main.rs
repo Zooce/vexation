@@ -9,6 +9,7 @@ mod constants;
 mod events;
 mod choose_color;
 mod dice_roll;
+mod end_turn;
 mod human_turn;
 mod main_menu;
 mod next_player;

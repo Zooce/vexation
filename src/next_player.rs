@@ -28,7 +28,8 @@ pub fn choose_next_player(
         }
     }
 
-    println!("player = {:?}, data = {:?}", current_player_data.player, game_data.players.get(&current_player_data.player).unwrap());
+    let new_player_data = game_data.players.get(&current_player_data.player).unwrap();
+    println!("player = {:?}, data = {:?}", current_player_data.player, new_player_data);
 }
 
 pub fn show_or_hide_buttons(

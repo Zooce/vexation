@@ -5,6 +5,7 @@ use crate::buttons::*;
 use crate::components::*;
 use crate::computer_turn::*;
 use crate::constants::*;
+use crate::end_turn::*;
 use crate::events::*;
 use crate::choose_color::ChooseColorPlugin;
 use crate::dice_roll::DiceRollPlugin;
@@ -59,8 +60,8 @@ impl Plugin for VexationPlugin {
             // turn setup
             .add_system_set(SystemSet::on_update(GameState::TurnSetup)
                 .with_system(calc_possible_moves)
-                .with_system(check_empty_moves.after(calc_possible_moves))
-                .with_system(turn_setup_complete.after(check_empty_moves))
+                .with_system(count_moves.after(calc_possible_moves))
+                .with_system(turn_setup_complete.after(count_moves))
             )
 
             // computer turn
@@ -80,6 +81,11 @@ impl Plugin for VexationPlugin {
             .add_plugin(DiceRollPlugin)
             .add_plugin(HumanTurnPlugin)
             .add_plugin(ProcessMovePlugin)
+            
+            // end turn
+            .add_system_set(SystemSet::on_update(GameState::EndTurn)
+                .with_system(end_turn)
+            )
             ;
     }
 }

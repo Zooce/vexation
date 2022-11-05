@@ -44,8 +44,18 @@ fn roll_die() -> u8 {
 
 fn roll_dice(
     mut dice_data: ResMut<DiceData>,
+    game_data: Res<GameData>,
+    current_player_data: Res<CurrentPlayerData>,
 ) {
-    let (d1, d2) = (roll_die(), roll_die());
+    let player_data = game_data.players.get(&current_player_data.player).unwrap();
+    let (d1, d2) = loop {
+        let (a, b) = (roll_die(), roll_die());
+        // before accepting the roll, make sure the player get's a move if they
+        // haven't been able to play for two entire turns
+        if player_data.consecutive_empty_turns < 2 || a == 1 || b == 1 {
+            break (a, b);
+        }
+    };
     dice_data.doubles = d1 == d2;
     dice_data.die_1_side = Some(d1);
     dice_data.die_2_side = Some(d2);

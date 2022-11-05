@@ -68,7 +68,7 @@ pub fn computer_move_buffer(
         } else if dice_data.doubles {
             state.set(GameState::DiceRoll).unwrap();
         } else {
-            state.set(GameState::NextPlayer).unwrap();
+            state.set(GameState::EndTurn).unwrap();
         }
     }
 }

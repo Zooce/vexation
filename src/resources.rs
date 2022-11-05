@@ -105,7 +105,8 @@ pub enum GameButtonAction {
 
 #[derive(Debug)]
 pub struct PlayerData {
-    pub consecutive_empty_moves: u8,
+    pub turn_move_count: u8,
+    pub consecutive_empty_turns: u8,
     pub power: f32,
     pub multiplier: f32,
     pub power_ups: Vec<PowerUp>,
@@ -114,11 +115,23 @@ pub struct PlayerData {
 impl Default for PlayerData {
     fn default() -> Self {
         Self {
-            consecutive_empty_moves: 0,
+            turn_move_count: 0,
+            consecutive_empty_turns: 0,
             power: 0.0,
             multiplier: 1.0,
             power_ups: vec![],
         }
+    }
+}
+
+impl PlayerData {
+    pub fn end_of_turn(&mut self) {
+        self.consecutive_empty_turns = if self.turn_move_count > 0 {
+            0
+        } else {
+            self.consecutive_empty_turns + 1
+        };
+        self.turn_move_count = 0;
     }
 }
 
@@ -139,6 +152,7 @@ pub enum GameState {
     HumanTurn,
     WaitForAnimation,
     ProcessMove,
+    EndTurn,
     GameEnd,
 }
 

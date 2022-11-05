@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
-use crate::power::*;
 use crate::resources::*;
 use std::collections::BTreeSet;
 
@@ -53,23 +52,12 @@ pub fn calc_possible_moves(
         .collect();
 }
 
-pub fn check_empty_moves(
+pub fn count_moves(
     mut game_data: ResMut<GameData>,
     current_player_data: Res<CurrentPlayerData>,
-    dice_data: Res<DiceData>,
-    mut power_up_events: EventWriter<GeneratePowerUpEvent>,
 ) {
-    if dice_data.did_use_die() { return; }
-    let mut player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
-    player_data.consecutive_empty_moves = if current_player_data.possible_moves.is_empty() {
-        player_data.consecutive_empty_moves + 1
-    } else {
-        0
-    };
-    if player_data.consecutive_empty_moves == 3 {
-        player_data.consecutive_empty_moves = 0;
-        power_up_events.send(GeneratePowerUpEvent(current_player_data.player, PowerChange::Up));
-    }
+    let count = current_player_data.possible_moves.len() as u8;
+    game_data.players.get_mut(&current_player_data.player).unwrap().turn_move_count += count;
 }
 
 pub fn turn_setup_complete(
