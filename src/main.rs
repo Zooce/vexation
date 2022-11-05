@@ -4,17 +4,19 @@ use bevy::window::PresentMode;
 
 mod buttons;
 mod components;
+mod computer_turn;
 mod constants;
 mod events;
 mod choose_color;
 mod dice_roll;
 mod human_turn;
 mod main_menu;
+mod next_player;
 mod power;
 mod process;
 mod resources;
 mod shared_systems;
-mod system_sets;
+mod turn_setup;
 mod vexation;
 
 use constants::*;
