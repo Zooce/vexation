@@ -66,7 +66,7 @@ impl From<usize> for PowerUp {
 
 struct PowerUpDistribution(pub WeightedIndex<usize>);
 
-const POWER_UP_WEIGHTS: [usize; 6] = [4, 4, 3, 2, 1];
+const POWER_UP_WEIGHTS: [usize; 5] = [4, 4, 3, 2, 1];
 
 pub struct PowerUpPlugin;
 
