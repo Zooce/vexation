@@ -12,7 +12,6 @@ pub struct GeneratePowerUpEvent(pub Player, pub PowerChange);
 #[derive(Debug)]
 pub enum PowerBarEvent {
     Capture{captor: Player, captive: Player},
-    Deflection{deflector: Player, deflected: Player},
     Index{player: Player, index: usize, prev_index: usize},
 }
 
@@ -48,7 +47,6 @@ pub enum PowerUp {
     RollAgain,       // weight = 4
     DoubleDice,      // weight = 4
     EvadeCapture,    // weight = 3
-    DeflectCapture,  // weight = 3
     SelfJump,        // weight = 2 
     HomeRun,         // weight = 1
 }
@@ -59,7 +57,6 @@ impl From<usize> for PowerUp {
             0 => PowerUp::RollAgain,
             1 => PowerUp::DoubleDice,
             2 => PowerUp::EvadeCapture,
-            3 => PowerUp::DeflectCapture,
             4 => PowerUp::SelfJump,
             5 => PowerUp::HomeRun,
             _ => unreachable!(),
@@ -103,7 +100,6 @@ fn update_power_bars(
                     (captive, game_data.players.get_mut(captive).unwrap().update_power(-3.0)),
                 ]
             },
-            PowerBarEvent::Deflection{ deflector, deflected } => vec![],
             PowerBarEvent::Index{player, index, prev_index} => {
                 let distance = if *index == CENTER_INDEX {
                     // home (54)  -> center (53) = 7
