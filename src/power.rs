@@ -37,7 +37,7 @@ impl PlayerData {
             None
         };
         self.power = new_power;
-        self.multiplier = self.multiplier.clamp(0.0, 3.0); // TODO: not sure if this is necessary
+        // self.multiplier = self.multiplier.clamp(0.0, 3.0); // TODO: not sure if this is necessary
         pl
     }
 }
