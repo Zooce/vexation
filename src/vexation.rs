@@ -42,6 +42,7 @@ impl Plugin for VexationPlugin {
 
             // shared systems
             .add_system_set(SystemSet::new()
+                .label(SharedSystemLabel)
                 .with_run_criteria(should_run_shared_systems)
                 .with_system(animate_marble_moves)
                 .with_system(highlighter)

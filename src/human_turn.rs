@@ -1,3 +1,4 @@
+use bevy::input::keyboard::KeyboardInput;
 use bevy::prelude::*;
 use bevy::app::AppExit;
 use bevy::input::mouse::{MouseButtonInput, MouseButton};
@@ -5,6 +6,7 @@ use crate::buttons::*;
 use crate::components::*;
 use crate::constants::*;
 use crate::events::*;
+use crate::power::ActivatePowerUpEvent;
 use crate::resources::*;
 
 struct ClickEvent(pub Vec2);
@@ -23,6 +25,8 @@ impl Plugin for HumanTurnPlugin {
                 .with_system(enable_ui)
             )
             .add_system_set(SystemSet::on_update(GameState::HumanTurn)
+                // temp
+                .with_system(use_power_up_from_keyboard)
                 // ui
                 .with_system(execute_button_actions.before(mouse_watcher::<GameButtonAction>))
                 .with_system(mouse_watcher::<GameButtonAction>)
@@ -209,5 +213,32 @@ fn snap(coord: f32) -> f32 {
         result * -1.0
     } else {
         result
+    }
+}
+
+fn use_power_up_from_keyboard(
+    mut kb_events: EventReader<KeyboardInput>,
+    mut game_data: ResMut<GameData>,
+    current_player_data: Res<CurrentPlayerData>,
+    mut pu_events: EventWriter<ActivatePowerUpEvent>,
+) {
+    let player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
+    if player_data.power_ups.is_empty() {
+        return;
+    }
+    if let Some(event) = kb_events.iter().last() {
+        if !event.state.is_pressed() {
+            return;
+        }
+        if let Some(keycode) = event.key_code {
+            if let Some(power_up) = match keycode {
+                KeyCode::Key1 => player_data.use_power_up(0),
+                KeyCode::Key2 => player_data.use_power_up(1),
+                KeyCode::Key3 => player_data.use_power_up(2),
+                _ => None,
+            } {
+                pu_events.send(ActivatePowerUpEvent(power_up));
+            }
+        }
     }
 }

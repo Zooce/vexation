@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use crate::components::Player;
 use crate::constants::CENTER_INDEX;
-use crate::resources::{ GameData, PlayerData };
-use crate::shared_systems::should_run_shared_systems;
+use crate::resources::GameData;
+use crate::shared_systems::{SharedSystemLabel, should_run_shared_systems};
 use rand::thread_rng;
 use rand::distributions::{ Distribution, WeightedIndex };
 
@@ -16,30 +16,15 @@ pub enum PowerBarEvent {
 }
 
 #[derive(Debug)]
+pub struct ActivatePowerUpEvent(pub PowerUp);
+
+#[derive(Debug)]
 pub enum PowerChange {
     Up,
     Down,
 }
 
-const MAX_POWER: f32 = 30.0;
-
-impl PlayerData {
-    pub fn update_power(&mut self, delta: f32) -> Option<PowerChange> {
-        if self.power == MAX_POWER && delta.is_sign_positive() { return None; }
-        let new_power = (self.power + delta).clamp(0.0, MAX_POWER);
-        let pl = if new_power >= 10.0 * self.multiplier {
-            self.multiplier += 1.0;
-            Some(PowerChange::Up)
-        } else if new_power < 10.0 * (self.multiplier - 1.0) {
-            self.multiplier -= 1.0;
-            Some(PowerChange::Down)
-        } else {
-            None
-        };
-        self.power = new_power;
-        pl
-    }
-}
+pub const MAX_POWER: f32 = 30.0;
 
 #[derive(Debug)]
 pub enum PowerUp {
@@ -49,6 +34,8 @@ pub enum PowerUp {
     SelfJump,        // weight = 2 
     HomeRun,         // weight = 1
 }
+
+const POWER_UP_WEIGHTS: [usize; 5] = [4, 4, 3, 2, 1];
 
 impl From<usize> for PowerUp {
     fn from(value: usize) -> Self {
@@ -65,22 +52,23 @@ impl From<usize> for PowerUp {
 
 struct PowerUpDistribution(pub WeightedIndex<usize>);
 
-const POWER_UP_WEIGHTS: [usize; 5] = [4, 4, 3, 2, 1];
-
 pub struct PowerUpPlugin;
 
 impl Plugin for PowerUpPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_event::<PowerBarEvent>()
+            .add_event::<ActivatePowerUpEvent>()
             .add_event::<GeneratePowerUpEvent>()
+            .add_event::<PowerBarEvent>()
             
             .insert_resource(PowerUpDistribution(WeightedIndex::new(&POWER_UP_WEIGHTS).unwrap()))
 
             .add_system_set(SystemSet::new()
+                .label(SharedSystemLabel)
                 .with_run_criteria(should_run_shared_systems)
                 .with_system(update_power_bars)
                 .with_system(generate_power_up)
+                .with_system(activate_power_up)
             )
             ;
     }
@@ -159,3 +147,34 @@ fn generate_power_up(
     }
 }
 
+fn activate_power_up(
+    mut events: EventReader<ActivatePowerUpEvent>,
+) {
+    for event in events.iter() {
+        match event.0 {
+            PowerUp::RollAgain => {
+                // state.set(GameState::DiceRoll).unwrap();
+                println!("RollAgain");
+            }
+            PowerUp::DoubleDice => {
+                // set 'double_dice' on CurrentPlayerData
+                // state.set(GameState::TurnSetup).unwrap(); // to recalc moves
+                println!("DoubleDice");
+            }
+            PowerUp::EvadeCapture => {
+                // insert 'Evading' component for all current player's marbles
+                println!("EvadeCapture");
+            }
+            PowerUp::SelfJump => {
+                // set 'jump_self' flag on CurrentPlayerData
+                // state.set(GameState::TurnSetup).unwrap(); // to recalc moves
+                println!("SelfJump");
+            }
+            PowerUp::HomeRun => {
+                // set 'home_run' flag on CurrentPlayerData
+                // state.set(GameState::TurnSetup).unwrap(); // to recalc moves
+                println!("HomeRun");
+            }
+        }
+    }
+}

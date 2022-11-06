@@ -5,6 +5,9 @@ use crate::constants::*;
 use crate::events::*;
 use crate::resources::*;
 
+#[derive(SystemLabel)]
+pub struct SharedSystemLabel;
+
 pub fn should_run_shared_systems(
     state: Res<State<GameState>>,
 ) -> ShouldRun {
