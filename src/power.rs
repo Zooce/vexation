@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use crate::components::Player;
 use crate::constants::CENTER_INDEX;
-use crate::resources::{GameData, GameState};
+use crate::resources::{CurrentPlayerData, GameData, GameState};
 use crate::shared_systems::{SharedSystemLabel, should_run_shared_systems};
 use rand::thread_rng;
 use rand::distributions::{ Distribution, WeightedIndex };
@@ -150,14 +150,16 @@ fn generate_power_up(
 fn activate_power_up(
     mut events: EventReader<ActivatePowerUpEvent>,
     mut state: ResMut<State<GameState>>,
+    mut game_data: ResMut<GameData>,
+    current_player_data: Res<CurrentPlayerData>,
 ) {
+    let player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
     for event in events.iter() {
         if let Some(new_state) = match event.0 {
             PowerUp::RollAgain => Some(GameState::DiceRoll),
             PowerUp::DoubleDice => {
-                // set 'double_dice' on CurrentPlayerData
-                // state.set(GameState::TurnSetup).unwrap(); // to recalc moves
-                None
+                player_data.power_up_status.double_dice();
+                Some(GameState::TurnSetup)
             }
             PowerUp::EvadeCapture => {
                 // insert 'Evading' component for all current player's marbles

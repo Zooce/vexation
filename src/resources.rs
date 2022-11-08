@@ -130,12 +130,61 @@ pub enum GameButtonAction {
 }
 
 #[derive(Debug)]
+pub struct PowerUpStatus {
+    pub dice_multiplier: u8,
+    pub evade_capture_turns: u8,
+    pub jump_self_turns: u8,
+    pub home_run: bool,
+}
+
+impl PowerUpStatus {
+    pub fn double_dice(&mut self) {
+        self.dice_multiplier = 2;
+    }
+
+    pub fn evade_capture(&mut self) {
+        self.evade_capture_turns = 3;
+    }
+
+    pub fn jump_self(&mut self) {
+        self.jump_self_turns = 3;
+    }
+
+    pub fn home_run(&mut self) {
+        self.home_run = true;
+    }
+
+    pub fn tick(&mut self) {
+        self.dice_multiplier = 1;
+        self.home_run = false;
+        if self.evade_capture_turns > 0 {
+            self.evade_capture_turns -= 1;
+        }
+        if self.jump_self_turns > 0 {
+            self.jump_self_turns -= 1;
+        }
+    }
+}
+
+impl Default for PowerUpStatus {
+    fn default() -> Self {
+        Self {
+            dice_multiplier: 1,
+            evade_capture_turns: 0,
+            jump_self_turns: 0,
+            home_run: false,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct PlayerData {
     pub turn_move_count: u8,
     pub consecutive_empty_turns: u8,
     pub power: f32,
     pub multiplier: f32,
     pub power_ups: Vec<PowerUp>,
+    pub power_up_status: PowerUpStatus,
 }
 
 impl Default for PlayerData {
@@ -146,6 +195,7 @@ impl Default for PlayerData {
             power: 0.0,
             multiplier: 1.0,
             power_ups: vec![],
+            power_up_status: PowerUpStatus::default(),
         }
     }
 }
@@ -158,6 +208,7 @@ impl PlayerData {
             self.consecutive_empty_turns + 1
         };
         self.turn_move_count = 0;
+        self.power_up_status.tick();
     }
 
     pub fn update_power(&mut self, delta: f32) -> Option<PowerChange> {
