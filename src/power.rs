@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use crate::components::Player;
 use crate::constants::CENTER_INDEX;
-use crate::resources::GameData;
+use crate::resources::{GameData, GameState};
 use crate::shared_systems::{SharedSystemLabel, should_run_shared_systems};
 use rand::thread_rng;
 use rand::distributions::{ Distribution, WeightedIndex };
@@ -149,32 +149,33 @@ fn generate_power_up(
 
 fn activate_power_up(
     mut events: EventReader<ActivatePowerUpEvent>,
+    mut state: ResMut<State<GameState>>,
 ) {
     for event in events.iter() {
-        match event.0 {
-            PowerUp::RollAgain => {
-                // state.set(GameState::DiceRoll).unwrap();
-                println!("RollAgain");
-            }
+        if let Some(new_state) = match event.0 {
+            PowerUp::RollAgain => Some(GameState::DiceRoll),
             PowerUp::DoubleDice => {
                 // set 'double_dice' on CurrentPlayerData
                 // state.set(GameState::TurnSetup).unwrap(); // to recalc moves
-                println!("DoubleDice");
+                None
             }
             PowerUp::EvadeCapture => {
                 // insert 'Evading' component for all current player's marbles
                 println!("EvadeCapture");
+                None
             }
             PowerUp::SelfJump => {
                 // set 'jump_self' flag on CurrentPlayerData
                 // state.set(GameState::TurnSetup).unwrap(); // to recalc moves
-                println!("SelfJump");
+                None
             }
             PowerUp::HomeRun => {
                 // set 'home_run' flag on CurrentPlayerData
                 // state.set(GameState::TurnSetup).unwrap(); // to recalc moves
-                println!("HomeRun");
+                None
             }
+        } {
+            state.set(new_state).unwrap();
         }
     }
 }
