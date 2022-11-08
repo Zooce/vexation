@@ -10,26 +10,26 @@ pub fn calc_possible_moves(
     mut current_player_data: ResMut<CurrentPlayerData>,
 ) {
     let mut possible_moves = BTreeSet::new(); // so we disregard duplicates
-    let dice = dice_data.sides();
-    if dice == (None, None) {
+    // POWERUP: HOME RUN - set all open home spaces as the possible moves for all current player marbles
+    if dice_data.dice.is_empty() {
         current_player_data.possible_moves = vec![]; // no moves
         return;
     }
     for (entity, marble) in &marbles {
         // exit base
         if marble.index == BOARD.len() {
-            base_exit_rules(dice, entity, &mut possible_moves);
+            base_exit_rules(&dice_data.dice, entity, &mut possible_moves);
             continue;
         }
 
         // exit center
         if marble.index == CENTER_INDEX {
-            center_exit_rules(dice, entity, &mut possible_moves);
+            center_exit_rules(&dice_data.dice, entity, &mut possible_moves);
             continue;
         }
 
         // basic moves
-        basic_rules(dice, entity, marble, &mut possible_moves);
+        basic_rules(&dice_data.dice, entity, marble, &mut possible_moves);
     }
 
     // filter out moves that violate the self-hop rules
@@ -87,24 +87,24 @@ fn enter_center_path(start: usize, end: usize) -> Option<Vec<usize>> {
 }
 
 fn base_exit_rules(
-    dice: (Option<u8>, Option<u8>),
+    dice: &Dice,
     entity: Entity,
     possible_moves: &mut BTreeSet<(Entity, Vec<usize>, WhichDie)>,
 ) {
-    if dice.0 == Some(1) || dice.0 == Some(6) {
+    if dice.one == Some(1) || dice.one == Some(6) {
         possible_moves.insert((entity, vec![START_INDEX], WhichDie::One)); // exit with die 1...
-        if dice.1.is_some() {
-            let dest = START_INDEX + dice.1.unwrap() as usize;
+        if let Some(two) = dice.two {
+            let dest = START_INDEX + two as usize;
             possible_moves.insert((entity, (START_INDEX..=dest).collect(), WhichDie::Both)); // ...then move with die 2...or...
             if let Some(center_path) = enter_center_path(START_INDEX, dest) {
                 possible_moves.insert((entity, center_path, WhichDie::Both)); // ...move to center with die 2
             }
         }
     }
-    if dice.1 == Some(1) || dice.1 == Some(6) {
+    if dice.two == Some(1) || dice.two == Some(6) {
         possible_moves.insert((entity, vec![START_INDEX], WhichDie::Two)); // exit with die 2...
-        if dice.0.is_some() {
-            let dest = START_INDEX + dice.0.unwrap() as usize;
+        if let Some(one) = dice.one {
+            let dest = START_INDEX + one as usize;
             possible_moves.insert((entity, (START_INDEX..=dest).collect(), WhichDie::Both)); // ...then move with die 1...or...
             if let Some(center_path) = enter_center_path(START_INDEX, dest) {
                 possible_moves.insert((entity, center_path, WhichDie::Both)); //...move to center with die 1
@@ -114,11 +114,11 @@ fn base_exit_rules(
 }
 
 fn center_exit_rules(
-    dice: (Option<u8>, Option<u8>),
+    dice: &Dice,
     entity: Entity,
     possible_moves: &mut BTreeSet<(Entity, Vec<usize>, WhichDie)>,
 ) {
-    match dice {
+    match (dice.one, dice.two) {
         (Some(1), Some(1)) => {
             possible_moves.insert((entity, vec![CENTER_EXIT_INDEX], WhichDie::One));
             possible_moves.insert((entity, vec![CENTER_EXIT_INDEX], WhichDie::Two));
@@ -139,13 +139,13 @@ fn center_exit_rules(
 }
 
 fn basic_rules(
-    dice: (Option<u8>, Option<u8>),
+    dice: &Dice,
     entity: Entity,
     marble: &Marble,
     possible_moves: &mut BTreeSet<(Entity, Vec<usize>, WhichDie)>,
 ) {
     let mut basic_moves = BTreeSet::new();
-    match dice {
+    match (dice.one, dice.two) {
         (Some(d1), Some(d2)) => {
             basic_moves.insert((entity, (marble.index + 1..=marble.index + d1 as usize).collect(), WhichDie::One));
             basic_moves.insert((entity, (marble.index + 1..=marble.index + d2 as usize).collect(), WhichDie::Two));
@@ -156,10 +156,10 @@ fn basic_rules(
             }
         }
         (Some(d1), None) => {
-            basic_moves.insert((entity, (marble.index + 1..=marble.index + (d1 as usize)).collect(), WhichDie::One));
+            basic_moves.insert((entity, (marble.index + 1..=marble.index + d1 as usize).collect(), WhichDie::One));
         }
         (None, Some(d2)) => {
-            basic_moves.insert((entity, (marble.index + 1..=marble.index + (d2 as usize)).collect(), WhichDie::Two));
+            basic_moves.insert((entity, (marble.index + 1..=marble.index + d2 as usize).collect(), WhichDie::Two));
         }
         _ => unreachable!(),
     }
@@ -184,9 +184,9 @@ mod test {
 
     #[test]
     fn test_base_exit_moves() {
-        let dice = (Some(1), Some(6));
+        let dice = Dice::new(1, 6);
         let mut moves = BTreeSet::new();
-        base_exit_rules(dice, Entity::from_raw(12), &mut moves);
+        base_exit_rules(&dice, Entity::from_raw(12), &mut moves);
         let mut iter = moves.iter();
         assert_eq!(5, iter.len());
         assert_eq!(vec![0], iter.next().unwrap().1); // use die 1 to exit
@@ -198,9 +198,9 @@ mod test {
 
     #[test]
     fn test_center_exit_moves() {
-        let dice = (Some(1), Some(4));
+        let dice = Dice::new(1, 4);
         let mut moves = BTreeSet::new();
-        center_exit_rules(dice, Entity::from_raw(12), &mut moves);
+        center_exit_rules(&dice, Entity::from_raw(12), &mut moves);
         let mut iter = moves.iter();
         assert_eq!(2, iter.len());
         assert_eq!(vec![41], iter.next().unwrap().1); // use die 1 to exit
@@ -209,19 +209,19 @@ mod test {
 
     #[test]
     fn test_basic_moves() {
-        let dice = (Some(5), Some(5));
+        let dice = Dice::new(5, 5);
         let marble = Marble{ index: 43, prev_index: 42, origin: Vec3::ZERO };
         let mut moves = BTreeSet::new();
-        basic_rules(dice, Entity::from_raw(12), &marble, &mut moves);
+        basic_rules(&dice, Entity::from_raw(12), &marble, &mut moves);
         let mut iter = moves.iter();
         assert_eq!(2, moves.len());
         assert_eq!(vec![44, 45, 46, 47, 48], iter.next().unwrap().1);
         assert_eq!(vec![44, 45, 46, 47, 48], iter.next().unwrap().1);
 
-        let dice = (Some(4), Some(1));
+        let dice = Dice::new(4, 1);
         let marble = Marble{ index: 52, prev_index: 52, origin: Vec3::ZERO };
         moves = BTreeSet::new();
-        basic_rules(dice, Entity::from_raw(13), &marble, &mut moves);
+        basic_rules(&dice, Entity::from_raw(13), &marble, &mut moves);
         assert_eq!(0, moves.len());
     }
 }

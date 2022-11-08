@@ -41,12 +41,12 @@ pub fn computer_move_buffer(
     mut highlight_events: EventWriter<HighlightEvent>,
 ) {
     let no_moves = current_player_data.possible_moves.is_empty();
-    if no_moves && dice_data.doubles && dice_data.did_use_die() {
+    if no_moves && dice_data.dice.doubles && dice_data.dice.did_use_any() {
         state.set(GameState::DiceRoll).unwrap();
         return;
     }
 
-    let timer_finished = if no_moves && (dice_data.doubles || dice_data.did_use_die()) {
+    let timer_finished = if no_moves && (dice_data.dice.doubles || dice_data.dice.did_use_any()) {
         computer_turn_timers.buffer_timer.tick(time.delta()).just_finished()
     } else {
         computer_turn_timers.move_timer.tick(time.delta()).just_finished()
@@ -65,7 +65,7 @@ pub fn computer_move_buffer(
             commands.entity(entity).insert(Moving::new(destination, transform.translation));
             highlight_events.send(HighlightEvent{ marble: None, move_index: None });
             state.set(GameState::WaitForAnimation).unwrap();
-        } else if dice_data.doubles {
+        } else if dice_data.dice.doubles {
             state.set(GameState::DiceRoll).unwrap();
         } else {
             state.set(GameState::EndTurn).unwrap();

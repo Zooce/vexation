@@ -56,9 +56,7 @@ fn roll_dice(
             break (a, b);
         }
     };
-    dice_data.doubles = d1 == d2;
-    dice_data.die_1_side = Some(d1);
-    dice_data.die_2_side = Some(d2);
+    dice_data.dice = Dice::new(d1, d2);
 }
 
 fn roll_animation(
@@ -103,10 +101,10 @@ fn stop_roll_animation(
     dice_data: Res<DiceData>,
 ) {
     let (mut sprite, mut transform) = query.get_mut(dice_data.die_1).expect("Unable to get die 1");
-    sprite.index = (dice_data.die_1_side.unwrap() - 1) as usize;
+    sprite.index = (dice_data.dice.one.unwrap() - 1) as usize;
     transform.rotation = Quat::from_rotation_z(0.0);
 
     let (mut sprite, mut transform) = query.get_mut(dice_data.die_2).expect("Unable to get die 2");
-    sprite.index = (dice_data.die_2_side.unwrap() - 1) as usize;
+    sprite.index = (dice_data.dice.two.unwrap() - 1) as usize;
     transform.rotation = Quat::from_rotation_z(0.0);
 }

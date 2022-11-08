@@ -178,7 +178,7 @@ fn execute_button_actions(
 ) {
     for action in action_events.iter() {
         match action.0 {
-            GameButtonAction::Done => if dice_data.doubles {
+            GameButtonAction::Done => if dice_data.dice.doubles {
                 state.set(GameState::DiceRoll).unwrap();
             } else {
                 state.set(GameState::EndTurn).unwrap();

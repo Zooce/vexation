@@ -59,42 +59,65 @@ impl CurrentPlayerData {
     }
 }
 
+#[derive(Debug, Default)]
+pub struct Dice {
+    pub one: Option<u8>,
+    pub two: Option<u8>,
+    pub doubles: bool,
+}
+
+impl Dice {
+    pub fn new(one: u8, two: u8) -> Self {
+        Self {
+            one: Some(one),
+            two: Some(two),
+            doubles: one == two,
+        }
+    }
+    
+    pub fn use_die(&mut self, which: WhichDie) {
+        match which {
+            WhichDie::One => self.one = None,
+            WhichDie::Two => self.two = None,
+            WhichDie::Both => {
+                self.one = None;
+                self.two = None;
+            }
+        }
+    }
+
+    pub fn did_use_any(&self) -> bool {
+        self.one.is_none() || self.two.is_none()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.one.is_none() && self.two.is_none()
+    }
+}
+
 #[derive(Debug)]
 pub struct DiceData {
     pub die_1: Entity,
     pub die_2: Entity,
     pub die_sheet_handle: Handle<TextureAtlas>,
-    pub die_1_side: Option<u8>,
-    pub die_2_side: Option<u8>,
-    pub doubles: bool,
+    pub dice: Dice,
 }
 
 impl DiceData {
     pub fn use_die(&mut self, which: WhichDie, commands: &mut Commands) {
+        self.dice.use_die(which);
         match which {
             WhichDie::One => {
-                self.die_1_side = None;
                 commands.entity(self.die_1).insert(UsedDie);
             }
             WhichDie::Two => {
-                self.die_2_side = None;
                 commands.entity(self.die_2).insert(UsedDie);
             }
             WhichDie::Both => {
-                self.die_1_side = None;
-                self.die_2_side = None;
                 commands.entity(self.die_1).insert(UsedDie);
                 commands.entity(self.die_2).insert(UsedDie);
             }
         }
-    }
-
-    pub fn sides(&self) -> (Option<u8>, Option<u8>) {
-        (self.die_1_side, self.die_2_side)
-    }
-
-    pub fn did_use_die(&self) -> bool {
-        self.die_1_side.is_none() || self.die_2_side.is_none()
     }
 }
 

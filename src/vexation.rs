@@ -222,9 +222,7 @@ pub fn create_game(
         die_1,
         die_2,
         die_sheet_handle,
-        die_1_side: None,
-        die_2_side: None,
-        doubles: false,
+        dice: Dice::default(),
     });
 
     // highlight data
