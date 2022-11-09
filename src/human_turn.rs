@@ -5,13 +5,14 @@ use bevy::input::mouse::{MouseButtonInput, MouseButton};
 use crate::buttons::*;
 use crate::components::*;
 use crate::constants::*;
-use crate::events::*;
 use crate::power::ActivatePowerUpEvent;
+use crate::shared_systems::HighlightEvent;
 use crate::resources::*;
 
+#[derive(Debug)]
 struct ClickEvent(pub Vec2);
 
-struct MoveEvent(pub (usize, WhichDie, Vec3));
+struct MoveEvent(pub (Entity, usize, WhichDie, Vec3));
 
 pub struct HumanTurnPlugin;
 
@@ -99,13 +100,11 @@ fn translate_mouse_input(
 }
 
 fn interpret_click_event(
-    mut commands: Commands,
     mut highlight_events: EventWriter<HighlightEvent>,
     mut move_events: EventWriter<MoveEvent>,
     mut click_events: EventReader<ClickEvent>,
-    current_player_data: Res<CurrentPlayerData>,
+    mut current_player_data: ResMut<CurrentPlayerData>,
     marbles_query: Query<(Entity, &Transform), (With<Marble>, With<CurrentPlayer>)>,
-    selected_marble: Query<Entity, (With<Marble>, With<SelectedMarble>)>,
 ) {
     if let Some(click_event) = click_events.iter().last() {
         // interpret click as marble selection
@@ -117,18 +116,16 @@ fn interpret_click_event(
                 if found { Some(e) } else { None }
             })
         {
-            if let Ok(old_marble) = selected_marble.get_single() {
-                if old_marble != marble {
-                    commands.entity(old_marble).remove::<SelectedMarble>();
-                } else {
+            if let Some(old_marble) = current_player_data.selected_marble {
+                if old_marble == marble {
                     return; // ignore clicks on a marble that is already selected
                 }
             }
-            commands.entity(marble).insert(SelectedMarble);
-            highlight_events.send(HighlightEvent{ marble: Some(marble), move_index: None });
+            current_player_data.selected_marble = Some(marble);
+            highlight_events.send(HighlightEvent::On);
         }
         // interpret click as move selection
-        else if let Ok(marble) = selected_marble.get_single() {
+        else if let Some(marble) = current_player_data.selected_marble {
             // to compare to board coordinates, we need to snap the click event to the center of a tile
             let (col, row) = (snap(click_event.0.x), snap(click_event.0.y));
             // find the move that corresponds to this click position
@@ -144,13 +141,14 @@ fn interpret_click_event(
                 _ => None,
             };
             if let Some((idx, which)) = selected_move {
-                move_events.send(MoveEvent((idx, which, Vec3::new(col, row, 1.0))));
-            } else {
-                commands.entity(marble).remove::<SelectedMarble>();
+                move_events.send(MoveEvent((marble, idx, which, Vec3::new(col, row, 1.0))));
             }
 
             // since we didn't click on another marble, we need all highlights to be removed
-            highlight_events.send(HighlightEvent{ marble: None, move_index: None });
+            highlight_events.send(HighlightEvent::Off);
+        }
+        else {
+            println!("no marble clicked AND no selected marble: {:?}", current_player_data);
         }
     }
 }
@@ -158,12 +156,12 @@ fn interpret_click_event(
 fn move_event_handler(
     mut commands: Commands,
     mut move_events: EventReader<MoveEvent>,
-    mut marbles: Query<(Entity, &Transform, &mut Marble), With<SelectedMarble>>,
+    mut marbles: Query<(Entity, &Transform, &mut Marble), With<CurrentPlayer>>,
     mut dice_data: ResMut<DiceData>,
     mut state: ResMut<State<GameState>>,
 ) {
-    if let Some(MoveEvent((idx, which, dest))) = move_events.iter().last() {
-        let (e, t, mut m) = marbles.single_mut();
+    if let Some(MoveEvent((e, idx, which, dest))) = move_events.iter().last() {
+        let (e, t, mut m) = marbles.get_mut(*e).unwrap();
         m.update_index(*idx);
         dice_data.use_die(*which, &mut commands);
         commands.entity(e).insert(Moving::new(*dest, t.translation));

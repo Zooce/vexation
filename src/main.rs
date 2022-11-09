@@ -6,7 +6,6 @@ mod buttons;
 mod components;
 mod computer_turn;
 mod constants;
-mod events;
 mod choose_color;
 mod dice_roll;
 mod end_turn;

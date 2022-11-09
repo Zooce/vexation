@@ -2,7 +2,6 @@ use bevy::prelude::*;
 use bevy::ecs::schedule::ShouldRun;
 use crate::components::*;
 use crate::constants::*;
-use crate::events::*;
 use crate::resources::*;
 
 #[derive(SystemLabel)]
@@ -44,68 +43,78 @@ pub fn animate_marble_moves(
     }
 }
 
+#[derive(Debug)]
+pub enum HighlightEvent {
+    On,
+    Off,
+}
+
 /// This system spawns and/or despawns highlights based on the latest
 /// [`HighlightEvent`].
 pub fn highlighter(
     mut commands: Commands,
-    marbles: Query<&Marble, With<CurrentPlayer>>, // we do this instead of using SelectedMarble because it may not have been set yet
-    highlights: Query<(Entity, &Highlight)>,
+    marbles: Query<&Marble, With<CurrentPlayer>>,
+    highlights: Query<(Entity, &Highlight, Option<&SelectedMarble>)>,
     current_player_data: Res<CurrentPlayerData>,
     highlight_data: Res<HighlightData>,
     mut highlight_events: EventReader<HighlightEvent>,
 ) {
     if let Some(event) = highlight_events.iter().last() {
-        match &event.marble {
-            None => remove_all_highlights(commands, highlights),
-            Some(selected_marble) => {
-                let marble = marbles.get(*selected_marble).unwrap();
-                let indexes = if let Some(index) = event.move_index {
-                    vec![current_player_data.possible_moves[index].1]
+        match event {
+            HighlightEvent::Off => remove_all_highlights(commands, highlights),
+            HighlightEvent::On => {
+                let entity = current_player_data.selected_marble.unwrap();
+                // get the move indexes for the selected marble so we can highlight them
+                // -- the computer player would have already selected a move, so we can just highlight that index 
+                let indexes = if let Some((index, _)) = current_player_data.selected_move {
+                    vec![index]
                 } else {
-                    current_player_data.get_moves(*selected_marble)
+                    current_player_data.get_moves(entity)
                         .iter().map(|(index, _)| *index)
                         .collect()
                 };
 
                 // remove any "old" highlights
                 highlights.iter()
-                    .filter_map(|(e, h)| {
-                        if h.marble != *selected_marble || !indexes.contains(&h.index) {
+                    .filter_map(|(e, h, _)| {
+                        if h.marble != entity || !indexes.contains(&h.index) {
                             Some(e)
                         } else {
                             None
                         }
                     })
-                    .for_each(|h| commands.entity(h).despawn());
+                    .for_each(|e| commands.entity(e).despawn());
 
                 let rotated_transform_fn = |index| {
                     let tile: (i32, i32) = BOARD[index];
                     let (x, y) = current_player_data.player.rotate_coords((tile.0 as f32, tile.1 as f32));
                     Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 2.0)
                 };
-                // highlight the marble
-                commands.spawn_bundle(SpriteBundle{
-                    texture: highlight_data.marble_texture.clone(),
-                    transform: if marble.index == BOARD.len() {
-                        Transform::from_xyz(marble.origin.x, marble.origin.y, 2.0)
-                    } else {
-                        rotated_transform_fn(marble.index)
-                    },
-                    ..default()
-                })
-                .insert(Highlight{ marble: *selected_marble, index: marble.index })
-                .insert(SelectedMarble);
+
+                // highlight the marble if it's not already highlighted
+                if highlights.iter().find(|(e, _, m)| m.is_some() && *e == entity).is_none() {
+                    let marble = marbles.get(entity).unwrap();
+                    commands.spawn_bundle(SpriteBundle{
+                        texture: highlight_data.marble_texture.clone(),
+                        transform: if marble.index == BOARD.len() {
+                            Transform::from_xyz(marble.origin.x, marble.origin.y, 2.0)
+                        } else {
+                            rotated_transform_fn(marble.index)
+                        },
+                        ..default()
+                    })
+                    .insert(Highlight{ marble: entity, index: marble.index })
+                    .insert(SelectedMarble);
+                }
 
                 // highlight the move tiles
                 for index in indexes {
-                    let tile = BOARD[index];
-                    let (x, y) = current_player_data.player.rotate_coords((tile.0 as f32, tile.1 as f32));
                     commands.spawn_bundle(SpriteBundle{
                         texture: highlight_data.tile_texture.clone(),
-                        transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 2.0),
+                        transform: rotated_transform_fn(index),
                         ..default()
                     })
-                    .insert(Highlight{ marble: *selected_marble, index })
+                    .insert(Highlight{ marble: entity, index })
                     ;
                 }
             }
@@ -126,9 +135,9 @@ pub fn animate_tile_highlights(
 /// a "turn" state.
 pub fn remove_all_highlights(
     mut commands: Commands,
-    highlights: Query<(Entity, &Highlight)>,
+    highlights: Query<(Entity, &Highlight, Option<&SelectedMarble>)>,
 ) {
-    highlights.for_each(|(e, _)| commands.entity(e).despawn());
+    highlights.for_each(|(e, _, _)| commands.entity(e).despawn());
 }
 
 pub fn wait_for_marble_animation(
@@ -151,5 +160,4 @@ pub fn dim_used_die(
         sprite.color = Color::rgba(1.0, 1.0, 1.0, 0.4);
     }
 }
-
 

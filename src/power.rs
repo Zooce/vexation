@@ -133,6 +133,7 @@ fn generate_power_up(
             PowerChange::Up => {
                 // pick random power-up
                 let power_up: PowerUp = power_up_dist.0.sample(&mut rng).into();
+                println!("{:?}", power_up);
                 // add power-up to player's list
                 game_data.players.get_mut(&event.0).unwrap().power_ups.push(power_up);
                 // mark current player to wait for animation
@@ -152,6 +153,7 @@ fn activate_power_up(
     mut state: ResMut<State<GameState>>,
     mut game_data: ResMut<GameData>,
     current_player_data: Res<CurrentPlayerData>,
+    // mut marbles: Query<Entity, (With<Marble>, With<CurrentPlayer>)>,
 ) {
     let player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
     for event in events.iter() {
@@ -162,18 +164,20 @@ fn activate_power_up(
                 Some(GameState::TurnSetup)
             }
             PowerUp::EvadeCapture => {
-                // insert 'Evading' component for all current player's marbles
-                println!("EvadeCapture");
+                // player_data.power_up_status.evade_capture();
+                // for marble in marbles.iter_mut() {
+                //     commands.entity(marble).insert(Evading);
+                // }
                 None
             }
             PowerUp::SelfJump => {
-                // set 'jump_self' flag on CurrentPlayerData
-                // state.set(GameState::TurnSetup).unwrap(); // to recalc moves
+                // player_data.power_up_status.jump_self();
+                // Some(GameState::TurnSetup)
                 None
             }
             PowerUp::HomeRun => {
-                // set 'home_run' flag on CurrentPlayerData
-                // state.set(GameState::TurnSetup).unwrap(); // to recalc moves
+                // player_data.power_up_status.home_run();
+                // Some(GameState::TurnSetup)
                 None
             }
         } {

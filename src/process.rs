@@ -15,7 +15,7 @@ impl Plugin for ProcessMovePlugin {
                 .with_system(check_for_winner)
             )
             .add_system_set(SystemSet::on_exit(GameState::ProcessMove)
-                .with_system(clear_selected_marble)
+                .with_system(clear_selections)
             )
             ;
     }
@@ -24,11 +24,11 @@ impl Plugin for ProcessMovePlugin {
 fn check_for_capture(
     mut commands: Commands,
     current_player_data: Res<CurrentPlayerData>,
-    selected_marble: Query<&Marble, (With<CurrentPlayer>, With<SelectedMarble>)>,
+    current_player_marbles: Query<&Marble, With<CurrentPlayer>>,
     mut opponent_marbles: Query<(Entity, &mut Marble, &Transform, &Player), Without<CurrentPlayer>>,
     mut power_bar_events: EventWriter<PowerBarEvent>,
 ) {
-    let cur = selected_marble.single();
+    let cur = current_player_marbles.get(current_player_data.selected_marble.unwrap()).unwrap();
 
     // we don't capture in the home row
     if cur.index >= FIRST_HOME_INDEX && cur.index <= LAST_HOME_INDEX {
@@ -54,9 +54,9 @@ fn check_for_capture(
 fn process_index(
     mut power_bar_events: EventWriter<PowerBarEvent>,
     current_player_data: Res<CurrentPlayerData>,
-    selected_marble: Query<&Marble, (With<CurrentPlayer>, With<SelectedMarble>)>,
+    marbles: Query<&Marble, With<CurrentPlayer>>,
 ) {
-    let marble = selected_marble.single();
+    let marble = marbles.get(current_player_data.selected_marble.unwrap()).unwrap();
     power_bar_events.send(PowerBarEvent::Index{
         player: current_player_data.player,
         index: marble.index,
@@ -81,11 +81,10 @@ fn check_for_winner(
     }
 }
 
-fn clear_selected_marble(
-    mut commands: Commands,
-    selected_marble: Query<Entity, With<SelectedMarble>>,
+fn clear_selections(
+    mut current_player_data: ResMut<CurrentPlayerData>,
 ) {
-    let selected_marble = selected_marble.single();
-    commands.entity(selected_marble).remove::<SelectedMarble>();
+    current_player_data.selected_marble = None;
+    current_player_data.selected_move = None;
 }
 

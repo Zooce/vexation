@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
+use crate::shared_systems::HighlightEvent;
 use crate::resources::*;
 use std::collections::BTreeSet;
 
@@ -34,10 +35,7 @@ pub fn calc_possible_moves(
         basic_rules(&dice_data.dice, entity, marble, &mut possible_moves, dice_multiplier);
     }
 
-    // filter out moves that violate the self-hop rules
-    // - marbles of the same color cannot capture each other
-    // - marbles of the same color cannot jump over each other
-    // POWERUP: filter out moves that land on opponents who are currently "evading"
+    // filter out moves that violate the self-hop rules and moves that land on "evading" opponents
     current_player_data.possible_moves = possible_moves.into_iter()
         .filter_map(|(entity, path, which)| {
             match marbles.iter()
@@ -46,6 +44,7 @@ pub fn calc_possible_moves(
                 // look for a same color marble along the path of this move
                 // POWERUP: ignore this check if "self jump" power-up is currently enabled
                 .find(|(_, other_marble)| path.iter().any(|i| other_marble.index == *i))
+                // POWERUP: filter out moves that land on opponents who are currently "evading"
             {
                 Some(_) => None, // we found a marble along the path of this move, so it's no good
                 None => Some((entity, *path.last().unwrap(), which))
@@ -66,7 +65,13 @@ pub fn turn_setup_complete(
     mut state: ResMut<State<GameState>>,
     human_player: Res<HumanPlayer>,
     current_player_data: Res<CurrentPlayerData>,
+    mut highlight_events: EventWriter<HighlightEvent>,
 ) {
+    // rehighlight the selected marble if there is one - this would be because
+    // the current player used a power up that changed the possible moves
+    if current_player_data.selected_marble.is_some() {
+        highlight_events.send(HighlightEvent::On);
+    }
     if human_player.color == current_player_data.player {
         state.set(GameState::HumanTurn).unwrap();
     } else {
