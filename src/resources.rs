@@ -25,6 +25,7 @@ pub struct CurrentPlayerData {
     pub possible_moves: Vec<(Entity, usize, WhichDie)>,
     pub selected_move: Option<(usize, WhichDie)>,
     pub selected_marble: Option<Entity>,
+    pub moved_marble: Option<Entity>,
 }
 
 impl CurrentPlayerData {
@@ -34,6 +35,7 @@ impl CurrentPlayerData {
             possible_moves: Vec::new(),
             selected_move: None,
             selected_marble: None,
+            moved_marble: None,
         }
     }
 
@@ -59,6 +61,17 @@ impl CurrentPlayerData {
             (None, Some(_)) => unreachable!(),
             _ => None,
         }
+    }
+
+    pub fn move_marble(&mut self) {
+        self.moved_marble = self.selected_marble.take();
+    }
+
+    pub fn clear(&mut self) {
+        self.possible_moves = Vec::new();
+        self.selected_marble = None;
+        self.selected_move = None;
+        self.moved_marble = None;
     }
 }
 

@@ -28,7 +28,7 @@ fn check_for_capture(
     mut opponent_marbles: Query<(Entity, &mut Marble, &Transform, &Player), Without<CurrentPlayer>>,
     mut power_bar_events: EventWriter<PowerBarEvent>,
 ) {
-    let cur = current_player_marbles.get(current_player_data.selected_marble.unwrap()).unwrap();
+    let cur = current_player_marbles.get(current_player_data.moved_marble.unwrap()).unwrap();
 
     // we don't capture in the home row
     if cur.index >= FIRST_HOME_INDEX && cur.index <= LAST_HOME_INDEX {
@@ -56,7 +56,7 @@ fn process_index(
     current_player_data: Res<CurrentPlayerData>,
     marbles: Query<&Marble, With<CurrentPlayer>>,
 ) {
-    let marble = marbles.get(current_player_data.selected_marble.unwrap()).unwrap();
+    let marble = marbles.get(current_player_data.moved_marble.unwrap()).unwrap();
     power_bar_events.send(PowerBarEvent::Index{
         player: current_player_data.player,
         index: marble.index,
@@ -84,7 +84,6 @@ fn check_for_winner(
 fn clear_selections(
     mut current_player_data: ResMut<CurrentPlayerData>,
 ) {
-    current_player_data.selected_marble = None;
-    current_player_data.selected_move = None;
+    current_player_data.clear();
 }
 

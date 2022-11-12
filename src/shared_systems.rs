@@ -109,6 +109,11 @@ pub fn highlighter(
 
                 // highlight the move tiles
                 for index in indexes {
+                    // it's possible that an "old" highlight is still valid for
+                    // the selected moves, so make sure we don't add another one
+                    if highlights.iter().find(|(_, h, _)| h.index == index).is_some() {
+                        continue;
+                    }
                     commands.spawn_bundle(SpriteBundle{
                         texture: highlight_data.tile_texture.clone(),
                         transform: rotated_transform_fn(index),

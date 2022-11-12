@@ -30,9 +30,6 @@ pub fn computer_choose_move(
         current_player_data.possible_moves[
             rng.gen_range(0..current_player_data.possible_moves.len())
         ]
-        // current_player_data.select_move((*marble, *index, *which));
-        // current_player_data.selected_marble = Some(*marble);
-        // current_player_data.selected_move = Some((*index, *which));
     };
     current_player_data.select_move(random_move);
     highlight_events.send(HighlightEvent::On);
@@ -42,7 +39,7 @@ pub fn computer_move_buffer(
     mut computer_turn_timers: ResMut<ComputerTurnTimers>,
     time: Res<Time>,
     mut commands: Commands,
-    current_player_data: ResMut<CurrentPlayerData>,
+    mut current_player_data: ResMut<CurrentPlayerData>,
     mut marbles: Query<(&Transform, &mut Marble), With<CurrentPlayer>>,
     mut dice_data: ResMut<DiceData>,
     mut state: ResMut<State<GameState>>,
@@ -74,6 +71,7 @@ pub fn computer_move_buffer(
                 Vec3::new(x * TILE_SIZE, y * TILE_SIZE, 1.0)
             };
             commands.entity(entity).insert(Moving::new(destination, transform.translation));
+            current_player_data.move_marble();
             highlight_events.send(HighlightEvent::Off);
             state.set(GameState::WaitForAnimation).unwrap();
         } else if dice_data.dice.doubles {

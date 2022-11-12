@@ -141,15 +141,18 @@ fn interpret_click_event(
                 _ => None,
             };
             if let Some((idx, which)) = selected_move {
+                current_player_data.move_marble();
                 move_events.send(MoveEvent((marble, idx, which, Vec3::new(col, row, 1.0))));
+            } else {
+                // deselect the marble if the click was anywhere unimportant
+                current_player_data.selected_marble = None;
             }
 
-            // since we didn't click on another marble, we need all highlights to be removed
+            // since we didn't click on another marble and we no longer have a
+            // selected marble then all highlights can be removed
             highlight_events.send(HighlightEvent::Off);
         }
-        else {
-            println!("no marble clicked AND no selected marble: {:?}", current_player_data);
-        }
+        // POWERUP: ignore power up button clicks
     }
 }
 
