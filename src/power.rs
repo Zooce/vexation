@@ -157,6 +157,7 @@ fn activate_power_up(
 ) {
     let player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
     for event in events.iter() {
+        println!("activating {:?}", event);
         if let Some(new_state) = match event.0 {
             PowerUp::RollAgain => Some(GameState::DiceRoll),
             PowerUp::DoubleDice => {
@@ -171,9 +172,8 @@ fn activate_power_up(
                 None
             }
             PowerUp::SelfJump => {
-                // player_data.power_up_status.jump_self();
-                // Some(GameState::TurnSetup)
-                None
+                player_data.power_up_status.jump_self();
+                Some(GameState::TurnSetup)
             }
             PowerUp::HomeRun => {
                 // player_data.power_up_status.home_run();

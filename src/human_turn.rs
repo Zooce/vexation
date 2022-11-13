@@ -238,6 +238,7 @@ fn use_power_up_from_keyboard(
                 KeyCode::Key3 => player_data.use_power_up(2),
                 _ => None,
             } {
+                println!("activate {:?}", power_up);
                 pu_events.send(ActivatePowerUpEvent(power_up));
             }
         }

@@ -39,14 +39,20 @@ pub fn calc_possible_moves(
     current_player_data.possible_moves = possible_moves.into_iter()
         .filter_map(|(entity, path, which)| {
             match marbles.iter()
-                // no need to compare the same marbles
-                .filter(|(e, _)| *e != entity)
-                // look for a same color marble along the path of this move
-                // POWERUP: ignore this check if "self jump" power-up is currently enabled
-                .find(|(_, other_marble)| path.iter().any(|i| other_marble.index == *i))
+                .filter(|(e, _)| *e != entity) // no need to compare the same marbles
+                .find(|(_, other_marble)| {
+                    // if we're allowed to jump over our own marbles find one where we land on it
+                    if game_data.players.get(&current_player_data.player).unwrap().power_up_status.jump_self_turns > 0 {
+                        other_marble.index == *path.last().unwrap()
+                    }
+                    // look for another one of our marbles along the path of this move
+                    else {
+                        path.iter().any(|i| other_marble.index == *i)
+                    }
+                })
                 // POWERUP: filter out moves that land on opponents who are currently "evading"
             {
-                Some(_) => None, // we found a marble along the path of this move, so it's no good
+                Some(_) => None, // we found one of our other marbles in the way of this move
                 None => Some((entity, *path.last().unwrap(), which))
             }
         })
