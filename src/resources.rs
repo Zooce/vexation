@@ -150,6 +150,7 @@ pub struct PowerUpStatus {
     pub dice_multiplier: u8,
     pub evade_capture_turns: u8,
     pub jump_self_turns: u8,
+    pub capture_nearest: bool,
     pub home_run: bool,
 }
 
@@ -165,6 +166,10 @@ impl PowerUpStatus {
     pub fn jump_self(&mut self) {
         self.jump_self_turns = 3;
     }
+    
+    pub fn capture_nearest(&mut self) {
+        self.capture_nearest = true;
+    }
 
     pub fn home_run(&mut self) {
         self.home_run = true;
@@ -172,6 +177,7 @@ impl PowerUpStatus {
 
     pub fn tick(&mut self) {
         self.dice_multiplier = 1;
+        self.capture_nearest = false;
         self.home_run = false;
         if self.evade_capture_turns > 0 {
             self.evade_capture_turns -= 1;
@@ -188,6 +194,7 @@ impl Default for PowerUpStatus {
             dice_multiplier: 1,
             evade_capture_turns: 0,
             jump_self_turns: 0,
+            capture_nearest: false,
             home_run: false,
         }
     }

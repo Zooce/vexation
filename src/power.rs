@@ -32,10 +32,11 @@ pub enum PowerUp {
     DoubleDice,      // weight = 4
     EvadeCapture,    // weight = 3
     SelfJump,        // weight = 2 
+    CaptureNearest,  // weight = 1
     HomeRun,         // weight = 1
 }
 
-const POWER_UP_WEIGHTS: [usize; 5] = [4, 4, 3, 2, 1];
+const POWER_UP_WEIGHTS: [usize; 6] = [4, 4, 3, 2, 1, 1];
 
 impl From<usize> for PowerUp {
     fn from(value: usize) -> Self {
@@ -44,7 +45,8 @@ impl From<usize> for PowerUp {
             1 => PowerUp::DoubleDice,
             2 => PowerUp::EvadeCapture,
             3 => PowerUp::SelfJump,
-            4 => PowerUp::HomeRun,
+            4 => PowerUp::CaptureNearest,
+            5 => PowerUp::HomeRun,
             _ => unreachable!(),
         }
     }
@@ -174,6 +176,10 @@ fn activate_power_up(
             PowerUp::SelfJump => {
                 player_data.power_up_status.jump_self();
                 Some(GameState::TurnSetup)
+            }
+            PowerUp::CaptureNearest => {
+                // player_data.power_up_status.capture_nearest();
+                None
             }
             PowerUp::HomeRun => {
                 // player_data.power_up_status.home_run();
