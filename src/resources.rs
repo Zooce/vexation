@@ -80,6 +80,7 @@ pub struct Dice {
     pub one: Option<u8>,
     pub two: Option<u8>,
     pub doubles: bool,
+    pub multiplier: u8,
 }
 
 impl Dice {
@@ -88,6 +89,7 @@ impl Dice {
             one: Some(one),
             two: Some(two),
             doubles: one == two,
+            multiplier: 1,
         }
     }
     
@@ -99,6 +101,10 @@ impl Dice {
                 self.one = None;
                 self.two = None;
             }
+            WhichDie::Neither => {}
+        }
+        if self.is_empty() {
+            self.multiplier = 1;
         }
     }
 
@@ -133,6 +139,7 @@ impl DiceData {
                 commands.entity(self.die_1).insert(UsedDie);
                 commands.entity(self.die_2).insert(UsedDie);
             }
+            WhichDie::Neither => {}
         }
     }
 }
@@ -147,7 +154,6 @@ pub enum GameButtonAction {
 
 #[derive(Debug)]
 pub struct PowerUpStatus {
-    pub dice_multiplier: u8,
     pub evade_capture_turns: u8,
     pub jump_self_turns: u8,
     pub capture_nearest: bool,
@@ -155,10 +161,6 @@ pub struct PowerUpStatus {
 }
 
 impl PowerUpStatus {
-    pub fn double_dice(&mut self) {
-        self.dice_multiplier = 2;
-    }
-
     pub fn evade_capture(&mut self) {
         self.evade_capture_turns = 3;
     }
@@ -176,9 +178,7 @@ impl PowerUpStatus {
     }
 
     pub fn tick(&mut self) {
-        self.dice_multiplier = 1;
-        self.capture_nearest = false;
-        self.home_run = false;
+        self.clear_one_shots();
         if self.evade_capture_turns > 0 {
             self.evade_capture_turns -= 1;
         }
@@ -186,12 +186,16 @@ impl PowerUpStatus {
             self.jump_self_turns -= 1;
         }
     }
+
+    pub fn clear_one_shots(&mut self) {
+        self.capture_nearest = false;
+        self.home_run = false;
+    }
 }
 
 impl Default for PowerUpStatus {
     fn default() -> Self {
         Self {
-            dice_multiplier: 1,
             evade_capture_turns: 0,
             jump_self_turns: 0,
             capture_nearest: false,
@@ -249,7 +253,7 @@ impl PlayerData {
         self.power = new_power;
         change
     }
-    
+
     pub fn use_power_up(&mut self, index: usize) -> Option<PowerUp> {
         if index < self.power_ups.len() {
             _ = self.update_power(-10.0); // power ups cost 10 points         
@@ -311,4 +315,5 @@ pub enum WhichDie {
     One,
     Two,
     Both,
+    Neither,
 }

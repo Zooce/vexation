@@ -54,7 +54,7 @@ pub enum HighlightEvent {
 pub fn highlighter(
     mut commands: Commands,
     marbles: Query<&Marble, With<CurrentPlayer>>,
-    highlights: Query<(Entity, &Highlight, Option<&SelectedMarble>)>,
+    mut highlights: Query<(Entity, &mut Highlight, Option<&SelectedMarble>)>,
     current_player_data: Res<CurrentPlayerData>,
     highlight_data: Res<HighlightData>,
     mut highlight_events: EventReader<HighlightEvent>,
@@ -77,7 +77,7 @@ pub fn highlighter(
                 // remove any "old" highlights
                 highlights.iter()
                     .filter_map(|(e, h, _)| {
-                        if h.marble != entity || !indexes.contains(&h.index) {
+                        if !indexes.contains(&h.index) || (h.index == BOARD.len() && h.marble != entity) {
                             Some(e)
                         } else {
                             None
@@ -107,21 +107,21 @@ pub fn highlighter(
                     .insert(SelectedMarble);
                 }
 
-                // highlight the move tiles
-                for index in indexes {
-                    // it's possible that an "old" highlight is still valid for
-                    // the selected moves, so make sure we don't add another one
-                    if highlights.iter().find(|(_, h, _)| h.index == index).is_some() {
-                        continue;
-                    }
-                    commands.spawn_bundle(SpriteBundle{
-                        texture: highlight_data.tile_texture.clone(),
-                        transform: rotated_transform_fn(index),
-                        ..default()
-                    })
-                    .insert(Highlight{ marble: entity, index })
-                    ;
-                }
+                // set the marble entity for all highlights
+                highlights.iter_mut().for_each(|(_, mut h, _)| { h.marble = entity; });
+
+                // highlight indexes that are not already highlighted
+                indexes.iter()
+                    .filter(|&&i| highlights.iter().find(|(_, h, _)| h.index == i).is_none())
+                    .for_each(|&i| {
+                        commands.spawn_bundle(SpriteBundle{
+                            texture: highlight_data.tile_texture.clone(),
+                            transform: rotated_transform_fn(i),
+                            ..default()
+                        })
+                        .insert(Highlight{ marble: entity, index: i })
+                        ;
+                    });
             }
         }
     }
@@ -140,7 +140,7 @@ pub fn animate_tile_highlights(
 /// a "turn" state.
 pub fn remove_all_highlights(
     mut commands: Commands,
-    highlights: Query<(Entity, &Highlight, Option<&SelectedMarble>)>,
+    highlights: Query<(Entity, &mut Highlight, Option<&SelectedMarble>)>,
 ) {
     highlights.for_each(|(e, _, _)| commands.entity(e).despawn());
 }

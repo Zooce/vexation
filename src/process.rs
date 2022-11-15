@@ -15,7 +15,7 @@ impl Plugin for ProcessMovePlugin {
                 .with_system(check_for_winner)
             )
             .add_system_set(SystemSet::on_exit(GameState::ProcessMove)
-                .with_system(clear_selections)
+                .with_system(process_complete)
             )
             ;
     }
@@ -81,9 +81,15 @@ fn check_for_winner(
     }
 }
 
-fn clear_selections(
+fn process_complete(
     mut current_player_data: ResMut<CurrentPlayerData>,
+    mut game_data: ResMut<GameData>,
 ) {
+    // clear the current player data so they don't have anything selected
     current_player_data.clear();
+
+    // clear any used power ups that should only be used one time
+    game_data.players.get_mut(&current_player_data.player).unwrap()
+        .power_up_status.clear_one_shots();
 }
 

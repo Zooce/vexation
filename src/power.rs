@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use crate::components::Player;
 use crate::constants::CENTER_INDEX;
-use crate::resources::{CurrentPlayerData, GameData, GameState};
+use crate::resources::{CurrentPlayerData, DiceData, GameData, GameState};
 use crate::shared_systems::{SharedSystemLabel, should_run_shared_systems};
 use rand::thread_rng;
 use rand::distributions::{ Distribution, WeightedIndex };
@@ -89,9 +89,10 @@ fn update_power_bars(
                     (captive, game_data.players.get_mut(captive).unwrap().update_power(-3.0)),
                 ]
             },
-            PowerBarEvent::Index{player, index, prev_index} => {
+            PowerBarEvent::Index{ player, index, prev_index } => {
                 let distance = if *index == CENTER_INDEX {
-                    // home (54)  -> center (53) = 7
+                    // TODO: with the double dice power up, the longest move you can make is 24 spaces
+                    // base (54)  -> center (53) = 7
                     // prev_index -> center (53) = (5 or 17 or 29) - prev_index + 1
                     match *prev_index {
                         54 => 7,
@@ -101,7 +102,7 @@ fn update_power_bars(
                         _ => unreachable!(),
                     }
                 } else {
-                    // home (54)   -> index = index + 1
+                    // base (54)   -> index = index + 1
                     // center (53) -> index = index + 1 - 41 
                     // prev_index  -> index = index - prev_index
                     match *prev_index {
@@ -154,6 +155,7 @@ fn activate_power_up(
     mut events: EventReader<ActivatePowerUpEvent>,
     mut state: ResMut<State<GameState>>,
     mut game_data: ResMut<GameData>,
+    mut dice_data: ResMut<DiceData>,
     current_player_data: Res<CurrentPlayerData>,
     // mut marbles: Query<Entity, (With<Marble>, With<CurrentPlayer>)>,
 ) {
@@ -163,7 +165,7 @@ fn activate_power_up(
         if let Some(new_state) = match event.0 {
             PowerUp::RollAgain => Some(GameState::DiceRoll),
             PowerUp::DoubleDice => {
-                player_data.power_up_status.double_dice();
+                dice_data.dice.multiplier = 2;
                 Some(GameState::TurnSetup)
             }
             PowerUp::EvadeCapture => {
@@ -182,9 +184,8 @@ fn activate_power_up(
                 None
             }
             PowerUp::HomeRun => {
-                // player_data.power_up_status.home_run();
-                // Some(GameState::TurnSetup)
-                None
+                player_data.power_up_status.home_run();
+                Some(GameState::TurnSetup)
             }
         } {
             state.set(new_state).unwrap();
