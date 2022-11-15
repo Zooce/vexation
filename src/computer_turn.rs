@@ -25,7 +25,7 @@ pub fn computer_choose_move(
     let mut rng = thread_rng();
     let random_move = if let Some(entity) = current_player_data.selected_marble {
         let chosen = current_player_data.get_moves(entity).into_iter().choose(&mut rng).unwrap();
-        (entity, chosen.0, chosen.1)
+        (entity, chosen)
     } else {
         current_player_data.possible_moves[
             rng.gen_range(0..current_player_data.possible_moves.len())
@@ -61,12 +61,12 @@ pub fn computer_move_buffer(
         computer_turn_timers.move_timer.tick(time.delta()).just_finished()
     };
     if timer_finished {
-        if let Some((entity, index, which)) = current_player_data.get_selected_move() {
+        if let Some((entity, MarbleMove{ destination, which, .. })) = current_player_data.get_selected_move() {
             let (transform, mut marble) = marbles.get_mut(entity).unwrap();
-            marble.update_index(index);
+            marble.update_index(destination);
             dice_data.use_die(which, &mut commands);
             let destination = {
-                let (c, r) = BOARD[index];
+                let (c, r) = BOARD[destination];
                 let (x, y) = current_player_data.player.rotate_coords((c as f32, r as f32));
                 Vec3::new(x * TILE_SIZE, y * TILE_SIZE, 1.0)
             };

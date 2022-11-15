@@ -67,7 +67,7 @@ pub fn calc_possible_moves(
                 // POWERUP: filter out moves that land on opponents who are currently "evading"
             {
                 Some(_) => None, // we found one of our other marbles in the way of this move
-                None => Some((entity, *path.last().unwrap(), which))
+                None => Some((entity, (*path.last().unwrap(), path.len(), which).into()))
             }
         })
         .collect();

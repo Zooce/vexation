@@ -61,16 +61,16 @@ pub fn highlighter(
 ) {
     if let Some(event) = highlight_events.iter().last() {
         match event {
-            HighlightEvent::Off => remove_all_highlights(commands, highlights),
+            HighlightEvent::Off => highlights.for_each(|(e, _, _)| commands.entity(e).despawn()),
             HighlightEvent::On => {
                 let entity = current_player_data.selected_marble.unwrap();
                 // get the move indexes for the selected marble so we can highlight them
                 // -- the computer player would have already selected a move, so we can just highlight that index 
-                let indexes = if let Some((index, _)) = current_player_data.selected_move {
-                    vec![index]
+                let indexes = if let Some(MarbleMove{ destination, .. }) = current_player_data.selected_move {
+                    vec![destination]
                 } else {
                     current_player_data.get_moves(entity)
-                        .iter().map(|(index, _)| *index)
+                        .iter().map(|MarbleMove{ destination, .. }| *destination)
                         .collect()
                 };
 
@@ -134,15 +134,6 @@ pub fn animate_tile_highlights(
     for mut transform in &mut marble_transform {
         transform.rotate(Quat::from_rotation_z(0.5 * time.delta_seconds()));
     }
-}
-
-/// This system removes all highlights and should be run as the exit system of
-/// a "turn" state.
-pub fn remove_all_highlights(
-    mut commands: Commands,
-    highlights: Query<(Entity, &mut Highlight, Option<&SelectedMarble>)>,
-) {
-    highlights.for_each(|(e, _, _)| commands.entity(e).despawn());
 }
 
 pub fn wait_for_marble_animation(

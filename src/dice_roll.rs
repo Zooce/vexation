@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::resources::*;
-use crate::shared_systems::*;
 use rand::{Rng, thread_rng};
 use rand::distributions::Uniform;
 
@@ -13,8 +12,7 @@ impl Plugin for DiceRollPlugin {
             // dice roll
             .add_system_set(SystemSet::on_enter(GameState::DiceRoll)
                 .with_system(undim_dice)
-                .with_system(remove_all_highlights)
-                .with_system(roll_dice.after(remove_all_highlights))
+                .with_system(roll_dice)
             )
             .add_system_set(SystemSet::on_update(GameState::DiceRoll)
                 .with_system(roll_animation)

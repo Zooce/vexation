@@ -19,11 +19,28 @@ impl ComputerTurnTimers {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct MarbleMove {
+    pub destination: usize,
+    pub distance: usize,
+    pub which: WhichDie,
+}
+
+impl From<(usize, usize, WhichDie)> for MarbleMove {
+    fn from(value: (usize, usize, WhichDie)) -> Self {
+        Self {
+            destination: value.0,
+            distance: value.1,
+            which: value.2,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct CurrentPlayerData {
     pub player: Player,
-    pub possible_moves: Vec<(Entity, usize, WhichDie)>,
-    pub selected_move: Option<(usize, WhichDie)>,
+    pub possible_moves: Vec<(Entity, MarbleMove)>,
+    pub selected_move: Option<MarbleMove>,
     pub selected_marble: Option<Entity>,
     pub moved_marble: Option<Entity>,
 }
@@ -39,25 +56,25 @@ impl CurrentPlayerData {
         }
     }
 
-    pub fn get_moves(&self, marble: Entity) -> Vec<(usize, WhichDie)> {
+    pub fn get_moves(&self, marble: Entity) -> Vec<MarbleMove> {
         self.possible_moves.iter()
-            .filter_map(|(e, i, d)| {
+            .filter_map(|(e, m)| {
                 if *e == marble {
-                    Some((*i, *d))
+                    Some(*m)
                 } else {
                     None
                 }
         }).collect()
     }
 
-    pub fn select_move(&mut self, m: (Entity, usize, WhichDie)) {
+    pub fn select_move(&mut self, m: (Entity, MarbleMove)) {
         self.selected_marble = Some(m.0);
-        self.selected_move = Some((m.1, m.2));
+        self.selected_move = Some(m.1);
     }
 
-    pub fn get_selected_move(&self) -> Option<(Entity, usize, WhichDie)> {
+    pub fn get_selected_move(&self) -> Option<(Entity, MarbleMove)> {
         match (self.selected_marble, self.selected_move) {
-            (Some(entity), Some((index, which))) => Some((entity, index, which)),
+            (Some(entity), Some(marble_move)) => Some((entity, marble_move)),
             (None, Some(_)) => unreachable!(),
             _ => None,
         }

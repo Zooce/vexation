@@ -137,12 +137,12 @@ fn interpret_click_event(
             }) {
                 // find a move for this board index
                 Some(clicked_board_index) => current_player_data
-                    .get_moves(marble).into_iter().find(|(idx, _)| *idx == clicked_board_index),
+                    .get_moves(marble).into_iter().find(|MarbleMove{ destination, .. }| *destination == clicked_board_index),
                 _ => None,
             };
-            if let Some((idx, which)) = selected_move {
+            if let Some(MarbleMove{ destination, which, .. }) = selected_move {
                 current_player_data.move_marble();
-                move_events.send(MoveEvent((marble, idx, which, Vec3::new(col, row, 1.0))));
+                move_events.send(MoveEvent((marble, destination, which, Vec3::new(col, row, 1.0))));
             } else {
                 // deselect the marble if the click was anywhere unimportant
                 current_player_data.selected_marble = None;
