@@ -10,6 +10,9 @@ pub struct Die {
     pub timer: Timer,
 }
 
+#[derive(Component)]
+pub struct Evading;
+
 // shared_systems.rs
 /// Used to mark the highlight sprites when a marble is selected, so we can
 /// later remove them when a marble is no longer selected.
@@ -120,6 +123,9 @@ mod tests {
     fn same_index_test() {
         assert!(Player::is_same_index(
             Player::Yellow, 16, Player::Blue, 28
+        ));
+        assert!(Player::is_same_index(
+            Player::Blue, 28, Player::Yellow, 16
         ));
         assert!(!Player::is_same_index(
             Player::Blue, 17, Player::Green, 13

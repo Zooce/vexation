@@ -198,9 +198,15 @@ impl PowerUpStatus {
         self.clear_one_shots();
         if self.evade_capture_turns > 0 {
             self.evade_capture_turns -= 1;
+            if self.evade_capture_turns == 0 {
+                println!("evading ended");
+            }
         }
         if self.jump_self_turns > 0 {
             self.jump_self_turns -= 1;
+            if self.jump_self_turns == 0 {
+                println!("self jump ended");
+            }
         }
     }
 

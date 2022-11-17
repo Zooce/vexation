@@ -223,22 +223,28 @@ fn use_power_up_from_keyboard(
     current_player_data: Res<CurrentPlayerData>,
     mut pu_events: EventWriter<ActivatePowerUpEvent>,
 ) {
-    let player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
-    if player_data.power_ups.is_empty() {
-        return;
-    }
     if let Some(event) = kb_events.iter().last() {
         if !event.state.is_pressed() {
             return;
         }
         if let Some(keycode) = event.key_code {
+            if keycode == KeyCode::D {
+                println!("\n===---[ Debug Info ] ---===");
+                for (p, d) in &game_data.players {
+                    println!("{p:?}: {}", d.debug_info());
+                }
+                return;
+            }
+            let player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
+            if player_data.power_ups.is_empty() {
+                return;
+            }
             if let Some(power_up) = match keycode {
                 KeyCode::Key1 => player_data.use_power_up(0),
                 KeyCode::Key2 => player_data.use_power_up(1),
                 KeyCode::Key3 => player_data.use_power_up(2),
                 _ => None,
             } {
-                println!("activate {:?}", power_up);
                 pu_events.send(ActivatePowerUpEvent(power_up));
             }
         }

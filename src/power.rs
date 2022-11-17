@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::components::Player;
+use crate::components::{CurrentPlayer, Evading, Marble, Player};
 use crate::constants::CENTER_INDEX;
 use crate::resources::{CurrentPlayerData, DiceData, GameData, GameState};
 use crate::shared_systems::{SharedSystemLabel, should_run_shared_systems};
@@ -152,16 +152,17 @@ fn generate_power_up(
 }
 
 fn activate_power_up(
+    mut commands: Commands, 
     mut events: EventReader<ActivatePowerUpEvent>,
     mut state: ResMut<State<GameState>>,
     mut game_data: ResMut<GameData>,
     mut dice_data: ResMut<DiceData>,
     current_player_data: Res<CurrentPlayerData>,
-    // mut marbles: Query<Entity, (With<Marble>, With<CurrentPlayer>)>,
+    mut marbles: Query<Entity, (With<Marble>, With<CurrentPlayer>)>,
 ) {
     let player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
     for event in events.iter() {
-        println!("activating {:?}", event);
+        println!("activating {:?}", event.0);
         if let Some(new_state) = match event.0 {
             PowerUp::RollAgain => Some(GameState::DiceRoll),
             PowerUp::DoubleDice => {
@@ -169,10 +170,11 @@ fn activate_power_up(
                 Some(GameState::TurnSetup)
             }
             PowerUp::EvadeCapture => {
-                // player_data.power_up_status.evade_capture();
-                // for marble in marbles.iter_mut() {
-                //     commands.entity(marble).insert(Evading);
-                // }
+                player_data.power_up_status.evade_capture();
+                for marble in marbles.iter_mut() {
+                    commands.entity(marble).insert(Evading);
+                }
+                // TODO: there needs to be a system that highlights the evading marbles
                 None
             }
             PowerUp::SelfJump => {

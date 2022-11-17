@@ -8,6 +8,7 @@ use std::collections::BTreeSet;
 pub fn calc_possible_moves(
     dice_data: Res<DiceData>,
     marbles: Query<(Entity, &Marble), With<CurrentPlayer>>,
+    evading_marbles: Query<(&Marble, &Player), (With<Evading>, Without<CurrentPlayer>)>,
     mut current_player_data: ResMut<CurrentPlayerData>,
     game_data: Res<GameData>,
 ) {
@@ -52,7 +53,7 @@ pub fn calc_possible_moves(
     // filter out moves that violate the self-hop rules and moves that land on "evading" opponents
     current_player_data.possible_moves = possible_moves.into_iter()
         .filter_map(|(entity, path, which)| {
-            match marbles.iter()
+            let self_jump_violations = marbles.iter()
                 .filter(|(e, _)| *e != entity) // no need to compare the same marbles
                 .find(|(_, other_marble)| {
                     // if we're allowed to jump over our own marbles find one where we land on it
@@ -63,11 +64,17 @@ pub fn calc_possible_moves(
                     else {
                         path.iter().any(|i| other_marble.index == *i)
                     }
-                })
-                // POWERUP: filter out moves that land on opponents who are currently "evading"
-            {
-                Some(_) => None, // we found one of our other marbles in the way of this move
-                None => Some((entity, (*path.last().unwrap(), path.len(), which).into()))
+                });
+            let evading_violations = evading_marbles.iter().find(|(m, p)| {
+                Player::is_same_index(current_player_data.player, *path.last().unwrap(), **p, m.index)
+            });
+            if evading_violations.is_some() {
+                println!("evading violation: {:?}", (entity, *path.last().unwrap(), which));
+            }
+            if self_jump_violations.is_none() && evading_violations.is_none() {
+                Some((entity, (*path.last().unwrap(), path.len(), which).into()))
+            } else {
+                None
             }
         })
         .collect();
