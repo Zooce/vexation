@@ -85,6 +85,23 @@ impl Player {
         }
     }
 
+    /// Shifts the index of the `from` player such that it becomes the index of
+    /// the `to` player at that same location. For example, the 0 index for
+    /// `Player::Red` is the 12 index for `Player::Yellow`, so this function
+    /// would be called like this:
+    /// 
+    /// ```rust
+    /// Player::rotate_index(0, Player::Red, Player::Yellow); // returns 12
+    /// ```
+    ///
+    /// NOTE: This does not work for the home row!
+    pub fn shift_index(i: usize, from: Player, to: Player) -> usize {
+        if i == CENTER_INDEX { return CENTER_INDEX; }
+        if i == BOARD.len() { return BOARD.len(); }
+        let rotations = (4 - from as usize) % 4;
+        (i + (rotations + to as usize) * 36) % 48
+    }
+
     pub fn is_same_index(p1: Player, i1: usize, p2: Player, i2: usize) -> bool {
         if i1 == CENTER_INDEX && i2 == CENTER_INDEX {
             return true;
@@ -92,8 +109,7 @@ impl Player {
         if i1 == CENTER_INDEX || i2 == CENTER_INDEX {
             return false;
         }
-        let rotations = (4 - p1 as usize) % 4;
-        (i1 + (rotations + p2 as usize) * 36) % 48 == i2
+        Player::shift_index(i1, p1, p2) == i2
     }
 }
 
@@ -139,5 +155,19 @@ mod tests {
         assert!(!Player::is_same_index(
             Player::Green, 53, Player::Red, 17
         ));
+    }
+
+    #[test]
+    fn shift_index_test() {
+        let tests = [
+            (0, Player::Red, 36, Player::Green),
+            (1, Player::Red, 25, Player::Blue),
+            (2, Player::Red, 14, Player::Yellow),
+            (BOARD.len(), Player::Red, BOARD.len(), Player::Green),
+            (CENTER_INDEX, Player::Red, CENTER_INDEX, Player::Blue),
+        ];
+        for (i, from, expected, to) in tests {
+            assert_eq!(Player::shift_index(i, from, to), expected);
+        }
     }
 }

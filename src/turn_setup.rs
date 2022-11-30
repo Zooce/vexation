@@ -7,22 +7,22 @@ use std::collections::BTreeSet;
 
 pub fn calc_possible_moves(
     dice_data: Res<DiceData>,
-    marbles: Query<(Entity, &Marble), With<CurrentPlayer>>,
-    evading_marbles: Query<(&Marble, &Player), (With<Evading>, Without<CurrentPlayer>)>,
+    current_player_marbles: Query<(Entity, &Marble), With<CurrentPlayer>>,
+    opponent_marbles: Query<(&Marble, &Player, Option<&Evading>), Without<CurrentPlayer>>,
     mut current_player_data: ResMut<CurrentPlayerData>,
     game_data: Res<GameData>,
 ) {
     let player_data = game_data.players.get(&current_player_data.player).unwrap();
     let mut possible_moves = BTreeSet::new(); // so we disregard duplicates
-    
+
     if player_data.power_up_status.home_run {
         let open_home_indexes: Vec<usize> = (FIRST_HOME_INDEX..=LAST_HOME_INDEX).into_iter()
-            .filter_map(|i| match marbles.iter().find(|(_, m)| m.index == i) {
+            .filter_map(|i| match current_player_marbles.iter().find(|(_, m)| m.index == i) {
                 Some(_) => None,
                 None => Some(i),
             })
             .collect();
-        marbles.iter()
+        current_player_marbles.iter()
             // home runs are only for marbles that are not already home
             .filter(|(_, m)| !(FIRST_HOME_INDEX..=LAST_HOME_INDEX).contains(&m.index))
             // add each open home index as a possible move
@@ -31,8 +31,65 @@ pub fn calc_possible_moves(
             }));
     }
 
+    if player_data.power_up_status.capture_nearest {
+        current_player_marbles.iter()
+            // cannot capture from the base or home
+            .filter(|(_, m)| m.index != BOARD.len() && !(FIRST_HOME_INDEX..=LAST_HOME_INDEX).contains(&m.index))
+            .for_each(|(e, m)| {
+                let closest = opponent_marbles.iter()
+                    .filter(|(om, _, ev)| {
+                        ev.is_none() && // can't capture evading marbles
+                        om.index != BOARD.len() && // can't capture marbles in the base
+                        !(FIRST_HOME_INDEX..=LAST_HOME_INDEX).contains(&om.index) // can't capture marbles in the home row
+                    })
+                    // map all to shifted indexes
+                    .map(|(om, op, _)| Player::shift_index(om.index, *op, current_player_data.player))
+                    // we can only capture marbles in front of us
+                    .filter(|i| i > &m.index)
+                    // find the smallest distance between this marble and the opponent marbles
+                    .min_by_key(|index| {
+                        match *index {
+                            // distance to center index depends on where the next entrance is
+                            CENTER_INDEX => match m.index {
+                                18..=29 => 29 - m.index + 1,
+                                6..=17 => 17 - m.index + 1,
+                                0..=5 => 5 - m.index + 1,
+                                _ => usize::MAX,
+                            }
+                            idx => match m.index {
+                                CENTER_INDEX => match idx {
+                                    41..=47 => 47 - idx + 1,
+                                    _ => usize::MAX,
+                                }
+                                _ => idx - m.index,
+                            }
+                        }
+                    });
+                if let Some(index) = closest {
+                    let path = match index {
+                        CENTER_INDEX => {
+                            let mut path: Vec<_> = match m.index {
+                                18..=29 => (m.index..=29).collect(),
+                                6..=17 => (m.index..=17).collect(),
+                                0..=5 => (m.index..=5).collect(),
+                                _ => unreachable!(),
+                            };
+                            path.remove(0); // paths should not contain the current marble location
+                            path.push(CENTER_INDEX);
+                            path
+                        }
+                        i => match m.index {
+                            CENTER_INDEX => (41..=i).collect(),
+                            _ => (m.index + 1..=i).collect(),
+                        }
+                    };
+                    possible_moves.insert((e, path, WhichDie::Neither));
+                }
+            });
+    }
+
     if !dice_data.dice.is_empty() {
-        for (entity, marble) in &marbles {
+        for (entity, marble) in &current_player_marbles {
             // exit base
             if marble.index == BOARD.len() {
                 base_exit_rules(&dice_data.dice, entity, &mut possible_moves);
@@ -53,7 +110,7 @@ pub fn calc_possible_moves(
     // filter out moves that violate the self-hop rules and moves that land on "evading" opponents
     current_player_data.possible_moves = possible_moves.into_iter()
         .filter_map(|(entity, path, which)| {
-            let self_jump_violations = marbles.iter()
+            let self_jump_violations = current_player_marbles.iter()
                 .filter(|(e, _)| *e != entity) // no need to compare the same marbles
                 .find(|(_, other_marble)| {
                     // if we're allowed to jump over our own marbles find one where we land on it
@@ -65,9 +122,11 @@ pub fn calc_possible_moves(
                         path.iter().any(|i| other_marble.index == *i)
                     }
                 });
-            let evading_violations = evading_marbles.iter().find(|(m, p)| {
-                Player::is_same_index(current_player_data.player, *path.last().unwrap(), **p, m.index)
-            });
+            let evading_violations = opponent_marbles.iter()
+                .filter(|(_, _, ev)| ev.is_some())
+                .find(|(m, p, _)| {
+                    Player::is_same_index(current_player_data.player, *path.last().unwrap(), **p, m.index)
+                });
             if evading_violations.is_some() {
                 println!("evading violation: {:?}", (entity, *path.last().unwrap(), which));
             }

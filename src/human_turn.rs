@@ -228,13 +228,6 @@ fn use_power_up_from_keyboard(
             return;
         }
         if let Some(keycode) = event.key_code {
-            if keycode == KeyCode::D {
-                println!("\n===---[ Debug Info ] ---===");
-                for (p, d) in &game_data.players {
-                    println!("{p:?}: {}", d.debug_info());
-                }
-                return;
-            }
             let player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
             if player_data.power_ups.is_empty() {
                 return;

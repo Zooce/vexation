@@ -28,8 +28,10 @@ pub fn choose_next_player(
         }
     }
 
-    let new_player_data = game_data.players.get(&current_player_data.player).unwrap();
-    println!("player = {:?}, data = {:#?}", current_player_data.player, new_player_data);
+    println!("\nCurrent Player: {:?}", current_player_data.player);
+    for (player, data) in &game_data.players {
+        println!("{player:?} \t {:>5.2} | {:?}", data.power, data.power_ups);
+    }
 }
 
 pub fn show_or_hide_buttons(

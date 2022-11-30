@@ -134,11 +134,11 @@ fn generate_power_up(
     for event in power_up_events.iter() {
         match event.1 {
             PowerChange::Up => {
-                // pick random power-up
                 let power_up: PowerUp = power_up_dist.0.sample(&mut rng).into();
-                println!("{:?}", power_up);
-                // add power-up to player's list
+                println!("recieved: {:?}", power_up);
                 game_data.players.get_mut(&event.0).unwrap().power_ups.push(power_up);
+
+                // TODOs:
                 // mark current player to wait for animation
                 // spawn power-up sprite in player's next empty power-up box
                 // mark power-up for animation
@@ -182,8 +182,8 @@ fn activate_power_up(
                 Some(GameState::TurnSetup)
             }
             PowerUp::CaptureNearest => {
-                // player_data.power_up_status.capture_nearest();
-                None
+                player_data.power_up_status.capture_nearest();
+                Some(GameState::TurnSetup)
             }
             PowerUp::HomeRun => {
                 player_data.power_up_status.home_run();
