@@ -118,22 +118,23 @@ pub fn spawn_sprite_sheet_button<T: Send + Sync + 'static>(
     button_state: ButtonState,
 ) {
     parent
-        .spawn_bundle(SpriteSheetBundle{
-            sprite: TextureAtlasSprite {
-                index: match button_state {
-                    ButtonState::NotHovered => 0,
-                    ButtonState::Hovered => 1,
-                    ButtonState::Pressed | ButtonState::PressedNotHovered => 2,
+        .spawn((
+            SpriteSheetBundle{
+                sprite: TextureAtlasSprite {
+                    index: match button_state {
+                        ButtonState::NotHovered => 0,
+                        ButtonState::Hovered => 1,
+                        ButtonState::Pressed | ButtonState::PressedNotHovered => 2,
+                    },
+                    ..default()
                 },
+                texture_atlas,
+                transform,
+                visibility: Visibility{ is_visible },
                 ..default()
             },
-            texture_atlas,
-            transform,
-            visibility: Visibility{ is_visible },
-            ..default()
-        })
-        .insert(button_state)
-        .insert(action)
-        ;
+            button_state,
+            action,
+        ));
 }
 

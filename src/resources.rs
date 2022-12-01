@@ -4,9 +4,10 @@ use bevy::prelude::*;
 use crate::components::*;
 use crate::power::{PowerChange, PowerUp, MAX_POWER};
 
+#[derive(Resource)]
 pub struct BufferTimer(pub Timer);
 
-// computer_turn.rs
+#[derive(Resource)]
 pub struct ComputerTurnTimers {
    pub move_timer: Timer,
    pub buffer_timer: Timer,
@@ -36,7 +37,7 @@ impl From<(usize, usize, WhichDie)> for MarbleMove {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Resource)]
 pub struct CurrentPlayerData {
     pub player: Player,
     pub possible_moves: Vec<(Entity, MarbleMove)>,
@@ -134,7 +135,7 @@ impl Dice {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Resource)]
 pub struct DiceData {
     pub die_1: Entity,
     pub die_2: Entity,
@@ -288,6 +289,7 @@ impl PlayerData {
 }
 
 /// The data keeping track of the current state of the game.
+#[derive(Resource)]
 pub struct GameData {
     pub players: HashMap<Player, PlayerData>,
 }
@@ -308,14 +310,14 @@ pub enum GameState {
     GameEnd,
 }
 
-// vexation.rs
+#[derive(Resource)]
 pub struct GamePlayEntities {
     pub board: Entity,
     pub ui: Entity,
 }
 
-// shared_systems.rs
 /// The resource for highlight data.
+#[derive(Resource)]
 pub struct HighlightData {
     /// the highlight texture for the selected marble
     pub marble_texture: Handle<Image>,
@@ -323,6 +325,7 @@ pub struct HighlightData {
     pub tile_texture: Handle<Image>,
 }
 
+#[derive(Resource)]
 pub struct HumanPlayer {
     pub color: Player,
     pub human_indicator: Entity,
@@ -330,7 +333,7 @@ pub struct HumanPlayer {
 
 pub struct MarbleAnimationDoneEvent(pub Player);
 
-// dice_roll.rs
+#[derive(Resource)]
 pub struct RollAnimationTimer(pub Timer);
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]

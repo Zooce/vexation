@@ -97,12 +97,12 @@ pub fn create_game(
     asset_server: Res<AssetServer>,
 ) {
     // insert resources
-    commands.insert_resource(BufferTimer(Timer::from_seconds(1.0, false)));
+    commands.insert_resource(BufferTimer(Timer::from_seconds(1.0, TimerMode::Once)));
     commands.insert_resource(ComputerTurnTimers{
-        move_timer: Timer::from_seconds(COMPUTER_MOVE_TIMER_SECS, false),
-        buffer_timer: Timer::from_seconds(COMPUTER_BUFFER_TIMER_SECS, false),
+        move_timer: Timer::from_seconds(COMPUTER_MOVE_TIMER_SECS, TimerMode::Once),
+        buffer_timer: Timer::from_seconds(COMPUTER_BUFFER_TIMER_SECS, TimerMode::Once),
     });
-    commands.insert_resource(RollAnimationTimer(Timer::from_seconds(1.5, false)));
+    commands.insert_resource(RollAnimationTimer(Timer::from_seconds(1.5, TimerMode::Once)));
     commands.insert_resource(GameData{
         players: HashMap::from([
             (Player::Red, PlayerData::default()),
@@ -119,7 +119,7 @@ pub fn create_game(
     commands.insert_resource(CurrentPlayerData::new(current_player));
 
     // board
-    let board = commands.spawn_bundle(SpriteBundle{
+    let board = commands.spawn(SpriteBundle{
         texture: asset_server.load("board.png"),
         ..default()
     }).id();
@@ -133,60 +133,60 @@ pub fn create_game(
         // green marbles
         let origin = Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 1.);
         let mut green = commands
-            .spawn_bundle(SpriteBundle{
-                texture: green_marble.clone(),
-                transform: origin,
-                ..default()
-            });
-        green
-            .insert(Marble::new(origin.translation))
-            .insert(Player::Green)
-            ;
+            .spawn((
+                SpriteBundle{
+                    texture: green_marble.clone(),
+                    transform: origin,
+                    ..default()
+                },
+                Marble::new(origin.translation),
+                Player::Green,
+            ));
         if current_player == Player::Green {
             green.insert(CurrentPlayer);
         }
         // yellow marbles
         let origin = Transform::from_xyz(-x * TILE_SIZE, -y * TILE_SIZE, 1.);
         let mut yellow = commands
-            .spawn_bundle(SpriteBundle{
-                texture: yellow_marble.clone(),
-                transform: origin,
-                ..default()
-            });
-        yellow
-            .insert(Marble::new(origin.translation))
-            .insert(Player::Yellow)
-            ;
+            .spawn((
+                SpriteBundle{
+                    texture: yellow_marble.clone(),
+                    transform: origin,
+                    ..default()
+                },
+                Marble::new(origin.translation),
+                Player::Yellow,
+            ));
         if current_player == Player::Yellow {
             yellow.insert(CurrentPlayer);
         }
         // red marbles
         let origin = Transform::from_xyz(-y * TILE_SIZE, x * TILE_SIZE, 1.);
         let mut red = commands
-            .spawn_bundle(SpriteBundle{
-                texture: red_marble.clone(),
-                transform: origin,
-                ..default()
-            });
-        red
-            .insert(Marble::new(origin.translation))
-            .insert(Player::Red)
-            ;
+            .spawn((
+                SpriteBundle{
+                    texture: red_marble.clone(),
+                    transform: origin,
+                    ..default()
+                },
+                Marble::new(origin.translation),
+                Player::Red,
+            ));
         if current_player == Player::Red {
             red.insert(CurrentPlayer);
         }
         // blue marbles
         let origin = Transform::from_xyz(y * TILE_SIZE, -x * TILE_SIZE, 1.);
         let mut blue = commands
-            .spawn_bundle(SpriteBundle{
-                texture: blue_marble.clone(),
-                transform: origin,
-                ..default()
-            });
-        blue
-            .insert(Marble::new(origin.translation))
-            .insert(Player::Blue)
-            ;
+            .spawn((
+                SpriteBundle{
+                    texture: blue_marble.clone(),
+                    transform: origin,
+                    ..default()
+                },
+                Marble::new(origin.translation),
+                Player::Blue,
+            ));
         if current_player == Player::Blue {
             blue.insert(CurrentPlayer);
         }
@@ -194,28 +194,36 @@ pub fn create_game(
 
     // die sprite sheet
     let die_sheet_handle = texture_atlases.add(TextureAtlas::from_grid(
-        asset_server.load("die-sheet.png"), Vec2::new(32.0, 32.0), 6, 1
+        asset_server.load("die-sheet.png"), Vec2::new(32.0, 32.0), 6, 1, None, None
     ));
     let die_1 = commands
-        .spawn_bundle(SpriteSheetBundle {
-            texture_atlas: die_sheet_handle.clone(),
-            visibility: Visibility{ is_visible: false },
-            transform: Transform::from_xyz(0.0, 0.0, 2.0),
-            ..default()
-        })
-        .insert(Die { location: Vec3::new(0.0, 0.0, 2.0), timer: Timer::from_seconds(0.1, true) })
-        .id()
-        ;
+        .spawn((
+            SpriteSheetBundle{
+                texture_atlas: die_sheet_handle.clone(),
+                visibility: Visibility{ is_visible: false },
+                transform: Transform::from_xyz(0.0, 0.0, 2.0),
+                ..default()
+            },
+            Die{
+                location: Vec3::new(0.0, 0.0, 2.0), 
+                timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+            },
+        ))
+        .id();
     let die_2 = commands
-        .spawn_bundle(SpriteSheetBundle {
-            texture_atlas: die_sheet_handle.clone(),
-            visibility: Visibility{ is_visible: false },
-            transform: Transform::from_xyz(0.0, 0.0, 2.0),
-            ..default()
-        })
-        .insert(Die { location: Vec3::new(0.0, 0.0, 2.0), timer: Timer::from_seconds(0.1, true) })
-        .id()
-        ;
+        .spawn((
+            SpriteSheetBundle{
+                texture_atlas: die_sheet_handle.clone(),
+                visibility: Visibility{ is_visible: false },
+                transform: Transform::from_xyz(0.0, 0.0, 2.0),
+                ..default()
+            },
+            Die{
+                location: Vec3::new(0.0, 0.0, 2.0),
+                timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+            }
+        ))
+        .id();
 
     commands.insert_resource(DiceData {
         die_1,
@@ -232,11 +240,11 @@ pub fn create_game(
 
     // UI buttons (power-ups + turn end)
     let ui = commands
-        .spawn_bundle(SpatialBundle::default())
+        .spawn(SpatialBundle::default())
         .with_children(|parent| {
 
             let sprite_sheet = texture_atlases.add(TextureAtlas::from_grid(
-                asset_server.load("buttons/done_button.png"), Vec2::new(160.0, 48.0), 3, 1
+                asset_server.load("buttons/done_button.png"), Vec2::new(160.0, 48.0), 3, 1, None, None
             ));
             let transform = Transform::from_xyz(0.0, (-WINDOW_SIZE / 2.0) + TILE_SIZE, 5.0);
             spawn_sprite_sheet_button(
@@ -271,7 +279,7 @@ pub fn destroy_game(
     commands.entity(dice_data.die_1).despawn();
     commands.entity(dice_data.die_2).despawn();
 
-    texture_atlases.remove(dice_data.die_sheet_handle.id);
+    texture_atlases.remove(dice_data.die_sheet_handle.id());
 
     commands.remove_resource::<GamePlayEntities>();
     commands.remove_resource::<BufferTimer>();

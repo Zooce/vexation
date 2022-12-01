@@ -24,7 +24,7 @@ impl Plugin for ChooseColorPlugin {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Resource)]
 struct ChooseColorData {
     pub masks: [Handle<Image>;4],
     pub current_color: Option<Player>,
@@ -96,7 +96,7 @@ fn mouse_click_handler(
             }
         };
         if let Some(color) = position_to_color(cursor) {
-            let human_indicator = commands.spawn_bundle(SpriteBundle{
+            let human_indicator = commands.spawn(SpriteBundle{
                 texture: asset_server.load("human-indicator.png"),
                 transform: {
                     let (x, y) = match color {
@@ -119,7 +119,7 @@ fn show_mask(mut commands: Commands, mut choose_color_data: ResMut<ChooseColorDa
     if let Some(mask) = choose_color_data.current_mask {
         commands.entity(mask).despawn();
     }
-    choose_color_data.current_mask = Some(commands.spawn_bundle(SpriteBundle{
+    choose_color_data.current_mask = Some(commands.spawn(SpriteBundle{
         texture: choose_color_data.masks[choose_color_data.current_color.unwrap() as usize].clone(),
         transform: Transform::from_xyz(0., 0., 3.),
         ..default()

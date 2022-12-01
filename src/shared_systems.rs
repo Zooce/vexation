@@ -94,17 +94,19 @@ pub fn highlighter(
                 // highlight the marble if it's not already highlighted
                 if highlights.iter().find(|(e, _, m)| m.is_some() && *e == entity).is_none() {
                     let marble = marbles.get(entity).unwrap();
-                    commands.spawn_bundle(SpriteBundle{
-                        texture: highlight_data.marble_texture.clone(),
-                        transform: if marble.index == BOARD.len() {
-                            Transform::from_xyz(marble.origin.x, marble.origin.y, 2.0)
-                        } else {
-                            rotated_transform_fn(marble.index)
+                    commands.spawn((
+                        SpriteBundle{
+                            texture: highlight_data.marble_texture.clone(),
+                            transform: if marble.index == BOARD.len() {
+                                Transform::from_xyz(marble.origin.x, marble.origin.y, 2.0)
+                            } else {
+                                rotated_transform_fn(marble.index)
+                            },
+                            ..default()
                         },
-                        ..default()
-                    })
-                    .insert(Highlight{ marble: entity, index: marble.index })
-                    .insert(SelectedMarble);
+                        Highlight{ marble: entity, index: marble.index },
+                        SelectedMarble,
+                    ));
                 }
 
                 // set the marble entity for all highlights
@@ -114,13 +116,14 @@ pub fn highlighter(
                 indexes.iter()
                     .filter(|&&i| highlights.iter().find(|(_, h, _)| h.index == i).is_none())
                     .for_each(|&i| {
-                        commands.spawn_bundle(SpriteBundle{
-                            texture: highlight_data.tile_texture.clone(),
-                            transform: rotated_transform_fn(i),
-                            ..default()
-                        })
-                        .insert(Highlight{ marble: entity, index: i })
-                        ;
+                        commands.spawn((
+                            SpriteBundle{
+                                texture: highlight_data.tile_texture.clone(),
+                                transform: rotated_transform_fn(i),
+                                ..default()
+                            },
+                            Highlight{ marble: entity, index: i },
+                        ));
                     });
             }
         }

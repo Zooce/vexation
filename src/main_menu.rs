@@ -12,10 +12,12 @@ enum MainMenuAction {
     Quit,
 }
 
+#[derive(Resource)]
 struct RootUiEntities{
     pub ui: Vec<Entity>,
 }
 
+#[derive(Resource)]
 struct UiAssets {
     // pub font: Handle<Font>,
     pub mini_font: Handle<Font>,
@@ -27,6 +29,7 @@ struct UiAssets {
     pub next_button: Handle<TextureAtlas>,
 }
 
+#[derive(Resource)]
 struct UiPageNumber(pub usize);
 
 pub struct MainMenuPlugin;
@@ -88,7 +91,7 @@ fn load_sprite_sheet(
 ) -> Handle<TextureAtlas>
 {
     texture_atlases.add(TextureAtlas::from_grid(
-        asset_server.load(name), size, cols, rows
+        asset_server.load(name), size, cols, rows, None, None
     ))
 }
 
@@ -190,12 +193,12 @@ fn create_main_menu(
     mouse_pressed: bool,
 ) -> Vec<Entity> {
     let root = commands
-        .spawn_bundle(SpatialBundle::default())
+        .spawn(SpatialBundle::default())
         .with_children(|parent| {
             // title
             let y_title = 100.0;
             parent
-                .spawn_bundle(SpriteBundle{
+                .spawn(SpriteBundle{
                     texture: ui_assets.title.clone(),
                     transform: Transform::from_xyz(0.0, y_title, 1.0),
                     ..default()
@@ -286,7 +289,7 @@ fn create_rules_page(
     mouse_pressed: bool,
 ) -> Vec<Entity> {
     let text = commands
-        .spawn_bundle(TextBundle{
+        .spawn(TextBundle{
             text: Text::from_section(
                 match page_number.0 {
                     1 => RULES_P1,
@@ -302,7 +305,7 @@ fn create_rules_page(
             ),
             style: Style{
                 size: Size::new(Val::Px(WINDOW_SIZE - 10.0 * 2.0), Val::Auto),
-                align_self: AlignSelf::FlexEnd,
+                align_self: AlignSelf::FlexStart,
                 position: UiRect{
                     left: Val::Px(10.0),
                     ..default()
@@ -315,7 +318,7 @@ fn create_rules_page(
         ;
 
     let buttons = commands
-        .spawn_bundle(SpatialBundle::default())
+        .spawn(SpatialBundle::default())
         .with_children(|parent| {
             const BOTTOM_BUTTON_Y: f32 = (-WINDOW_SIZE / 2.0) + TILE_SIZE;
             let x_offset = match page_number.0 {

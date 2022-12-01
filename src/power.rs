@@ -52,6 +52,7 @@ impl From<usize> for PowerUp {
     }
 }
 
+#[derive(Resource)]
 struct PowerUpDistribution(pub WeightedIndex<usize>);
 
 pub struct PowerUpPlugin;
