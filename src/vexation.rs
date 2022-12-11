@@ -129,7 +129,7 @@ pub fn create_game(
     let green_marble = asset_server.load("marbles/green-marble.png");
     let blue_marble = asset_server.load("marbles/blue-marble.png");
     let yellow_marble = asset_server.load("marbles/yellow-marble.png");
-    for (x, y) in &[(3., 3.5), (3., 4.5), (4., 3.), (4., 4.), (4., 5.)] {
+    for (x, y) in &[(2.5, 3.5), (2.5, 4.5), (3.5, 3.), (3.5, 4.), (3.5, 5.)] {
         // green marbles
         let origin = Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 1.);
         let mut green = commands

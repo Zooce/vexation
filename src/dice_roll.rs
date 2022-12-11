@@ -82,7 +82,7 @@ fn roll_animation(
                 transform.translation = die.location;
             }
         }
-        // rotate the dice
+        // rotate the dice - `from_rotation_z` its argument as radians
         transform.rotate(Quat::from_rotation_z(16.0 * time.delta_seconds()));
     }
 

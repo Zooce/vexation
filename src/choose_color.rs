@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 use bevy::app::AppExit;
 use bevy::window::CursorMoved;
@@ -26,10 +28,13 @@ impl Plugin for ChooseColorPlugin {
 
 #[derive(Debug, Resource)]
 struct ChooseColorData {
-    pub masks: [Handle<Image>;4],
     pub current_color: Option<Player>,
-    pub current_mask: Option<Entity>,
+    pub mask_entity: Option<Entity>,
+    pub mask_sprite: Handle<Image>,
 }
+
+#[derive(Component)]
+struct Mask;
 
 fn choose_color_setup(
     mut commands: Commands,
@@ -39,14 +44,9 @@ fn choose_color_setup(
     // clear out mouse button clicks that carry over from the main menu
     mouse_buttons.clear();
     commands.insert_resource(ChooseColorData{
-        masks: [
-            asset_server.load("red-mask.png"),
-            asset_server.load("green-mask.png"),
-            asset_server.load("blue-mask.png"),
-            asset_server.load("yellow-mask.png"),
-        ],
         current_color: None,
-        current_mask: None,
+        mask_entity: None,
+        mask_sprite: asset_server.load("mask.png"),
     });
 }
 
@@ -54,15 +54,13 @@ fn mouse_hover_handler(
     commands: Commands,
     mut cursor_moved: EventReader<CursorMoved>,
     mut choose_color_data: ResMut<ChooseColorData>,
+    mask: Query<&mut Transform, With<Mask>>,
 ) {
     if let Some(event) = cursor_moved.iter().last() {
         let color = position_to_color(event.position);
-        if color.is_some()
-            && (choose_color_data.current_color.is_none()
-                || choose_color_data.current_color != color)
-        {
+        if color.is_some() && color != choose_color_data.current_color {
             choose_color_data.current_color = color;
-            show_mask(commands, choose_color_data);
+            show_mask(commands, choose_color_data, mask);
         }
     }
 }
@@ -97,7 +95,7 @@ fn mouse_click_handler(
         };
         if let Some(color) = position_to_color(cursor) {
             let human_indicator = commands.spawn(SpriteBundle{
-                texture: asset_server.load("human-indicator.png"),
+                texture: asset_server.load("human-indicator.png"), // TODO: change indicator for power ups
                 transform: {
                     let (x, y) = match color {
                         Player::Red => (-4.0, 4.0),
@@ -115,24 +113,42 @@ fn mouse_click_handler(
     }
 }
 
-fn show_mask(mut commands: Commands, mut choose_color_data: ResMut<ChooseColorData>) {
-    if let Some(mask) = choose_color_data.current_mask {
-        commands.entity(mask).despawn();
+fn show_mask(
+    mut commands: Commands, 
+    mut choose_color_data: ResMut<ChooseColorData>,
+    mut mask: Query<&mut Transform, With<Mask>>,
+) {
+    let color = match choose_color_data.current_color {
+        Some(Player::Red) => Quat::from_rotation_z(0.0),
+        Some(Player::Yellow) => Quat::from_rotation_z(PI / 2.0),
+        Some(Player::Blue) => Quat::from_rotation_z(PI),
+        Some(Player::Green) => Quat::from_rotation_z(3.0 * PI / 2.0),
+        None => Quat::NAN,
+    };
+    if choose_color_data.mask_entity.is_some() {
+        let mut transform = mask.single_mut();
+        transform.rotation = color;
+        return;
     }
-    choose_color_data.current_mask = Some(commands.spawn(SpriteBundle{
-        texture: choose_color_data.masks[choose_color_data.current_color.unwrap() as usize].clone(),
-        transform: Transform::from_xyz(0., 0., 3.),
-        ..default()
-    }).id());
+    let mut transform = Transform::from_xyz(0., 0., 3.);
+    transform.rotation = color;
+    choose_color_data.mask_entity = Some(commands.spawn((
+        SpriteBundle{
+            texture: choose_color_data.mask_sprite.clone(),
+            transform,
+            ..default()
+        },
+        Mask,
+    )).id());
 }
 
 fn choose_color_cleanup(
     mut commands: Commands,
     mut choose_color_data: ResMut<ChooseColorData>,
 ) {
-    if let Some(mask) = choose_color_data.current_mask {
+    if let Some(mask) = choose_color_data.mask_entity {
         commands.entity(mask).despawn();
-        choose_color_data.current_mask = None;
+        choose_color_data.mask_entity = None;
     }
     commands.remove_resource::<ChooseColorData>();
 }

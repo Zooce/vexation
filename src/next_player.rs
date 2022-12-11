@@ -54,10 +54,10 @@ pub fn next_player_setup(
     mut dice: Query<(&mut Visibility, &mut Die)>,
 ) {
     let (d1_loc, d2_loc) = match current_player_data.player {
-        Player::Red    => ((-3.0,  5.5), (-5.0,  5.5)),
-        Player::Green  => (( 5.5,  3.0), ( 5.5,  5.0)),
-        Player::Blue   => (( 3.0, -5.5), ( 5.0, -5.5)),
-        Player::Yellow => ((-5.5, -3.0), (-5.5, -5.0)),
+        Player::Red    => ((-3.0,  5.0), (-5.0,  5.0)),
+        Player::Green  => (( 5.0,  3.0), ( 5.0,  5.0)),
+        Player::Blue   => (( 3.0, -5.0), ( 5.0, -5.0)),
+        Player::Yellow => ((-5.0, -3.0), (-5.0, -5.0)),
     };
 
     let (mut visibility, mut die) = dice.get_mut(dice_data.die_1).expect("Unable to get die 1");
