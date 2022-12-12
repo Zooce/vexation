@@ -12,7 +12,7 @@ The first player to move all 5 of their marbles clockwise around the board and i
 
 ## The Board
 
-> TODO: annotate picture
+> TODO: annotated picture
 
 1. Base
     * This is where marbles start and go back to if they are captured.
@@ -22,30 +22,31 @@ The first player to move all 5 of their marbles clockwise around the board and i
     * Must roll a 1 or a 6 to exit the base and land on this space.
 3. Home row
     * Only the matching color can enter their home row.
-4. Shortcut entrance
-    * The colored arrows indicate where that player's marbles can exit but cannot enter (all other colors can enter).
-    * Can only enter with an exact roll of **both** dice. Ex: Marble at starting space and rolled a total of 6 (e.g, 2+4, 3+3, etc.).
-5. Center
-    * Must roll a 1 to exit.
+4. Center space
+    * Can only enter with an exact roll using **both** dice. Ex: Marble at starting space and rolled a total of 6 (e.g, 2+4, 3+3, etc.).
+    * Can only enter from a corner where the arrow point out does **NOT** match your color.
+    * Must roll a 1 to exit the center space.
     * Can only exit in the direction indicated by the arrow matching your color.
 
 ## Setup
 
-The human player picks their color by clicking on the "base" of the color they want. Then random player is chosen to go first.
+The human player picks their color by clicking on the "base" of the color they want. Then a random player is chosen to go first.
 
 ## Player Turn
 
-First, the dice are automatically rolled for the current player. The player can then use the values of the dice individually to move one or two marbles or use the sum of the dice to move one marble clockwise around the board.
+First, the dice are automatically rolled for the current player. The player can then use the values of the dice individually to move one or two marbles, or use the sum of the dice to move one marble. 
 
 ## Marble Movement and Captures
 
-A player's marble can hop over opponents marbles but cannot hop over their own marbles. If a marble lands exactly on an opponent's marble the opponent's marble is considered "captured" and is moved back to its base.
+Movement is always clockwise around the board. A player's marble can hop over opponents' marbles but cannot hop over their own marbles. If a marble lands exactly on an opponent's marble the opponent's marble is considered "captured" and is moved back to its base.
 
 ---
 
 ## Running the game
 
-Download or clone this repository, install [Rust](https://rust-lang.org), and running `cargo run` at the root of the directory. Optionally use the `--features bevy/dynamic` flag to speed things up a bit if you have nightly installed.
+Make sure you have [Git LFS](https://git-lfs.github.com/) installed. This is used to store all of the image assets.
+
+Download or clone this repository, install [Rust](https://rust-lang.org), and run `cargo run` at the root of the directory. Optionally use the `--features bevy/dynamic` flag to speed things up a bit if you have nightly installed.
 
 ---
 
@@ -55,4 +56,4 @@ Made by me, [Zooce](https://github.com/Zooce).
 
 Inspired by [marbles.world](https://github.com/voxelv/marbles) by [voxelv](https://github.com/voxelv).
 
-Some assets used from the very generous [Kenney](https://kenney.nl/).
+Some assets used/inspired from the very generous [Kenney](https://kenney.nl/).
