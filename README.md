@@ -4,11 +4,7 @@ Vexation is a game very similar to [Aggravation](https://en.wikipedia.org/wiki/A
 
 > It was originally inspired by https://github.com/voxelv/marbles by @voxelv! Thanks dude!
 
-<div style="text-align:center;">
-
-![vexation screenshot](https://github.com/Zooce/vexation/blob/main/extra/images/Vexation.png?raw=true)
-
-</div>
+<img src="https://github.com/Zooce/vexation/blob/main/extra/images/Vexation.png?raw=true" align="center" alt="screenshot" />
 
 ## The Objective
 
