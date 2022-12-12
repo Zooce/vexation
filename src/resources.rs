@@ -312,8 +312,7 @@ pub enum GameState {
 
 #[derive(Resource)]
 pub struct GamePlayEntities {
-    pub board: Entity,
-    pub ui: Entity,
+    pub board_entities: Vec<Entity>,
 }
 
 /// The resource for highlight data.

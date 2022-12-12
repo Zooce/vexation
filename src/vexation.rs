@@ -123,7 +123,27 @@ pub fn create_game(
         texture: asset_server.load("board.png"),
         ..default()
     }).id();
+    // TODO: animate power up slots onto the board AFTER the player chooses their color
+    // animation idea:
+    // → ←
+    // → ←
+    let power_up_slots = commands.spawn(SpriteBundle{
+        texture: asset_server.load("power-up-slots.png"),
+        transform: Transform::from_xyz(0.0, 0.0, 2.0),
+        ..default()
+    }).id();
+    // TODO: animate power bars onto the board AFTER the player chooses their color
+    // animation idea:
+    // ↓↓
+    // ↑↑
+    let power_bars = commands.spawn(SpriteBundle{
+        texture: asset_server.load("power-bars.png"),
+        transform: Transform::from_xyz(0.0, 0.0, 2.0),
+        ..default()
+    }).id();
+    let mut board_entities = vec![board, power_up_slots, power_bars];
 
+    // TODO: create all marbles at the center and animate them to their bases - AFTER choose color system
     // marbles
     let red_marble = asset_server.load("marbles/red-marble.png");
     let green_marble = asset_server.load("marbles/green-marble.png");
@@ -258,8 +278,8 @@ pub fn create_game(
         })
         .id()
         ;
-
-    commands.insert_resource(GamePlayEntities{ board, ui });
+    board_entities.push(ui);
+    commands.insert_resource(GamePlayEntities{ board_entities });
 
     state.set(GameState::ChooseColor).unwrap();
 }
@@ -273,8 +293,9 @@ pub fn destroy_game(
     human_player: Res<HumanPlayer>,
     marbles: Query<Entity, With<Marble>>,
 ) {
-    commands.entity(game_play_entities.board).despawn();
-    commands.entity(game_play_entities.ui).despawn_recursive();
+    for e in &game_play_entities.board_entities {
+        commands.entity(*e).despawn_recursive();
+    }
     commands.entity(human_player.human_indicator).despawn();
     commands.entity(dice_data.die_1).despawn();
     commands.entity(dice_data.die_2).despawn();
