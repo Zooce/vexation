@@ -28,7 +28,7 @@ impl Plugin for ChooseColorPlugin {
 
 #[derive(Debug, Resource)]
 struct ChooseColorData {
-    pub current_color: Option<Player>,
+    pub current_player: Option<Player>,
     pub mask_entity: Option<Entity>,
     pub mask_sprite: Handle<Image>,
 }
@@ -44,7 +44,7 @@ fn choose_color_setup(
     // clear out mouse button clicks that carry over from the main menu
     mouse_buttons.clear();
     commands.insert_resource(ChooseColorData{
-        current_color: None,
+        current_player: None,
         mask_entity: None,
         mask_sprite: asset_server.load("mask.png"),
     });
@@ -58,8 +58,8 @@ fn mouse_hover_handler(
 ) {
     if let Some(event) = cursor_moved.iter().last() {
         let color = position_to_color(event.position);
-        if color.is_some() && color != choose_color_data.current_color {
-            choose_color_data.current_color = color;
+        if color.is_some() && color != choose_color_data.current_player {
+            choose_color_data.current_player = color;
             show_mask(commands, choose_color_data, mask);
         }
     }
@@ -118,7 +118,7 @@ fn show_mask(
     mut choose_color_data: ResMut<ChooseColorData>,
     mut mask: Query<&mut Transform, With<Mask>>,
 ) {
-    let color = match choose_color_data.current_color {
+    let color = match choose_color_data.current_player {
         Some(Player::Red) => Quat::from_rotation_z(0.0),
         Some(Player::Yellow) => Quat::from_rotation_z(PI / 2.0),
         Some(Player::Blue) => Quat::from_rotation_z(PI),
