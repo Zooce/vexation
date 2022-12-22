@@ -88,7 +88,7 @@ pub fn highlighter(
                 let rotated_transform_fn = |index| {
                     let tile: (i32, i32) = BOARD[index];
                     let (x, y) = current_player_data.player.rotate_coords((tile.0 as f32, tile.1 as f32));
-                    Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 2.0)
+                    Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, Z_SELECTION_HIGHLIGHT)
                 };
 
                 // highlight the marble if it's not already highlighted
@@ -98,7 +98,7 @@ pub fn highlighter(
                         SpriteBundle{
                             texture: highlight_data.marble_texture.clone(),
                             transform: if marble.index == BOARD.len() {
-                                Transform::from_xyz(marble.origin.x, marble.origin.y, 2.0)
+                                Transform::from_xyz(marble.origin.x, marble.origin.y, Z_SELECTION_HIGHLIGHT)
                             } else {
                                 rotated_transform_fn(marble.index)
                             },

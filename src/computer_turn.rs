@@ -68,7 +68,7 @@ pub fn computer_move_buffer(
             let destination = {
                 let (c, r) = BOARD[destination];
                 let (x, y) = current_player_data.player.rotate_coords((c as f32, r as f32));
-                Vec3::new(x * TILE_SIZE, y * TILE_SIZE, 1.0)
+                Vec3::new(x * TILE_SIZE, y * TILE_SIZE, Z_MARBLE)
             };
             commands.entity(entity).insert(Moving::new(destination, transform.translation));
             current_player_data.move_marble();

@@ -118,30 +118,53 @@ pub fn create_game(
     let current_player: Player = rng.sample(die).into();
     commands.insert_resource(CurrentPlayerData::new(current_player));
 
-    // board
-    let board = commands.spawn(SpriteBundle{
-        texture: asset_server.load("board.png"),
+    let mut board_entities = vec![];
+    board_entities.push(commands.spawn(SpriteBundle{
+        texture: asset_server.load("background.png"),
+        transform: Transform::from_xyz(0., 0., Z_BACKGROUND),
         ..default()
-    }).id();
+    }).id());
+
+    // board
+    board_entities.push(commands.spawn(SpriteBundle{
+        texture: asset_server.load("board.png"),
+        transform: Transform::from_xyz(0., 0., Z_BOARD),
+        ..default()
+    }).id());
     // TODO: animate power up slots onto the board AFTER the player chooses their color
     // animation idea:
     // → ←
     // → ←
-    let power_up_slots = commands.spawn(SpriteBundle{
+    board_entities.push(commands.spawn(SpriteBundle{
         texture: asset_server.load("power-up-slots.png"),
-        transform: Transform::from_xyz(0.0, 0.0, 2.0),
+        transform: Transform::from_xyz(0., 0., Z_POWER_UP), 
         ..default()
-    }).id();
+    }).id());
     // TODO: animate power bars onto the board AFTER the player chooses their color
     // animation idea:
     // ↓↓
     // ↑↑
-    let power_bars = commands.spawn(SpriteBundle{
+    board_entities.push(commands.spawn(SpriteBundle{
         texture: asset_server.load("power-bars.png"),
-        transform: Transform::from_xyz(0.0, 0.0, 2.0),
+        transform: Transform::from_xyz(0., 0., Z_POWER_BAR),
         ..default()
-    }).id();
-    let mut board_entities = vec![board, power_up_slots, power_bars];
+    }).id());
+    let power_fill = asset_server.load("power-fill.png");
+    for ((x, y), player) in &[
+        ((-7.75, 0.), Player::Red),
+        ((-7.75, -8.), Player::Yellow), 
+        ((7.75, 0.), Player::Green),
+        ((7.75, -8.), Player::Blue)
+    ] {
+        board_entities.push(commands.spawn((
+            SpriteBundle{
+                texture: power_fill.clone(),
+                transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE + 1., Z_POWER_FILL),
+                ..default()
+            },
+            *player,
+        )).id());
+    }
 
     // TODO: create all marbles at the center and animate them to their bases - AFTER choose color system
     // marbles
@@ -151,7 +174,7 @@ pub fn create_game(
     let yellow_marble = asset_server.load("marbles/yellow-marble.png");
     for (x, y) in &[(2.5, 3.5), (2.5, 4.5), (3.5, 3.), (3.5, 4.), (3.5, 5.)] {
         // green marbles
-        let origin = Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 1.);
+        let origin = Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, Z_MARBLE);
         let mut green = commands
             .spawn((
                 SpriteBundle{
@@ -166,7 +189,7 @@ pub fn create_game(
             green.insert(CurrentPlayer);
         }
         // yellow marbles
-        let origin = Transform::from_xyz(-x * TILE_SIZE, -y * TILE_SIZE, 1.);
+        let origin = Transform::from_xyz(-x * TILE_SIZE, -y * TILE_SIZE, Z_MARBLE);
         let mut yellow = commands
             .spawn((
                 SpriteBundle{
@@ -181,7 +204,7 @@ pub fn create_game(
             yellow.insert(CurrentPlayer);
         }
         // red marbles
-        let origin = Transform::from_xyz(-y * TILE_SIZE, x * TILE_SIZE, 1.);
+        let origin = Transform::from_xyz(-y * TILE_SIZE, x * TILE_SIZE, Z_MARBLE);
         let mut red = commands
             .spawn((
                 SpriteBundle{
@@ -196,7 +219,7 @@ pub fn create_game(
             red.insert(CurrentPlayer);
         }
         // blue marbles
-        let origin = Transform::from_xyz(y * TILE_SIZE, -x * TILE_SIZE, 1.);
+        let origin = Transform::from_xyz(y * TILE_SIZE, -x * TILE_SIZE, Z_MARBLE);
         let mut blue = commands
             .spawn((
                 SpriteBundle{
@@ -221,11 +244,11 @@ pub fn create_game(
             SpriteSheetBundle{
                 texture_atlas: die_sheet_handle.clone(),
                 visibility: Visibility{ is_visible: false },
-                transform: Transform::from_xyz(0.0, 0.0, 2.0),
+                transform: Transform::from_xyz(0.0, 0.0, Z_DICE),
                 ..default()
             },
             Die{
-                location: Vec3::new(0.0, 0.0, 2.0), 
+                location: Vec3::new(0.0, 0.0, Z_DICE), 
                 timer: Timer::from_seconds(0.1, TimerMode::Repeating),
             },
         ))
@@ -235,11 +258,11 @@ pub fn create_game(
             SpriteSheetBundle{
                 texture_atlas: die_sheet_handle.clone(),
                 visibility: Visibility{ is_visible: false },
-                transform: Transform::from_xyz(0.0, 0.0, 2.0),
+                transform: Transform::from_xyz(0.0, 0.0, Z_DICE),
                 ..default()
             },
             Die{
-                location: Vec3::new(0.0, 0.0, 2.0),
+                location: Vec3::new(0.0, 0.0, Z_DICE),
                 timer: Timer::from_seconds(0.1, TimerMode::Repeating),
             }
         ))
@@ -266,7 +289,7 @@ pub fn create_game(
             let sprite_sheet = texture_atlases.add(TextureAtlas::from_grid(
                 asset_server.load("buttons/done_button.png"), Vec2::new(160.0, 48.0), 3, 1, None, None
             ));
-            let transform = Transform::from_xyz(0.0, (-WINDOW_SIZE / 2.0) + TILE_SIZE, 5.0);
+            let transform = Transform::from_xyz(0.0, (-WINDOW_SIZE / 2.0) + TILE_SIZE, Z_UI);
             spawn_sprite_sheet_button(
                 parent,
                 sprite_sheet,

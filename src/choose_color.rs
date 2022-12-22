@@ -103,7 +103,7 @@ fn mouse_click_handler(
                         Player::Blue => (4.0, -4.0),
                         Player::Yellow => (-4.0, -4.0),
                     };
-                    Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, 1.0)
+                    Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE, Z_HUMAN_INDICATOR)
                 },
                 ..default()
             }).id();
@@ -118,7 +118,7 @@ fn show_mask(
     mut choose_color_data: ResMut<ChooseColorData>,
     mut mask: Query<&mut Transform, With<Mask>>,
 ) {
-    let color = match choose_color_data.current_player {
+    let rotation = match choose_color_data.current_player {
         Some(Player::Red) => Quat::from_rotation_z(0.0),
         Some(Player::Yellow) => Quat::from_rotation_z(PI / 2.0),
         Some(Player::Blue) => Quat::from_rotation_z(PI),
@@ -127,11 +127,11 @@ fn show_mask(
     };
     if choose_color_data.mask_entity.is_some() {
         let mut transform = mask.single_mut();
-        transform.rotation = color;
+        transform.rotation = rotation;
         return;
     }
-    let mut transform = Transform::from_xyz(0., 0., 3.);
-    transform.rotation = color;
+    let mut transform = Transform::from_xyz(0., 0., Z_UI);
+    transform.rotation = rotation;
     choose_color_data.mask_entity = Some(commands.spawn((
         SpriteBundle{
             texture: choose_color_data.mask_sprite.clone(),

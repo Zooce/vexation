@@ -142,7 +142,7 @@ fn interpret_click_event(
             };
             if let Some(MarbleMove{ destination, which, .. }) = selected_move {
                 current_player_data.move_marble();
-                move_events.send(MoveEvent((marble, destination, which, Vec3::new(col, row, 1.0))));
+                move_events.send(MoveEvent((marble, destination, which, Vec3::new(col, row, Z_MARBLE))));
             } else {
                 // deselect the marble if the click was anywhere unimportant
                 current_player_data.selected_marble = None;

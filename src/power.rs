@@ -31,7 +31,7 @@ pub enum PowerUp {
     RollAgain,       // weight = 4
     DoubleDice,      // weight = 4
     EvadeCapture,    // weight = 3
-    SelfJump,        // weight = 2 
+    SelfJump,        // weight = 2
     CaptureNearest,  // weight = 1
     HomeRun,         // weight = 1
 }
@@ -69,7 +69,7 @@ impl Plugin for PowerUpPlugin {
             .add_system_set(SystemSet::new()
                 .label(SharedSystemLabel)
                 .with_run_criteria(should_run_shared_systems)
-                .with_system(update_power_bars)
+                .with_system(handle_power_events)
                 .with_system(generate_power_up)
                 .with_system(activate_power_up)
             )
@@ -77,7 +77,14 @@ impl Plugin for PowerUpPlugin {
     }
 }
 
-fn update_power_bars(
+#[derive(Component, Debug)]
+pub struct PowerBar {
+    pub power: f32,
+    multiplier: f32,
+    pub origin: f32,
+}
+
+fn handle_power_events(
     mut game_data: ResMut<GameData>,
     mut power_bar_events: EventReader<PowerBarEvent>,
     mut power_up_events: EventWriter<GeneratePowerUpEvent>,
@@ -153,7 +160,7 @@ fn generate_power_up(
 }
 
 fn activate_power_up(
-    mut commands: Commands, 
+    mut commands: Commands,
     mut events: EventReader<ActivatePowerUpEvent>,
     mut state: ResMut<State<GameState>>,
     mut game_data: ResMut<GameData>,

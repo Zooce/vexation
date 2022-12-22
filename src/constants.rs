@@ -20,6 +20,17 @@ pub const CENTER_ENTRANCE_INDEXES: [usize; 3] = [5, 17, 29];
 // turn_setup.rs
 pub const CENTER_EXIT_INDEX: usize = 41;
 
+pub const Z_POWER_FILL: f32 = 0.;
+pub const Z_BACKGROUND: f32 = 1.;
+pub const Z_BOARD: f32 = 2.;
+pub const Z_POWER_BAR: f32 = 2.;
+pub const Z_HUMAN_INDICATOR: f32 = 3.;
+pub const Z_POWER_UP: f32 = 4.;
+pub const Z_MARBLE: f32 = 4.;
+pub const Z_SELECTION_HIGHLIGHT: f32 = 5.;
+pub const Z_DICE: f32 = 5.;
+pub const Z_UI: f32 = 6.; 
+
 /// Main board cell indexes - rotate clockwise for each color
 ///
 ///                10 11 12
