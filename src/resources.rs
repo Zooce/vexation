@@ -180,11 +180,15 @@ pub struct PowerUpStatus {
 
 impl PowerUpStatus {
     pub fn evade_capture(&mut self) {
-        self.evade_capture_turns = 3;
+        // translates to 3 full turns since the first one will get decremented
+        // during the turn it's used
+        self.evade_capture_turns = 4; 
     }
 
     pub fn jump_self(&mut self) {
-        self.jump_self_turns = 3;
+        // translates to 3 full turns since the first one will get decremented
+        // during the turn it's used
+        self.jump_self_turns = 4;
     }
     
     pub fn capture_nearest(&mut self) {
