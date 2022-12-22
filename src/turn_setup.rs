@@ -29,6 +29,10 @@ pub fn calc_possible_moves(
             .for_each(|(e, _)| open_home_indexes.iter().for_each(|&i| {
                 possible_moves.insert((e, vec![i], WhichDie::Neither));
             }));
+        current_player_data.possible_moves = possible_moves.into_iter().map(|(entity, path, which)| {
+            (entity, (*path.last().unwrap(), path.len(), which).into())
+        }).collect();
+        return;
     }
 
     if player_data.power_up_status.capture_nearest {

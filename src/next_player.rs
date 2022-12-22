@@ -8,7 +8,6 @@ pub fn choose_next_player(
     mut commands: Commands,
     mut current_player_data: ResMut<CurrentPlayerData>,
     marbles: Query<(Entity, &Player, Option<&CurrentPlayer>), With<Marble>>,
-    game_data: Res<GameData>,
 ) {
     // move clockwise to the next player
     current_player_data.player = match current_player_data.player {
@@ -26,11 +25,6 @@ pub fn choose_next_player(
         if *color == current_player_data.player {
             commands.entity(marble).insert(CurrentPlayer);
         }
-    }
-
-    println!("\nCurrent Player: {:?}", current_player_data.player);
-    for (player, data) in &game_data.players {
-        println!("{player:?} \t {:>5.2} | {:?}", data.power, data.power_ups);
     }
 }
 

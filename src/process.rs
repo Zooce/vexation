@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::constants::*;
-use crate::power::PowerBarEvent;
+use crate::power::PowerEvent;
 use crate::resources::*;
 
 pub struct ProcessMovePlugin;
@@ -26,7 +26,7 @@ fn check_for_capture(
     current_player_data: Res<CurrentPlayerData>,
     current_player_marbles: Query<&Marble, With<CurrentPlayer>>,
     mut opponent_marbles: Query<(Entity, &mut Marble, &Transform, &Player), Without<CurrentPlayer>>,
-    mut power_bar_events: EventWriter<PowerBarEvent>,
+    mut power_events: EventWriter<PowerEvent>,
 ) {
     let cur = current_player_marbles.get(current_player_data.moved_marble.unwrap()).unwrap();
 
@@ -44,7 +44,7 @@ fn check_for_capture(
     {
         opponent_marble.index = BOARD.len();
         commands.entity(opp_entity).insert(Moving::new(opponent_marble.origin, transform.translation));
-        power_bar_events.send(PowerBarEvent::Capture{ captor: current_player_data.player, captive: *opponent }); 
+        power_events.send(PowerEvent::Capture{ captor: current_player_data.player, captive: *opponent }); 
     }
 }
 
@@ -52,16 +52,20 @@ fn check_for_capture(
 
 // POWERUP: add process index system - generates index power bar event
 fn process_index(
-    mut power_bar_events: EventWriter<PowerBarEvent>,
+    mut power_events: EventWriter<PowerEvent>,
     current_player_data: Res<CurrentPlayerData>,
     marbles: Query<&Marble, With<CurrentPlayer>>,
+    game_data: Res<GameData>,
 ) {
-    let marble = marbles.get(current_player_data.moved_marble.unwrap()).unwrap();
-    power_bar_events.send(PowerBarEvent::Index{
-        player: current_player_data.player,
-        index: marble.index,
-        prev_index: marble.prev_index
-    });
+    let player_data = game_data.players.get(&current_player_data.player).unwrap();
+    if !player_data.power_up_status.home_run {
+        let marble = marbles.get(current_player_data.moved_marble.unwrap()).unwrap();
+        power_events.send(PowerEvent::Index{
+            player: current_player_data.player,
+            index: marble.index,
+            prev_index: marble.prev_index
+        });
+    }
 }
 
 fn check_for_winner(

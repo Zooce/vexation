@@ -10,9 +10,10 @@ use rand::distributions::{ Distribution, WeightedIndex };
 pub struct GeneratePowerUpEvent(pub Player, pub PowerChange);
 
 #[derive(Debug)]
-pub enum PowerBarEvent {
+pub enum PowerEvent {
     Capture{captor: Player, captive: Player},
     Index{player: Player, index: usize, prev_index: usize},
+    Use{player: Player, power_up: PowerUp},
 }
 
 #[derive(Debug)]
@@ -26,7 +27,7 @@ pub enum PowerChange {
 
 pub const MAX_POWER: f32 = 30.0;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum PowerUp {
     RollAgain,       // weight = 4
     DoubleDice,      // weight = 4
@@ -62,8 +63,9 @@ impl Plugin for PowerUpPlugin {
         app
             .add_event::<ActivatePowerUpEvent>()
             .add_event::<GeneratePowerUpEvent>()
+            .add_event::<PowerEvent>()
             .add_event::<PowerBarEvent>()
-            
+
             .insert_resource(PowerUpDistribution(WeightedIndex::new(&POWER_UP_WEIGHTS).unwrap()))
 
             .add_system_set(SystemSet::new()
@@ -84,20 +86,55 @@ pub struct PowerBar {
     pub origin: f32,
 }
 
+impl PowerBar {
+    pub fn new(origin: f32) -> Self {
+        Self {
+            power: 0.,
+            multiplier: 1.,
+            origin,
+        }
+    }
+}
+
+impl PowerBar {
+    pub fn update(&mut self, delta: f32) -> Option<PowerChange> {
+        if self.power == MAX_POWER && delta.is_sign_positive() { return None; }
+        let new_power = (self.power + delta).clamp(0.0, MAX_POWER);
+        let change = if new_power >= 10.0 * self.multiplier {
+            self.multiplier += 1.0;
+            Some(PowerChange::Up)
+        } else if new_power < 10.0 * (self.multiplier - 1.0) {
+            self.multiplier -= 1.0;
+            Some(PowerChange::Down)
+        } else {
+            None
+        };
+        self.power = new_power;
+        change
+    }
+}
+
+pub struct PowerBarEvent {
+    pub power: f32,
+    pub player: Player,
+}
+
 fn handle_power_events(
     mut game_data: ResMut<GameData>,
-    mut power_bar_events: EventReader<PowerBarEvent>,
+    mut power_events: EventReader<PowerEvent>,
     mut power_up_events: EventWriter<GeneratePowerUpEvent>,
+    mut activate_events: EventWriter<ActivatePowerUpEvent>,
+    mut power_bars: Query<(&mut PowerBar, &mut Transform, &Player)>,
 ) {
-    for event in power_bar_events.iter() {
-        for (player, power_change) in match event {
-            PowerBarEvent::Capture{ captor, captive } => {
+    for event in power_events.iter() {
+        for (player, power) in match event {
+            PowerEvent::Capture{ captor, captive } => {
                 vec![
-                    (captor, game_data.players.get_mut(captor).unwrap().update_power(3.0)),
-                    (captive, game_data.players.get_mut(captive).unwrap().update_power(-3.0)),
+                    (captor, 3.),
+                    (captive, -3.),
                 ]
             },
-            PowerBarEvent::Index{ player, index, prev_index } => {
+            PowerEvent::Index{ player, index, prev_index } => {
                 let distance = if *index == CENTER_INDEX {
                     // TODO: with the double dice power up, the longest move you can make is 24 spaces
                     // base (54)  -> center (53) = 7
@@ -111,7 +148,7 @@ fn handle_power_events(
                     }
                 } else {
                     // base (54)   -> index = index + 1
-                    // center (53) -> index = index + 1 - 41 
+                    // center (53) -> index = index + 1 - 41
                     // prev_index  -> index = index - prev_index
                     match *prev_index {
                         54 => index + 1,
@@ -123,11 +160,24 @@ fn handle_power_events(
                     0..=47 => 1.0,
                     _ => 2.0,
                 } * 10.0 * distance / 48.0;
-                vec![(player, game_data.players.get_mut(player).unwrap().update_power(points))]
+                vec![(player, points)]
+            }
+            PowerEvent::Use{ player, power_up } => {
+                activate_events.send(ActivatePowerUpEvent(*power_up));
+                vec![(player, -10.)]
             }
         } {
-            if let Some(power_change) = power_change {
-                power_up_events.send(GeneratePowerUpEvent(*player, power_change));
+            let (mut bar, mut transform, _) = power_bars.iter_mut().find(|(_, _, &p)| p == *player).unwrap();
+            let change = bar.update(power);
+            transform.translation.y = bar.origin + bar.power * 4.;
+            if let Some(change) = change {
+                if bar.power != 0. && bar.power != MAX_POWER {
+                    match change {
+                        PowerChange::Up => transform.translation.y += 3.,
+                        PowerChange::Down => transform.translation.y -= 3.,
+                    }
+                }
+                power_up_events.send(GeneratePowerUpEvent(*player, change));
             }
         }
     }
@@ -139,12 +189,13 @@ fn generate_power_up(
     power_up_dist: Res<PowerUpDistribution>,
 ) {
     let mut rng = thread_rng();
-    for event in power_up_events.iter() {
-        match event.1 {
+    for GeneratePowerUpEvent(player, change) in power_up_events.iter() {
+        let player_string = format!("{:?}", &player);
+        match change {
             PowerChange::Up => {
                 let power_up: PowerUp = power_up_dist.0.sample(&mut rng).into();
-                println!("recieved: {:?}", power_up);
-                game_data.players.get_mut(&event.0).unwrap().power_ups.push(power_up);
+                game_data.players.get_mut(&player).unwrap().power_ups.push(power_up);
+                println!("{:6>} ++ {:?}", player_string, game_data.players.get(&player).unwrap().power_ups);
 
                 // TODOs:
                 // mark current player to wait for animation
@@ -153,7 +204,8 @@ fn generate_power_up(
             }
             PowerChange::Down => {
                 // remove power up
-                game_data.players.get_mut(&event.0).unwrap().power_ups.pop();
+                game_data.players.get_mut(&player).unwrap().power_ups.pop();
+                println!("{:6>} -- {:?}", player_string, game_data.players.get(&player).unwrap().power_ups);
             }
         }
     }

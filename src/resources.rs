@@ -232,7 +232,6 @@ impl Default for PowerUpStatus {
 pub struct PlayerData {
     pub turn_move_count: u8,
     pub consecutive_empty_turns: u8,
-    pub power: f32,
     pub multiplier: f32,
     pub power_ups: Vec<PowerUp>,
     pub power_up_status: PowerUpStatus,
@@ -243,7 +242,6 @@ impl Default for PlayerData {
         Self {
             turn_move_count: 0,
             consecutive_empty_turns: 0,
-            power: 0.0,
             multiplier: 1.0,
             power_ups: vec![],
             power_up_status: PowerUpStatus::default(),
@@ -262,26 +260,17 @@ impl PlayerData {
         self.power_up_status.tick();
     }
 
-    pub fn update_power(&mut self, delta: f32) -> Option<PowerChange> {
-        if self.power == MAX_POWER && delta.is_sign_positive() { return None; }
-        let new_power = (self.power + delta).clamp(0.0, MAX_POWER);
-        let change = if new_power >= 10.0 * self.multiplier {
-            self.multiplier += 1.0;
-            Some(PowerChange::Up)
-        } else if new_power < 10.0 * (self.multiplier - 1.0) {
-            self.multiplier -= 1.0;
-            Some(PowerChange::Down)
-        } else {
-            None
-        };
-        self.power = new_power;
-        change
-    }
-
     pub fn use_power_up(&mut self, index: usize) -> Option<PowerUp> {
         if index < self.power_ups.len() {
-            _ = self.update_power(-10.0); // power ups cost 10 points         
             Some(self.power_ups.remove(index))
+        } else {
+            None
+        }
+    }
+
+    pub fn get_power_up(&self, index: usize) -> Option<PowerUp> {
+        if index < self.power_ups.len() {
+            Some(self.power_ups[index])
         } else {
             None
         }

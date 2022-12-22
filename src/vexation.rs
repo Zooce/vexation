@@ -10,6 +10,7 @@ use crate::choose_color::ChooseColorPlugin;
 use crate::dice_roll::DiceRollPlugin;
 use crate::human_turn::HumanTurnPlugin;
 use crate::next_player::*;
+use crate::power::PowerBar;
 use crate::power::PowerUpPlugin;
 use crate::process::ProcessMovePlugin;
 use crate::resources::*;
@@ -162,6 +163,7 @@ pub fn create_game(
                 transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE + 1., Z_POWER_FILL),
                 ..default()
             },
+            PowerBar::new(y * TILE_SIZE + 1.),
             *player,
         )).id());
     }

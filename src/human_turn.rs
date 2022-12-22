@@ -5,7 +5,7 @@ use bevy::input::mouse::{MouseButtonInput, MouseButton};
 use crate::buttons::*;
 use crate::components::*;
 use crate::constants::*;
-use crate::power::ActivatePowerUpEvent;
+use crate::power::PowerEvent;
 use crate::shared_systems::HighlightEvent;
 use crate::resources::*;
 
@@ -221,7 +221,7 @@ fn use_power_up_from_keyboard(
     mut kb_events: EventReader<KeyboardInput>,
     mut game_data: ResMut<GameData>,
     current_player_data: Res<CurrentPlayerData>,
-    mut pu_events: EventWriter<ActivatePowerUpEvent>,
+    mut power_events: EventWriter<PowerEvent>,
 ) {
     if let Some(event) = kb_events.iter().last() {
         if !event.state.is_pressed() {
@@ -233,12 +233,12 @@ fn use_power_up_from_keyboard(
                 return;
             }
             if let Some(power_up) = match keycode {
-                KeyCode::Key1 => player_data.use_power_up(0),
-                KeyCode::Key2 => player_data.use_power_up(1),
-                KeyCode::Key3 => player_data.use_power_up(2),
+                KeyCode::Key1 => player_data.get_power_up(0),
+                KeyCode::Key2 => player_data.get_power_up(1),
+                KeyCode::Key3 => player_data.get_power_up(2),
                 _ => None,
             } {
-                pu_events.send(ActivatePowerUpEvent(power_up));
+                power_events.send(PowerEvent::Use{ player: current_player_data.player, power_up });
             }
         }
     }
