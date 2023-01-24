@@ -283,13 +283,12 @@ pub fn create_game(
         tile_texture: asset_server.load("tile-highlight.png"),
     });
 
-    // UI buttons (power-ups + turn end)
+    // human player turn end UI button
     let ui = commands
         .spawn(SpatialBundle::default())
         .with_children(|parent| {
-
             let sprite_sheet = texture_atlases.add(TextureAtlas::from_grid(
-                asset_server.load("buttons/done_button.png"), Vec2::new(160.0, 48.0), 3, 1, None, None
+                asset_server.load("buttons/done_button.png"), UI_BUTTON_SIZE.clone(), 3, 1, None, None
             ));
             let transform = Transform::from_xyz(0.0, (-WINDOW_SIZE / 2.0) + TILE_SIZE, Z_UI);
             spawn_sprite_sheet_button(
@@ -299,6 +298,7 @@ pub fn create_game(
                 ButtonAction(ActionEvent(GameButtonAction::Done)),
                 false,
                 ButtonState::NotHovered,
+                ButtonSize(UI_BUTTON_SIZE.clone()),
             );
         })
         .id()

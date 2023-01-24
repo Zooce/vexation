@@ -68,31 +68,17 @@ fn setup(
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-    let size = Vec2::new(UI_BUTTON_WIDTH, UI_BUTTON_HEIGHT);
     let grid = (3, 1);
     commands.insert_resource(UiAssets{
         // font: asset_server.load("Kenney Thick.ttf"),
         mini_font: asset_server.load("Kenney Mini.ttf"),
         title: asset_server.load("title.png"),
-        play_button: load_sprite_sheet("buttons/play_button.png", size, grid, &asset_server, &mut texture_atlases),
-        rules_button: load_sprite_sheet("buttons/rules_button.png", size, grid, &asset_server, &mut texture_atlases),
-        quit_button: load_sprite_sheet("buttons/quit_button.png", size, grid, &asset_server, &mut texture_atlases),
-        back_button: load_sprite_sheet("buttons/back_button.png", size, grid, &asset_server, &mut texture_atlases),
-        next_button: load_sprite_sheet("buttons/next_button.png", size, grid, &asset_server, &mut texture_atlases),
+        play_button: load_sprite_sheet("buttons/play_button.png", UI_BUTTON_SIZE.clone(), grid, &asset_server, &mut texture_atlases),
+        rules_button: load_sprite_sheet("buttons/rules_button.png", UI_BUTTON_SIZE.clone(), grid, &asset_server, &mut texture_atlases),
+        quit_button: load_sprite_sheet("buttons/quit_button.png", UI_BUTTON_SIZE.clone(), grid, &asset_server, &mut texture_atlases),
+        back_button: load_sprite_sheet("buttons/back_button.png", UI_BUTTON_SIZE.clone(), grid, &asset_server, &mut texture_atlases),
+        next_button: load_sprite_sheet("buttons/next_button.png", UI_BUTTON_SIZE.clone(), grid, &asset_server, &mut texture_atlases),
     });
-}
-
-fn load_sprite_sheet(
-    name: &str,
-    size: Vec2,
-    (cols, rows): (usize, usize),
-    asset_server: &Res<AssetServer>,
-    texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
-) -> Handle<TextureAtlas>
-{
-    texture_atlases.add(TextureAtlas::from_grid(
-        asset_server.load(name), size, cols, rows, None, None
-    ))
 }
 
 fn main_menu_enter(
@@ -212,7 +198,8 @@ fn create_main_menu(
                 transform,
                 ButtonAction(ActionEvent(MainMenuAction::StartGame)),
                 true,
-                get_button_state(cursor_pos, transform.translation, mouse_pressed),
+                get_button_state(cursor_pos, transform.translation, UI_BUTTON_SIZE.clone(), mouse_pressed),
+                ButtonSize(UI_BUTTON_SIZE.clone()),
             );
 
             let y_offset = 48.0 + 20.0; // 48 = height of a button, 20 = spacing between buttons
@@ -223,7 +210,8 @@ fn create_main_menu(
                 transform,
                 ButtonAction(ActionEvent(MainMenuAction::NextPage)),
                 true,
-                get_button_state(cursor_pos, transform.translation, mouse_pressed),
+                get_button_state(cursor_pos, transform.translation, UI_BUTTON_SIZE.clone(), mouse_pressed),
+                ButtonSize(UI_BUTTON_SIZE.clone()),
             );
 
             transform.translation -= Vec3::new(0.0, y_offset, 0.0);
@@ -233,7 +221,8 @@ fn create_main_menu(
                 transform,
                 ButtonAction(ActionEvent(MainMenuAction::Quit)),
                 true,
-                get_button_state(cursor_pos, transform.translation, mouse_pressed),
+                get_button_state(cursor_pos, transform.translation, UI_BUTTON_SIZE.clone(), mouse_pressed),
+                ButtonSize(UI_BUTTON_SIZE.clone()),
             );
         })
         .id()
@@ -331,7 +320,8 @@ fn create_rules_page(
                         transform,
                         ButtonAction(ActionEvent(MainMenuAction::NextPage)),
                         true,
-                        get_button_state(cursor_pos, transform.translation, mouse_pressed),
+                        get_button_state(cursor_pos, transform.translation, UI_BUTTON_SIZE.clone(), mouse_pressed),
+                        ButtonSize(UI_BUTTON_SIZE.clone()),
                     );
                     Some(-x_offset)
                 }
@@ -344,7 +334,8 @@ fn create_rules_page(
                 transform,
                 ButtonAction(ActionEvent(MainMenuAction::PrevPage)),
                 true,
-                get_button_state(cursor_pos, transform.translation, mouse_pressed),
+                get_button_state(cursor_pos, transform.translation, UI_BUTTON_SIZE.clone(), mouse_pressed),
+                ButtonSize(UI_BUTTON_SIZE.clone()),
             );
         })
         .id()

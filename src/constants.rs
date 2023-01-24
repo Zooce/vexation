@@ -1,9 +1,10 @@
+use bevy::prelude::Vec2;
+
 pub const TILE_SIZE: f32 = 32.;
 const TILE_COUNT: f32 = 17.;
 pub const WINDOW_SIZE: f32 = TILE_SIZE * TILE_COUNT;
 
-pub const UI_BUTTON_WIDTH: f32 = 160.0;
-pub const UI_BUTTON_HEIGHT: f32 = 48.0;
+pub const UI_BUTTON_SIZE: Vec2 = Vec2::new(160.0, 48.0);
 
 // vexation.rs
 pub const COMPUTER_BUFFER_TIMER_SECS: f32 = 0.75;

@@ -17,18 +17,21 @@ pub enum ButtonState {
     PressedNotHovered,
 }
 
+#[derive(Component, Debug)]
+pub struct ButtonSize(pub Vec2);
+
 pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
     mouse_button_inputs: Res<Input<MouseButton>>,
     mut cursor_moved_events: EventReader<CursorMoved>,
-    mut button_query: Query<(&mut ButtonState, &ButtonAction<T>, &Transform)>,
+    mut button_query: Query<(&mut ButtonState, &ButtonAction<T>, &Transform, &ButtonSize)>,
     mut action_events: EventWriter<ActionEvent<T>>,
 ) {
     let cursor_move_event = cursor_moved_events.iter().last();
 
-    for (mut button_state, action, transform) in &mut button_query {
+    for (mut button_state, action, transform, button_size) in &mut button_query {
         match (*button_state, cursor_move_event) {
             (ButtonState::NotHovered, Some(move_event)) => {
-                if is_in_bounds(move_event.position, transform.translation) {
+                if is_in_bounds(move_event.position, transform.translation, button_size.0) {
                     *button_state = ButtonState::Hovered;
                 }
             }
@@ -36,7 +39,7 @@ pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
                 if mouse_button_inputs.just_pressed(MouseButton::Left) {
                     *button_state = ButtonState::Pressed;
                 } else if let Some(move_event) = moved {
-                    if !is_in_bounds(move_event.position, transform.translation) {
+                    if !is_in_bounds(move_event.position, transform.translation, button_size.0) {
                         *button_state = ButtonState::NotHovered;
                     }
                 }
@@ -46,7 +49,7 @@ pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
                     *button_state = ButtonState::Hovered;
                     action_events.send(action.0)
                 } else if let Some(move_event) = moved {
-                    if !is_in_bounds(move_event.position, transform.translation) {
+                    if !is_in_bounds(move_event.position, transform.translation, button_size.0) {
                         *button_state = ButtonState::PressedNotHovered;
                     }
                 }
@@ -55,7 +58,7 @@ pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
                 if mouse_button_inputs.just_released(MouseButton::Left) {
                     *button_state = ButtonState::NotHovered;
                 } else if let Some(move_event) = moved {
-                    if is_in_bounds(move_event.position, transform.translation) {
+                    if is_in_bounds(move_event.position, transform.translation, button_size.0) {
                         *button_state = ButtonState::Pressed;
                     }
                 }
@@ -66,22 +69,23 @@ pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
 }
 
 /// This is a helper function used specifically in this file.
-fn is_in_bounds(cursor_pos: Vec2, button_pos: Vec3) -> bool {
+fn is_in_bounds(cursor_pos: Vec2, button_pos: Vec3, button_size: Vec2) -> bool {
     let (x, y) = (cursor_pos.x - WINDOW_SIZE / 2.0, cursor_pos.y - WINDOW_SIZE / 2.0);
-    x > button_pos.x - UI_BUTTON_WIDTH / 2.0 &&
-    x < button_pos.x + UI_BUTTON_WIDTH / 2.0 &&
-    y > button_pos.y - UI_BUTTON_HEIGHT / 2.0 &&
-    y < button_pos.y + UI_BUTTON_HEIGHT / 2.0
+    x > button_pos.x - button_size.x / 2.0 &&
+    x < button_pos.x + button_size.x / 2.0 &&
+    y > button_pos.y - button_size.y / 2.0 &&
+    y < button_pos.y + button_size.y / 2.0
 }
 
 /// This is a helper function used to get the state of a button.
 pub fn get_button_state(
     cursor_pos: Option<Vec2>,
     button_pos: Vec3,
-    mouse_pressed: bool
+    button_size: Vec2,
+    mouse_pressed: bool,
 ) -> ButtonState {
     if let Some(cursor_pos) = cursor_pos {
-        if is_in_bounds(cursor_pos, button_pos) {
+        if is_in_bounds(cursor_pos, button_pos, button_size) {
             if mouse_pressed {
                 ButtonState::Pressed
             } else {
@@ -108,7 +112,6 @@ pub fn watch_button_state_changes(
     }
 }
 
-// TODO: create a builder for this sprite sheet button stuff
 pub fn spawn_sprite_sheet_button<T: Send + Sync + 'static>(
     parent: &mut ChildBuilder,
     texture_atlas: Handle<TextureAtlas>,
@@ -116,6 +119,7 @@ pub fn spawn_sprite_sheet_button<T: Send + Sync + 'static>(
     action: ButtonAction<T>,
     is_visible: bool,
     button_state: ButtonState,
+    button_size: ButtonSize,
 ) {
     parent
         .spawn((
@@ -134,7 +138,49 @@ pub fn spawn_sprite_sheet_button<T: Send + Sync + 'static>(
                 ..default()
             },
             button_state,
+            button_size,
             action,
         ));
 }
 
+pub fn sprite_sheet_button_bundle<T: Send + Sync + 'static>(
+    texture_atlas: Handle<TextureAtlas>,
+    transform: Transform,
+    action: ButtonAction<T>,
+    is_visible: bool,
+    button_state: ButtonState,
+    button_size: ButtonSize,
+) -> impl Bundle {
+    (
+        SpriteSheetBundle{
+            sprite: TextureAtlasSprite{
+                index: match button_state {
+                    ButtonState::NotHovered => 0,
+                    ButtonState::Hovered => 1,
+                    ButtonState::Pressed | ButtonState::PressedNotHovered => 2,
+                },
+                ..default()
+            },
+            texture_atlas,
+            transform,
+            visibility: Visibility{ is_visible },
+            ..default()
+        },
+        button_state,
+        button_size,
+        action,
+    )
+}
+
+pub fn load_sprite_sheet(
+    name: &str,
+    size: Vec2,
+    (cols, rows): (usize, usize),
+    asset_server: &Res<AssetServer>,
+    texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
+) -> Handle<TextureAtlas>
+{
+    texture_atlases.add(TextureAtlas::from_grid(
+        asset_server.load(name), size, cols, rows, None, None
+    ))
+}
