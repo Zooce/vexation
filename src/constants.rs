@@ -5,6 +5,7 @@ const TILE_COUNT: f32 = 17.;
 pub const WINDOW_SIZE: f32 = TILE_SIZE * TILE_COUNT;
 
 pub const UI_BUTTON_SIZE: Vec2 = Vec2::new(160.0, 48.0);
+pub const TILE_BUTTON_SIZE: Vec2 = Vec2::new(TILE_SIZE, TILE_SIZE);
 
 // vexation.rs
 pub const COMPUTER_BUFFER_TIMER_SECS: f32 = 0.75;

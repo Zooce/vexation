@@ -1,7 +1,8 @@
 use bevy::prelude::*;
+use crate::buttons::{load_sprite_sheet, ActionEvent, ButtonAction, ButtonSize, ButtonState};
 use crate::components::{CurrentPlayer, Evading, Marble, Player};
-use crate::constants::CENTER_INDEX;
-use crate::resources::{CurrentPlayerData, DiceData, GameData, GameState};
+use crate::constants::{CENTER_INDEX, TILE_BUTTON_SIZE, UI_BUTTON_SIZE, TILE_SIZE, Z_UI};
+use crate::resources::{CurrentPlayerData, DiceData, GameData, GameState, GameButtonAction, GamePlayEntities, HumanPlayer};
 use crate::shared_systems::{SharedSystemLabel, should_run_shared_systems};
 use rand::thread_rng;
 use rand::distributions::{ Distribution, WeightedIndex };
@@ -187,25 +188,65 @@ fn generate_power_up(
     mut power_up_events: EventReader<GeneratePowerUpEvent>,
     mut game_data: ResMut<GameData>,
     power_up_dist: Res<PowerUpDistribution>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut game_play_entities: ResMut<GamePlayEntities>,
+    human_player: Res<HumanPlayer>,
 ) {
     let mut rng = thread_rng();
     for GeneratePowerUpEvent(player, change) in power_up_events.iter() {
         let player_string = format!("{:?}", &player);
         match change {
             PowerChange::Up => {
+                // spawn the power up button first
+                let (x, y) = match player {
+                    Player::Red => (-6.5, 2.5),
+                    Player::Green => (6.5, 2.5),
+                    Player::Blue => (6.5, -5.5),
+                    Player::Yellow => (-6.5, -5.5),
+                };
+                let i = game_data.players.get(&player).unwrap().power_ups.len();
+                let mut transform = Transform::from_xyz(x * TILE_SIZE, (y + 1.5 * (i as f32)) * TILE_SIZE, Z_UI);
+                // TODO: here's what I really want spawning buttons to look like
+                // btn_spawn_evnt.send(ButtonSpawnEvent{
+                //     ButtonDesc::PowerUpButton(i), // the `i` tells it which power up slot it goes into
+                //     Transform::from_xyz(...),
+                //
+                // })
+                let mut builder = commands.spawn((
+                    SpriteSheetBundle{
+                        texture_atlas: load_sprite_sheet("power-ups/button.png", TILE_BUTTON_SIZE.clone(), (3, 1), &asset_server, &mut texture_atlases),
+                        transform,
+                        ..default()
+                    },
+                    ButtonAction(ActionEvent(match i {
+                        0 => GameButtonAction::PowerUpOne,
+                        1 => GameButtonAction::PowerUpTwo,
+                        2 => GameButtonAction::PowerUpThree,
+                        _ => unreachable!(),
+                    })),
+                ));
+                if human_player.color == *player { 
+                    // only want to add button state and size if this is for the human player - we don't want them interacting with the computer players' buttons
+                    builder.insert((ButtonState::NotHovered, ButtonSize(UI_BUTTON_SIZE.clone())));
+                }
+                game_play_entities.board_entities.push(builder.id());
+                // randomly generate the power up
                 let power_up: PowerUp = power_up_dist.0.sample(&mut rng).into();
                 game_data.players.get_mut(&player).unwrap().power_ups.push(power_up);
-                println!("{:6>} ++ {:?}", player_string, game_data.players.get(&player).unwrap().power_ups);
+                println!("{:>6} ++ {:?}", player_string, game_data.players.get(&player).unwrap().power_ups);
 
                 // TODOs:
-                // mark current player to wait for animation
-                // spawn power-up sprite in player's next empty power-up box
+                // mark current player to wait for animation ?? maybe not ??
+                // spawn power-up sprite sheet in player's next empty power-up box
                 // mark power-up for animation
             }
             PowerChange::Down => {
+                // TODO: don't remove earned power-ups
                 // remove power up
                 game_data.players.get_mut(&player).unwrap().power_ups.pop();
-                println!("{:6>} -- {:?}", player_string, game_data.players.get(&player).unwrap().power_ups);
+                println!("{:>6} -- {:?}", player_string, game_data.players.get(&player).unwrap().power_ups);
             }
         }
     }

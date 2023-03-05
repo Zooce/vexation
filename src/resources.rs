@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bevy::prelude::*;
 use crate::components::*;
-use crate::power::{PowerChange, PowerUp, MAX_POWER};
+use crate::power::PowerUp;
 
 #[derive(Resource)]
 pub struct BufferTimer(pub Timer);
@@ -162,12 +162,12 @@ impl DiceData {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum GameButtonAction {
     Done,
-    // PowerUpOne,
-    // PowerUpTwo,
-    // PowerUpThree,
+    PowerUpOne(PowerUp),
+    PowerUpTwo(PowerUp),
+    PowerUpThree(PowerUp),
 }
 
 #[derive(Debug)]

@@ -3,10 +3,10 @@ use crate::constants::*;
 
 /// An `ActionEvent` that is sent when a button is clicked. The type `T` defines
 /// what those actions really are.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct ActionEvent<T>(pub T);
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct ButtonAction<T>(pub ActionEvent<T>);
 
 #[derive(Component, Clone, Copy, Debug)]
@@ -20,6 +20,8 @@ pub enum ButtonState {
 #[derive(Component, Debug)]
 pub struct ButtonSize(pub Vec2);
 
+/// This system is responsible for changing button states based on the mouse location and its
+/// button status.
 pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
     mouse_button_inputs: Res<Input<MouseButton>>,
     mut cursor_moved_events: EventReader<CursorMoved>,
@@ -99,6 +101,7 @@ pub fn get_button_state(
     }
 }
 
+/// This system is responsible for reacting to button state changes.
 pub fn watch_button_state_changes(
     mut button_query: Query<(&mut TextureAtlasSprite, &ButtonState), Changed<ButtonState>>
 ) {
@@ -178,8 +181,7 @@ pub fn load_sprite_sheet(
     (cols, rows): (usize, usize),
     asset_server: &Res<AssetServer>,
     texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
-) -> Handle<TextureAtlas>
-{
+) -> Handle<TextureAtlas> {
     texture_atlases.add(TextureAtlas::from_grid(
         asset_server.load(name), size, cols, rows, None, None
     ))
