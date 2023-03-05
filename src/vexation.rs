@@ -284,23 +284,18 @@ pub fn create_game(
     });
 
     // human player turn end UI button
+    let sprite_sheet = texture_atlases.add(TextureAtlas::from_grid(
+        asset_server.load("buttons/done_button.png"), UI_BUTTON_SIZE.clone(), 3, 1, None, None
+    ));
     let ui = commands
-        .spawn(SpatialBundle::default())
-        .with_children(|parent| {
-            let sprite_sheet = texture_atlases.add(TextureAtlas::from_grid(
-                asset_server.load("buttons/done_button.png"), UI_BUTTON_SIZE.clone(), 3, 1, None, None
-            ));
-            let transform = Transform::from_xyz(0.0, (-WINDOW_SIZE / 2.0) + TILE_SIZE, Z_UI);
-            spawn_sprite_sheet_button(
-                parent,
-                sprite_sheet,
-                transform,
-                ButtonAction(ActionEvent(GameButtonAction::Done)),
-                false,
-                ButtonState::NotHovered,
-                ButtonSize(UI_BUTTON_SIZE.clone()),
-            );
-        })
+        .spawn(sprite_sheet_button_bundle(
+            sprite_sheet,
+            Transform::from_xyz(0.0, (-WINDOW_SIZE / 2.0) + TILE_SIZE, Z_UI),
+            ButtonAction(ActionEvent(GameButtonAction::Done)),
+            false,
+            ButtonState::NotHovered,
+            ButtonSize(UI_BUTTON_SIZE.clone()),
+        ))
         .id()
         ;
     board_entities.push(ui);
