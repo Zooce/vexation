@@ -110,7 +110,7 @@ impl Dice {
             multiplier: 1,
         }
     }
-    
+
     pub fn use_die(&mut self, which: WhichDie) {
         match which {
             WhichDie::One => self.one = None,
@@ -182,7 +182,7 @@ impl PowerUpStatus {
     pub fn evade_capture(&mut self) {
         // translates to 3 full turns since the first one will get decremented
         // during the turn it's used
-        self.evade_capture_turns = 4; 
+        self.evade_capture_turns = 4;
     }
 
     pub fn jump_self(&mut self) {
@@ -190,7 +190,7 @@ impl PowerUpStatus {
         // during the turn it's used
         self.jump_self_turns = 4;
     }
-    
+
     pub fn capture_nearest(&mut self) {
         self.capture_nearest = true;
     }

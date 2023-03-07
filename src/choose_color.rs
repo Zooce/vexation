@@ -114,7 +114,7 @@ fn mouse_click_handler(
 }
 
 fn show_mask(
-    mut commands: Commands, 
+    mut commands: Commands,
     mut choose_color_data: ResMut<ChooseColorData>,
     mut mask: Query<&mut Transform, With<Mask>>,
 ) {
