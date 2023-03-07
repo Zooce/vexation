@@ -29,13 +29,13 @@ pub fn choose_next_player(
 }
 
 pub fn show_or_hide_buttons(
-    mut button_query: Query<(&mut Visibility, &mut TextureAtlasSprite, &mut ButtonState)>,
+    mut button_query: Query<(&mut Visibility, &mut TextureAtlasSprite, &mut ButtonState)>, // TODO: consider adding a 'Hideable' component to filter out buttons we don't ever want to hide
     human_player: Res<HumanPlayer>,
     current_player_data: Res<CurrentPlayerData>,
 ) {
     for (mut visibility, mut sprite, mut state) in &mut button_query {
-        visibility.is_visible = human_player.color == current_player_data.player;
-        sprite.color = Color::rgba(1.0, 1.0, 1.0, 0.4);
+        visibility.is_visible = human_player.color == current_player_data.player; // this is the only relevant part to showing or hiding, the rest is just assurance
+        sprite.color = Color::rgba(1.0, 1.0, 1.0, 0.4); // dim the button by default
         sprite.index = 0;
         *state = ButtonState::NotHovered;
     }
