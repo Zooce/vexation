@@ -12,6 +12,7 @@ use crate::human_turn::HumanTurnPlugin;
 use crate::next_player::*;
 use crate::power::PowerBar;
 use crate::power::PowerUpPlugin;
+use crate::power::PowerUpSpriteSheets;
 use crate::process::ProcessMovePlugin;
 use crate::resources::*;
 use crate::shared_systems::*;
@@ -112,6 +113,14 @@ pub fn create_game(
             (Player::Yellow, PlayerData::default()),
         ]),
     });
+    commands.insert_resource(PowerUpSpriteSheets{
+        roll_again: load_sprite_sheet("power-ups/roll-again-sheet.png", TILE_BUTTON_SIZE.clone(), (3, 1), &asset_server, &mut texture_atlases),
+        double_dice: load_sprite_sheet("power-ups/double-dice-sheet.png", TILE_BUTTON_SIZE.clone(), (3, 1), &asset_server, &mut texture_atlases),
+        evade_capture: load_sprite_sheet("power-ups/evade-capture-sheet.png", TILE_BUTTON_SIZE.clone(), (3, 1), &asset_server, &mut texture_atlases),
+        self_jump: load_sprite_sheet("power-ups/self-jump-sheet.png", TILE_BUTTON_SIZE.clone(), (3, 1), &asset_server, &mut texture_atlases),
+        capture_nearest: load_sprite_sheet("power-ups/capture-nearest-sheet.png", TILE_BUTTON_SIZE.clone(), (3, 1), &asset_server, &mut texture_atlases),
+        home_run: load_sprite_sheet("power-ups/home-run-sheet.png", TILE_BUTTON_SIZE.clone(), (3, 1), &asset_server, &mut texture_atlases),
+    });
 
     // pick the first player randomly
     let mut rng = thread_rng();
@@ -160,10 +169,10 @@ pub fn create_game(
         board_entities.push(commands.spawn((
             SpriteBundle{
                 texture: power_fill.clone(),
-                transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE + 1., Z_POWER_FILL),
+                transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE + 2., Z_POWER_FILL),
                 ..default()
             },
-            PowerBar::new(y * TILE_SIZE + 1.),
+            PowerBar::new(y * TILE_SIZE + 2.),
             *player,
         )).id());
     }
@@ -313,9 +322,18 @@ pub fn destroy_game(
     game_play_entities: Res<GamePlayEntities>,
     human_player: Res<HumanPlayer>,
     marbles: Query<Entity, With<Marble>>,
+    game_data: Res<GameData>,
 ) {
     for e in &game_play_entities.board_entities {
-        commands.entity(*e).despawn_recursive();
+        commands.entity(*e).despawn_recursive(); // FIXME: there's a panic here because the entity doesn't exist (try commands.get_entity() + figure out why that entity doesn't exist)
+    }
+    for player in [Player::Red, Player::Green, Player::Blue, Player::Yellow] {
+        let player_data = game_data.players.get_mut(&player).unwrap();
+        for i in 0..3 {
+            if let Some((_, e)) = player_data.use_power_up(i) {
+                commands.entity(e).despawn();
+            }
+        }
     }
     commands.entity(human_player.human_indicator).despawn();
     commands.entity(dice_data.die_1).despawn();

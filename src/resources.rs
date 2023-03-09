@@ -165,9 +165,9 @@ impl DiceData {
 #[derive(Clone, Copy, Debug)]
 pub enum GameButtonAction {
     Done,
-    PowerUpOne(PowerUp),
-    PowerUpTwo(PowerUp),
-    PowerUpThree(PowerUp),
+    PowerUpOne(Player),
+    PowerUpTwo(Player),
+    PowerUpThree(Player),
 }
 
 #[derive(Debug)]
@@ -237,7 +237,7 @@ pub struct PlayerData {
     pub turn_move_count: u8,
     pub consecutive_empty_turns: u8,
     pub multiplier: f32,
-    pub power_ups: Vec<PowerUp>,
+    pub power_ups: [Option<(PowerUp, Entity)>; 3],
     pub power_up_status: PowerUpStatus,
 }
 
@@ -247,7 +247,7 @@ impl Default for PlayerData {
             turn_move_count: 0,
             consecutive_empty_turns: 0,
             multiplier: 1.0,
-            power_ups: vec![],
+            power_ups: [None, None, None],
             power_up_status: PowerUpStatus::default(),
         }
     }
@@ -264,17 +264,11 @@ impl PlayerData {
         self.power_up_status.tick();
     }
 
-    pub fn use_power_up(&mut self, index: usize) -> Option<PowerUp> {
+    pub fn use_power_up(&mut self, index: usize) -> Option<(PowerUp, Entity)> {
         if index < self.power_ups.len() {
-            Some(self.power_ups.remove(index))
-        } else {
-            None
-        }
-    }
-
-    pub fn get_power_up(&self, index: usize) -> Option<PowerUp> {
-        if index < self.power_ups.len() {
-            Some(self.power_ups[index])
+            let power_up = self.power_ups[index];
+            self.power_ups[index] = None;
+            power_up
         } else {
             None
         }

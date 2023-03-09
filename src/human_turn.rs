@@ -21,13 +21,11 @@ impl Plugin for HumanTurnPlugin {
         app
             .add_event::<ClickEvent>()
             .add_event::<MoveEvent>()
-            
+
             .add_system_set(SystemSet::on_enter(GameState::HumanTurn)
                 .with_system(enable_ui)
             )
             .add_system_set(SystemSet::on_update(GameState::HumanTurn)
-                // temp
-                .with_system(use_power_up_from_keyboard)
                 // ui
                 .with_system(execute_button_actions.before(mouse_watcher::<GameButtonAction>))
                 .with_system(mouse_watcher::<GameButtonAction>)
@@ -60,7 +58,7 @@ fn enable_ui(
     let mouse_pressed = mouse_button_inputs.pressed(MouseButton::Left);
 
     for (mut button_state, mut button_sprite, button_transform) in &mut button_query {
-        *button_state = get_button_state(cursor_pos, button_transform.translation, mouse_pressed);
+        *button_state = get_button_state(cursor_pos, button_transform.translation, UI_BUTTON_SIZE.clone(), mouse_pressed);
         button_sprite.color = Color::WHITE;
     }
 }
@@ -176,14 +174,23 @@ fn execute_button_actions(
     mut action_events: EventReader<ActionEvent<GameButtonAction>>,
     mut state: ResMut<State<GameState>>,
     dice_data: Res<DiceData>,
+    mut power_events: EventWriter<PowerEvent>,
 ) {
     for action in action_events.iter() {
-        match action.0 {
-            GameButtonAction::Done => if dice_data.dice.doubles {
-                state.set(GameState::DiceRoll).unwrap();
-            } else {
-                state.set(GameState::EndTurn).unwrap();
+        if let Some((player, index)) = match action.0 {
+            GameButtonAction::Done => {
+                if dice_data.dice.doubles {
+                    state.set(GameState::DiceRoll).unwrap();
+                } else {
+                    state.set(GameState::EndTurn).unwrap();
+                }
+                None
             }
+            GameButtonAction::PowerUpOne(player) => Some((player, 0)),
+            GameButtonAction::PowerUpTwo(player) => Some((player, 1)),
+            GameButtonAction::PowerUpThree(player) => Some((player, 2)),
+        } {
+            power_events.send(PowerEvent::Use{ player, index });
         }
     }
 }
@@ -214,32 +221,5 @@ fn snap(coord: f32) -> f32 {
         result * -1.0
     } else {
         result
-    }
-}
-
-fn use_power_up_from_keyboard(
-    mut kb_events: EventReader<KeyboardInput>,
-    mut game_data: ResMut<GameData>,
-    current_player_data: Res<CurrentPlayerData>,
-    mut power_events: EventWriter<PowerEvent>,
-) {
-    if let Some(event) = kb_events.iter().last() {
-        if !event.state.is_pressed() {
-            return;
-        }
-        if let Some(keycode) = event.key_code {
-            let player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
-            if player_data.power_ups.is_empty() {
-                return;
-            }
-            if let Some(power_up) = match keycode {
-                KeyCode::Key1 => player_data.get_power_up(0),
-                KeyCode::Key2 => player_data.get_power_up(1),
-                KeyCode::Key3 => player_data.get_power_up(2),
-                _ => None,
-            } {
-                power_events.send(PowerEvent::Use{ player: current_player_data.player, power_up });
-            }
-        }
     }
 }

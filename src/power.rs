@@ -1,7 +1,7 @@
 use bevy::prelude::*;
-use crate::buttons::{load_sprite_sheet, ActionEvent, ButtonAction, ButtonSize, ButtonState};
+use crate::buttons::{ActionEvent, ButtonAction, ButtonSize, ButtonState};
 use crate::components::{CurrentPlayer, Evading, Marble, Player};
-use crate::constants::{CENTER_INDEX, TILE_BUTTON_SIZE, UI_BUTTON_SIZE, TILE_SIZE, Z_UI};
+use crate::constants::{CENTER_INDEX, TILE_BUTTON_SIZE, TILE_SIZE, Z_UI};
 use crate::resources::{CurrentPlayerData, DiceData, GameData, GameState, GameButtonAction, GamePlayEntities, HumanPlayer};
 use crate::shared_systems::{SharedSystemLabel, should_run_shared_systems};
 use rand::thread_rng;
@@ -14,7 +14,7 @@ pub struct GeneratePowerUpEvent(pub Player, pub PowerChange);
 pub enum PowerEvent {
     Capture{captor: Player, captive: Player},
     Index{player: Player, index: usize, prev_index: usize},
-    Use{player: Player, power_up: PowerUp},
+    Use{player: Player, index: usize},
 }
 
 #[derive(Debug)]
@@ -25,8 +25,6 @@ pub enum PowerChange {
     Up,
     Down,
 }
-
-pub const MAX_POWER: f32 = 30.0;
 
 #[derive(Debug, Clone, Copy)]
 pub enum PowerUp {
@@ -57,6 +55,16 @@ impl From<usize> for PowerUp {
 #[derive(Resource)]
 struct PowerUpDistribution(pub WeightedIndex<usize>);
 
+#[derive(Resource)]
+pub struct PowerUpSpriteSheets {
+    pub roll_again: Handle<TextureAtlas>,
+    pub double_dice: Handle<TextureAtlas>,
+    pub evade_capture: Handle<TextureAtlas>,
+    pub self_jump: Handle<TextureAtlas>,
+    pub capture_nearest: Handle<TextureAtlas>,
+    pub home_run: Handle<TextureAtlas>,
+}
+
 pub struct PowerUpPlugin;
 
 impl Plugin for PowerUpPlugin {
@@ -83,7 +91,7 @@ impl Plugin for PowerUpPlugin {
 #[derive(Component, Debug)]
 pub struct PowerBar {
     pub power: f32,
-    multiplier: f32,
+    pub power_up_count: usize,
     pub origin: f32,
 }
 
@@ -91,27 +99,38 @@ impl PowerBar {
     pub fn new(origin: f32) -> Self {
         Self {
             power: 0.,
-            multiplier: 1.,
+            power_up_count: 0,
             origin,
         }
     }
 }
 
+pub const MAX_POWER: f32 = 10.0;
+pub const MAX_POWER_UPS: usize = 3;
+
 impl PowerBar {
     pub fn update(&mut self, delta: f32) -> Option<PowerChange> {
-        if self.power == MAX_POWER && delta.is_sign_positive() { return None; }
-        let new_power = (self.power + delta).clamp(0.0, MAX_POWER);
-        let change = if new_power >= 10.0 * self.multiplier {
-            self.multiplier += 1.0;
-            Some(PowerChange::Up)
-        } else if new_power < 10.0 * (self.multiplier - 1.0) {
-            self.multiplier -= 1.0;
-            Some(PowerChange::Down)
+        let new_power = (self.power + delta).max(0.0); // this reads really weird but it means this -> max(self.power + delta, 0.0)
+        if new_power >= MAX_POWER {
+            match self.power_up_count {
+                0 | 1 => {
+                    self.power = (new_power - MAX_POWER).max(0.0); // carry over
+                    self.power_up_count += 1;
+                    Some(PowerChange::Up)
+                }
+                2 => {
+                    self.power = 0.0; // reset
+                    self.power_up_count += 1;
+                    Some(PowerChange::Up)
+                }
+                _ => None,
+            }
         } else {
+            if self.power_up_count < 3 {
+                self.power = new_power;
+            }
             None
-        };
-        self.power = new_power;
-        change
+        }
     }
 }
 
@@ -121,6 +140,7 @@ pub struct PowerBarEvent {
 }
 
 fn handle_power_events(
+    mut commands: Commands,
     mut game_data: ResMut<GameData>,
     mut power_events: EventReader<PowerEvent>,
     mut power_up_events: EventWriter<GeneratePowerUpEvent>,
@@ -131,8 +151,8 @@ fn handle_power_events(
         for (player, power) in match event {
             PowerEvent::Capture{ captor, captive } => {
                 vec![
-                    (captor, 3.),
-                    (captive, -3.),
+                    (captor, Some(3.)),
+                    (captive, Some(-3.)),
                 ]
             },
             PowerEvent::Index{ player, index, prev_index } => {
@@ -161,24 +181,27 @@ fn handle_power_events(
                     0..=47 => 1.0,
                     _ => 2.0,
                 } * 10.0 * distance / 48.0;
-                vec![(player, points)]
+                vec![(player, Some(points))]
             }
-            PowerEvent::Use{ player, power_up } => {
-                activate_events.send(ActivatePowerUpEvent(*power_up));
-                vec![(player, -10.)]
+            PowerEvent::Use{ player, index } => {
+                let (power_up, power_up_button) = game_data.players.get_mut(&player).unwrap().use_power_up(*index).unwrap();
+                commands.entity(power_up_button).despawn();
+                activate_events.send(ActivatePowerUpEvent(power_up));
+                vec![(player, None)]
             }
         } {
             let (mut bar, mut transform, _) = power_bars.iter_mut().find(|(_, _, &p)| p == *player).unwrap();
-            let change = bar.update(power);
-            transform.translation.y = bar.origin + bar.power * 4.;
-            if let Some(change) = change {
-                if bar.power != 0. && bar.power != MAX_POWER {
-                    match change {
-                        PowerChange::Up => transform.translation.y += 3.,
-                        PowerChange::Down => transform.translation.y -= 3.,
+            match power {
+                Some(power) => {
+                    let change = bar.update(power);
+                    println!("{player:?} {bar:?}");
+                    // power-fill sprite is 14 x 126 (that 126 represents 10 power points, so 126 / 10 = 12.6 pixels for every point)
+                    transform.translation.y = bar.origin + bar.power * 12.6;
+                    if change.is_some() {
+                        power_up_events.send(GeneratePowerUpEvent(*player, PowerChange::Up));
                     }
                 }
-                power_up_events.send(GeneratePowerUpEvent(*player, change));
+                None => { bar.power_up_count -= 1; }
             }
         }
     }
@@ -189,65 +212,69 @@ fn generate_power_up(
     mut game_data: ResMut<GameData>,
     power_up_dist: Res<PowerUpDistribution>,
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    power_up_sprite_sheets: Res<PowerUpSpriteSheets>,
     mut game_play_entities: ResMut<GamePlayEntities>,
     human_player: Res<HumanPlayer>,
 ) {
     let mut rng = thread_rng();
     for GeneratePowerUpEvent(player, change) in power_up_events.iter() {
         let player_string = format!("{:?}", &player);
-        match change {
-            PowerChange::Up => {
-                // spawn the power up button first
-                let (x, y) = match player {
-                    Player::Red => (-6.5, 2.5),
-                    Player::Green => (6.5, 2.5),
-                    Player::Blue => (6.5, -5.5),
-                    Player::Yellow => (-6.5, -5.5),
-                };
-                let i = game_data.players.get(&player).unwrap().power_ups.len();
-                let mut transform = Transform::from_xyz(x * TILE_SIZE, (y + 1.5 * (i as f32)) * TILE_SIZE, Z_UI);
-                // TODO: here's what I really want spawning buttons to look like
-                // btn_spawn_evnt.send(ButtonSpawnEvent{
-                //     ButtonDesc::PowerUpButton(i), // the `i` tells it which power up slot it goes into
-                //     Transform::from_xyz(...),
-                //
-                // })
-                let mut builder = commands.spawn((
-                    SpriteSheetBundle{
-                        texture_atlas: load_sprite_sheet("power-ups/button.png", TILE_BUTTON_SIZE.clone(), (3, 1), &asset_server, &mut texture_atlases),
-                        transform,
-                        ..default()
-                    },
-                    ButtonAction(ActionEvent(match i {
-                        0 => GameButtonAction::PowerUpOne,
-                        1 => GameButtonAction::PowerUpTwo,
-                        2 => GameButtonAction::PowerUpThree,
-                        _ => unreachable!(),
-                    })),
-                ));
-                if human_player.color == *player { 
-                    // only want to add button state and size if this is for the human player - we don't want them interacting with the computer players' buttons
-                    builder.insert((ButtonState::NotHovered, ButtonSize(UI_BUTTON_SIZE.clone())));
-                }
-                game_play_entities.board_entities.push(builder.id());
-                // randomly generate the power up
-                let power_up: PowerUp = power_up_dist.0.sample(&mut rng).into();
-                game_data.players.get_mut(&player).unwrap().power_ups.push(power_up);
-                println!("{:>6} ++ {:?}", player_string, game_data.players.get(&player).unwrap().power_ups);
+        if let PowerChange::Up = change {
+            // spawn the power up button first
+            let (x, y) = match player {
+                Player::Red => (-6.5, 2.5),
+                Player::Green => (6.5, 2.5),
+                Player::Blue => (6.5, -5.5),
+                Player::Yellow => (-6.5, -5.5),
+            };
+            // get the next unused power-up slot
+            let i = match game_data.players.get(&player).unwrap().power_ups {
+                [None, _, _] => 0,
+                [_, None, _] => 1,
+                [_, _, None] => 2,
+                _ => unreachable!(),
+            };
 
-                // TODOs:
-                // mark current player to wait for animation ?? maybe not ??
-                // spawn power-up sprite sheet in player's next empty power-up box
-                // mark power-up for animation
-            }
-            PowerChange::Down => {
-                // TODO: don't remove earned power-ups
-                // remove power up
-                game_data.players.get_mut(&player).unwrap().power_ups.pop();
-                println!("{:>6} -- {:?}", player_string, game_data.players.get(&player).unwrap().power_ups);
-            }
+            // randomly generate the power up
+            let power_up: PowerUp = power_up_dist.0.sample(&mut rng).into();
+
+            let sprite_sheet = SpriteSheetBundle{
+                texture_atlas: match power_up {
+                    PowerUp::RollAgain => power_up_sprite_sheets.roll_again.clone(),
+                    PowerUp::DoubleDice => power_up_sprite_sheets.double_dice.clone(),
+                    PowerUp::EvadeCapture => power_up_sprite_sheets.evade_capture.clone(),
+                    PowerUp::SelfJump => power_up_sprite_sheets.self_jump.clone(),
+                    PowerUp::CaptureNearest => power_up_sprite_sheets.capture_nearest.clone(),
+                    PowerUp::HomeRun => power_up_sprite_sheets.home_run.clone(),
+                },
+                transform: Transform::from_xyz(x * TILE_SIZE, (y + 1.5 * (i as f32)) * TILE_SIZE, Z_UI),
+                ..default()
+            };
+            let action = ButtonAction(ActionEvent(match i {
+                0 => GameButtonAction::PowerUpOne(*player),
+                1 => GameButtonAction::PowerUpTwo(*player),
+                2 => GameButtonAction::PowerUpThree(*player),
+                _ => unreachable!(),
+            }));
+
+            let power_up_button = if human_player.color == *player {
+                // only want to add button state and size if this is for the human player - we don't want them interacting with the computer players' buttons
+                commands.spawn((
+                    sprite_sheet,
+                    action,
+                    ButtonState::NotHovered,
+                    ButtonSize(TILE_BUTTON_SIZE.clone())
+                )).id()
+            } else {
+                commands.spawn((sprite_sheet, action)).id()
+            };
+            game_data.players.get_mut(&player).unwrap().power_ups[i] = Some((power_up, power_up_button));
+            println!("{:>6} ++ {:?}", player_string, game_data.players.get(&player).unwrap().power_ups);
+
+            // TODOs:
+            // mark current player to wait for animation ?? maybe not ??
+            // spawn power-up sprite sheet in player's next empty power-up box
+            // mark power-up for animation
         }
     }
 }
