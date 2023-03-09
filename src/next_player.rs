@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::buttons::ButtonState;
+use crate::buttons::{ButtonState, Hidable};
 use crate::components::*;
 use crate::constants::*;
 use crate::resources::*;
@@ -29,7 +29,7 @@ pub fn choose_next_player(
 }
 
 pub fn show_or_hide_buttons(
-    mut button_query: Query<(&mut Visibility, &mut TextureAtlasSprite, &mut ButtonState)>, // TODO: consider adding a 'Hideable' component to filter out buttons we don't ever want to hide
+    mut button_query: Query<(&mut Visibility, &mut TextureAtlasSprite, &mut ButtonState), With<Hidable>>,
     human_player: Res<HumanPlayer>,
     current_player_data: Res<CurrentPlayerData>,
 ) {

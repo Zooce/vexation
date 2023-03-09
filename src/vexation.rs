@@ -296,6 +296,7 @@ pub fn create_game(
             ButtonState::NotHovered,
             ButtonSize(UI_BUTTON_SIZE.clone()),
         ))
+        .insert(Hidable)
         .id()
         ;
     board_entities.push(ui);

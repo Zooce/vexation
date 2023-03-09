@@ -20,6 +20,9 @@ pub enum ButtonState {
 #[derive(Component, Debug)]
 pub struct ButtonSize(pub Vec2);
 
+#[derive(Component)]
+pub struct Hidable;
+
 /// This system is responsible for changing button states based on the mouse location and its
 /// button status.
 pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
