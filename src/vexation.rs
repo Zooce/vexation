@@ -322,7 +322,7 @@ pub fn destroy_game(
     game_play_entities: Res<GamePlayEntities>,
     human_player: Res<HumanPlayer>,
     marbles: Query<Entity, With<Marble>>,
-    game_data: Res<GameData>,
+    mut game_data: ResMut<GameData>,
 ) {
     for e in &game_play_entities.board_entities {
         commands.entity(*e).despawn_recursive(); // FIXME: there's a panic here because the entity doesn't exist (try commands.get_entity() + figure out why that entity doesn't exist)
