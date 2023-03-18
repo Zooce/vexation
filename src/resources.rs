@@ -297,7 +297,7 @@ pub enum GameState {
     GameEnd,
 }
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct GamePlayEntities {
     pub board_entities: Vec<Entity>,
 }

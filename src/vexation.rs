@@ -128,15 +128,15 @@ pub fn create_game(
     let current_player: Player = rng.sample(die).into();
     commands.insert_resource(CurrentPlayerData::new(current_player));
 
-    let mut board_entities = vec![];
-    board_entities.push(commands.spawn(SpriteBundle{
+    // background
+    let mut game_play_entities = GamePlayEntities::default();
+    game_play_entities.board_entities.push(commands.spawn(SpriteBundle{
         texture: asset_server.load("background.png"),
         transform: Transform::from_xyz(0., 0., Z_BACKGROUND),
         ..default()
     }).id());
-
     // board
-    board_entities.push(commands.spawn(SpriteBundle{
+    game_play_entities.board_entities.push(commands.spawn(SpriteBundle{
         texture: asset_server.load("board.png"),
         transform: Transform::from_xyz(0., 0., Z_BOARD),
         ..default()
@@ -145,7 +145,7 @@ pub fn create_game(
     // animation idea:
     // → ←
     // → ←
-    board_entities.push(commands.spawn(SpriteBundle{
+    game_play_entities.board_entities.push(commands.spawn(SpriteBundle{
         texture: asset_server.load("power-up-slots.png"),
         transform: Transform::from_xyz(0., 0., Z_POWER_UP), 
         ..default()
@@ -154,7 +154,7 @@ pub fn create_game(
     // animation idea:
     // ↓↓
     // ↑↑
-    board_entities.push(commands.spawn(SpriteBundle{
+    game_play_entities.board_entities.push(commands.spawn(SpriteBundle{
         texture: asset_server.load("power-bars.png"),
         transform: Transform::from_xyz(0., 0., Z_POWER_BAR),
         ..default()
@@ -166,7 +166,7 @@ pub fn create_game(
         ((7.75, 0.), Player::Green),
         ((7.75, -8.), Player::Blue)
     ] {
-        board_entities.push(commands.spawn((
+        game_play_entities.board_entities.push(commands.spawn((
             SpriteBundle{
                 texture: power_fill.clone(),
                 transform: Transform::from_xyz(x * TILE_SIZE, y * TILE_SIZE + 2., Z_POWER_FILL),
@@ -176,6 +176,29 @@ pub fn create_game(
             *player,
         )).id());
     }
+    // human player turn end UI button
+    let sprite_sheet = texture_atlases.add(TextureAtlas::from_grid(
+        asset_server.load("buttons/done_button.png"), UI_BUTTON_SIZE.clone(), 3, 1, None, None
+    ));
+    game_play_entities.board_entities.push(commands
+        .spawn(sprite_sheet_button_bundle(
+            sprite_sheet,
+            Transform::from_xyz(0.0, (-WINDOW_SIZE / 2.0) + TILE_SIZE, Z_UI),
+            ButtonAction(ActionEvent(GameButtonAction::Done)),
+            false,
+            ButtonState::NotHovered,
+            ButtonSize(UI_BUTTON_SIZE.clone()),
+        ))
+        .insert(Hidable)
+        .id()
+    );
+    commands.insert_resource(game_play_entities);
+
+    // highlight data
+    commands.insert_resource(HighlightData{
+        marble_texture: asset_server.load("marble-highlight.png"),
+        tile_texture: asset_server.load("tile-highlight.png"),
+    });
 
     // TODO: create all marbles at the center and animate them to their bases - AFTER choose color system
     // marbles
@@ -285,31 +308,6 @@ pub fn create_game(
         die_sheet_handle,
         dice: Dice::default(),
     });
-
-    // highlight data
-    commands.insert_resource(HighlightData{
-        marble_texture: asset_server.load("marble-highlight.png"),
-        tile_texture: asset_server.load("tile-highlight.png"),
-    });
-
-    // human player turn end UI button
-    let sprite_sheet = texture_atlases.add(TextureAtlas::from_grid(
-        asset_server.load("buttons/done_button.png"), UI_BUTTON_SIZE.clone(), 3, 1, None, None
-    ));
-    let ui = commands
-        .spawn(sprite_sheet_button_bundle(
-            sprite_sheet,
-            Transform::from_xyz(0.0, (-WINDOW_SIZE / 2.0) + TILE_SIZE, Z_UI),
-            ButtonAction(ActionEvent(GameButtonAction::Done)),
-            false,
-            ButtonState::NotHovered,
-            ButtonSize(UI_BUTTON_SIZE.clone()),
-        ))
-        .insert(Hidable)
-        .id()
-        ;
-    board_entities.push(ui);
-    commands.insert_resource(GamePlayEntities{ board_entities });
 
     state.set(GameState::ChooseColor).unwrap();
 }
