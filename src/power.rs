@@ -3,7 +3,7 @@ use crate::buttons::{ActionEvent, ButtonAction, ButtonSize, ButtonState};
 use crate::components::{CurrentPlayer, Evading, Marble, Player};
 use crate::constants::{CENTER_INDEX, TILE_BUTTON_SIZE, TILE_SIZE, Z_UI};
 use crate::resources::{CurrentPlayerData, DiceData, GameData, GameState, GameButtonAction, HumanPlayer};
-use crate::shared_systems::{SharedSystemLabel, should_run_shared_systems};
+use crate::shared_systems::SharedSystemSet;
 use rand::thread_rng;
 use rand::distributions::{ Distribution, WeightedIndex };
 
@@ -71,12 +71,8 @@ impl Plugin for PowerUpPlugin {
 
             .insert_resource(PowerUpDistribution(WeightedIndex::new(&POWER_UP_WEIGHTS).unwrap()))
 
-            .add_system_set(SystemSet::new()
-                .label(SharedSystemLabel)
-                .with_run_criteria(should_run_shared_systems)
-                .with_system(handle_power_events)
-                .with_system(generate_power_up)
-                .with_system(activate_power_up)
+            .add_systems((handle_power_events, generate_power_up, activate_power_up)
+                .in_set(SharedSystemSet)
             )
             ;
     }
@@ -274,7 +270,7 @@ fn generate_power_up(
 fn activate_power_up(
     mut commands: Commands,
     mut events: EventReader<ActivatePowerUpEvent>,
-    mut state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
     mut game_data: ResMut<GameData>,
     mut dice_data: ResMut<DiceData>,
     current_player_data: Res<CurrentPlayerData>,
@@ -310,7 +306,7 @@ fn activate_power_up(
                 Some(GameState::TurnSetup)
             }
         } {
-            state.set(new_state).unwrap();
+            next_state.set(new_state);
         }
     }
 }

@@ -34,7 +34,11 @@ pub fn show_or_hide_buttons(
     current_player_data: Res<CurrentPlayerData>,
 ) {
     for (mut visibility, mut sprite, mut state) in &mut button_query {
-        visibility.is_visible = human_player.color == current_player_data.player; // this is the only relevant part to showing or hiding, the rest is just assurance
+        *visibility = if human_player.color == current_player_data.player { // this is the only relevant part to showing or hiding, the rest is just assurance
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        };
         sprite.color = Color::rgba(1.0, 1.0, 1.0, 0.4); // dim the button by default
         sprite.index = 0;
         *state = ButtonState::NotHovered;
@@ -42,7 +46,7 @@ pub fn show_or_hide_buttons(
 }
 
 pub fn next_player_setup(
-    mut state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
     dice_data: Res<DiceData>,
     current_player_data: Res<CurrentPlayerData>,
     mut dice: Query<(&mut Visibility, &mut Die)>,
@@ -55,16 +59,16 @@ pub fn next_player_setup(
     };
 
     let (mut visibility, mut die) = dice.get_mut(dice_data.die_1).expect("Unable to get die 1");
-    visibility.is_visible = true;
+    *visibility = Visibility::Inherited;
     die.location.x = d1_loc.0 * TILE_SIZE;
     die.location.y = d1_loc.1 * TILE_SIZE;
     die.timer.reset();
 
     let (mut visibility, mut die) = dice.get_mut(dice_data.die_2).expect("Unable to get dice 2");
-    visibility.is_visible = true;
+    *visibility = Visibility::Inherited;
     die.location.x = d2_loc.0 * TILE_SIZE;
     die.location.y = d2_loc.1 * TILE_SIZE;
     die.timer.reset();
 
-    state.set(GameState::DiceRoll).unwrap();
+    next_state.set(GameState::DiceRoll);
 }

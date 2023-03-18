@@ -7,7 +7,7 @@ pub fn end_turn(
     evading_marbles: Query<Entity, (With<Evading>, With<CurrentPlayer>)>,
     mut current_player_data: ResMut<CurrentPlayerData>,
     mut game_data: ResMut<GameData>,
-    mut state: ResMut<State<GameState>>, 
+    mut next_state: ResMut<NextState<GameState>>, 
 ) {
     let player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
     player_data.end_of_turn();
@@ -15,5 +15,5 @@ pub fn end_turn(
         evading_marbles.iter().for_each(|e| { commands.entity(e).remove::<Evading>(); });
     }
     current_player_data.clear();
-    state.set(GameState::NextPlayer).unwrap();
+    next_state.set(GameState::NextPlayer);
 }

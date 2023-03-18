@@ -42,7 +42,7 @@ pub fn computer_move_buffer(
     mut current_player_data: ResMut<CurrentPlayerData>,
     mut marbles: Query<(&Transform, &mut Marble), With<CurrentPlayer>>,
     mut dice_data: ResMut<DiceData>,
-    mut state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
     mut highlight_events: EventWriter<HighlightEvent>,
 ) {
     // if the player rolled doubles we know they're going to roll again, but if
@@ -51,7 +51,7 @@ pub fn computer_move_buffer(
     // used their dice)
     let no_moves = current_player_data.possible_moves.is_empty();
     if no_moves && dice_data.dice.doubles && dice_data.dice.did_use_any() {
-        state.set(GameState::DiceRoll).unwrap();
+        next_state.set(GameState::DiceRoll);
         return;
     }
 
@@ -73,11 +73,11 @@ pub fn computer_move_buffer(
             commands.entity(entity).insert(Moving::new(destination, transform.translation));
             current_player_data.move_marble();
             highlight_events.send(HighlightEvent::Off);
-            state.set(GameState::WaitForAnimation).unwrap();
+            next_state.set(GameState::WaitForAnimation);
         } else if dice_data.dice.doubles {
-            state.set(GameState::DiceRoll).unwrap();
+            next_state.set(GameState::DiceRoll);
         } else {
-            state.set(GameState::EndTurn).unwrap();
+            next_state.set(GameState::EndTurn);
         }
     }
 }

@@ -30,54 +30,41 @@ impl Plugin for VexationPlugin {
             .add_event::<ActionEvent<GameButtonAction>>()
 
             // game play enter
-            .add_system_set(SystemSet::on_update(GameState::GameStart)
-                .with_system(create_game)
-            )
+            .add_system(create_game.in_schedule(OnEnter(GameState::GameStart)))
 
             // game play exit
-            .add_system_set(SystemSet::on_update(GameState::GameEnd)
-                .with_system(destroy_game)
-            )
+            .add_system(destroy_game.in_schedule(OnExit(GameState::GameEnd)))
 
             // --- states + systems -- TODO: move each to their own plugin to keep things smaller?
 
+            .configure_set(SharedSystemSet.run_if(should_run_shared_systems))
             // shared systems
-            .add_system_set(SystemSet::new()
-                .label(SharedSystemLabel)
-                .with_run_criteria(should_run_shared_systems)
-                .with_system(animate_marble_moves)
-                .with_system(highlighter)
-                .with_system(animate_tile_highlights)
-                .with_system(dim_used_die)
+            .add_systems((
+                animate_marble_moves,
+                highlighter,
+                animate_tile_highlights,
+                dim_used_die
+                ).in_set(SharedSystemSet)
             )
             .add_plugin(PowerUpPlugin)
 
             // next player
-            .add_system_set(SystemSet::on_update(GameState::NextPlayer)
-                .with_system(choose_next_player)
-                .with_system(show_or_hide_buttons.after(choose_next_player))
-                .with_system(next_player_setup.after(show_or_hide_buttons))
+            .add_systems((choose_next_player, show_or_hide_buttons, next_player_setup).chain()
+                .in_set(OnUpdate(GameState::NextPlayer))
             )
 
             // turn setup
-            .add_system_set(SystemSet::on_update(GameState::TurnSetup)
-                .with_system(calc_possible_moves)
-                .with_system(count_moves.after(calc_possible_moves))
-                .with_system(turn_setup_complete.after(count_moves))
+            .add_systems((calc_possible_moves, count_moves, turn_setup_complete).chain()
+                .in_set(OnUpdate(GameState::TurnSetup))
             )
 
             // computer turn
-            .add_system_set(SystemSet::on_enter(GameState::ComputerTurn)
-                .with_system(clear_animation_events)
-                .with_system(computer_choose_move.after(clear_animation_events))
+            .add_systems((clear_animation_events, computer_choose_move).chain()
+                .in_schedule(OnEnter(GameState::ComputerTurn))
             )
-            .add_system_set(SystemSet::on_update(GameState::ComputerTurn)
-                .with_system(computer_move_buffer)
-            )
+            .add_system(computer_move_buffer.in_set(OnUpdate(GameState::ComputerTurn)))
 
-            .add_system_set(SystemSet::on_update(GameState::WaitForAnimation)
-                .with_system(wait_for_marble_animation)
-            )
+            .add_system(wait_for_marble_animation.in_set(OnUpdate(GameState::WaitForAnimation)))
 
             .add_plugin(ChooseColorPlugin)
             .add_plugin(DiceRollPlugin)
@@ -85,9 +72,7 @@ impl Plugin for VexationPlugin {
             .add_plugin(ProcessMovePlugin)
             
             // end turn
-            .add_system_set(SystemSet::on_update(GameState::EndTurn)
-                .with_system(end_turn)
-            )
+            .add_system(end_turn.in_set(OnUpdate(GameState::EndTurn)))
             ;
     }
 }
@@ -95,7 +80,7 @@ impl Plugin for VexationPlugin {
 pub fn create_game(
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
     asset_server: Res<AssetServer>,
 ) {
     // insert resources
@@ -185,7 +170,7 @@ pub fn create_game(
             sprite_sheet,
             Transform::from_xyz(0.0, (-WINDOW_SIZE / 2.0) + TILE_SIZE, Z_UI),
             ButtonAction(ActionEvent(GameButtonAction::Done)),
-            false,
+            Visibility::Hidden,
             ButtonState::NotHovered,
             ButtonSize(UI_BUTTON_SIZE.clone()),
         ))
@@ -277,7 +262,7 @@ pub fn create_game(
         .spawn((
             SpriteSheetBundle{
                 texture_atlas: die_sheet_handle.clone(),
-                visibility: Visibility{ is_visible: false },
+                visibility: Visibility::Hidden,
                 transform: Transform::from_xyz(0.0, 0.0, Z_DICE),
                 ..default()
             },
@@ -291,7 +276,7 @@ pub fn create_game(
         .spawn((
             SpriteSheetBundle{
                 texture_atlas: die_sheet_handle.clone(),
-                visibility: Visibility{ is_visible: false },
+                visibility: Visibility::Hidden,
                 transform: Transform::from_xyz(0.0, 0.0, Z_DICE),
                 ..default()
             },
@@ -309,13 +294,13 @@ pub fn create_game(
         dice: Dice::default(),
     });
 
-    state.set(GameState::ChooseColor).unwrap();
+    next_state.set(GameState::ChooseColor);
 }
 
 pub fn destroy_game(
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
     dice_data: Res<DiceData>,
     game_play_entities: Res<GamePlayEntities>,
     human_player: Res<HumanPlayer>,
@@ -351,5 +336,5 @@ pub fn destroy_game(
         commands.entity(marble).despawn();
     }
 
-    state.set(GameState::MainMenu).unwrap();
+    next_state.set(GameState::MainMenu);
 }

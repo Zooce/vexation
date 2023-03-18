@@ -9,14 +9,10 @@ pub struct ProcessMovePlugin;
 impl Plugin for ProcessMovePlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_system_set(SystemSet::on_update(GameState::ProcessMove)
-                .with_system(check_for_capture.before(check_for_winner))
-                .with_system(process_index.before(check_for_winner))
-                .with_system(check_for_winner)
+            .add_systems((check_for_capture, process_index, check_for_winner).chain()
+                .in_set(OnUpdate(GameState::ProcessMove))
             )
-            .add_system_set(SystemSet::on_exit(GameState::ProcessMove)
-                .with_system(process_complete)
-            )
+            .add_system(process_complete.in_schedule(OnExit(GameState::ProcessMove)))
             ;
     }
 }
@@ -69,7 +65,7 @@ fn process_index(
 }
 
 fn check_for_winner(
-    mut state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
     marbles: Query<&Marble, With<CurrentPlayer>>,
     current_player_data: Res<CurrentPlayerData>,
 ) {
@@ -77,11 +73,11 @@ fn check_for_winner(
         .any(|m| !(FIRST_HOME_INDEX..=LAST_HOME_INDEX).contains(&m.index))
     {
         // not a winner
-        state.set(GameState::TurnSetup).unwrap();
+        next_state.set(GameState::TurnSetup);
     } else {
         // winner
         println!("winner = {:?}", current_player_data.player);
-        state.set(GameState::GameEnd).unwrap();
+        next_state.set(GameState::GameEnd);
     }
 }
 

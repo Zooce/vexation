@@ -281,8 +281,9 @@ pub struct GameData {
     pub players: HashMap<Player, PlayerData>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Copy)]
+#[derive(States, Default, Debug, Clone, Eq, PartialEq, Hash, Copy)]
 pub enum GameState {
+    #[default]
     MainMenu,
     GameStart,
     ChooseColor,

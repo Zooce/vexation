@@ -10,15 +10,15 @@ impl Plugin for DiceRollPlugin {
     fn build(&self, app: &mut App) {
         app  
             // dice roll
-            .add_system_set(SystemSet::on_enter(GameState::DiceRoll)
-                .with_system(undim_dice)
-                .with_system(roll_dice)
+            .add_systems((undim_dice, roll_dice)
+                .in_schedule(OnEnter(GameState::DiceRoll))
             )
-            .add_system_set(SystemSet::on_update(GameState::DiceRoll)
-                .with_system(roll_animation)
+            .add_system(roll_animation
+                .in_set(OnUpdate(GameState::DiceRoll))
             )
-            .add_system_set(SystemSet::on_exit(GameState::DiceRoll)
-                .with_system(stop_roll_animation)
+            .add_system(
+                stop_roll_animation
+                .in_schedule(OnExit(GameState::DiceRoll))
             )
         ;
     }
@@ -61,7 +61,7 @@ fn roll_animation(
     time: Res<Time>,
     mut roll_animation_timer: ResMut<RollAnimationTimer>,
     mut query: Query<(&mut Die, &mut Transform, &mut TextureAtlasSprite)>,
-    mut state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
 ) {
     const DIE_MOVE_SPEED: f32 = 500.;
 
@@ -88,7 +88,7 @@ fn roll_animation(
 
     if roll_animation_timer.0.tick(time.delta()).just_finished() {
         roll_animation_timer.0.reset();
-        state.set(GameState::TurnSetup).unwrap();
+        next_state.set(GameState::TurnSetup);
     }
 
     // TODO: create a 'roll buffer' timer so after the 'roll timer' stops, we have a second to see what the dice roll was before letting the player pick a move

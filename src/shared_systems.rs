@@ -1,21 +1,20 @@
 use bevy::prelude::*;
-use bevy::ecs::schedule::ShouldRun;
 use crate::components::*;
 use crate::constants::*;
 use crate::resources::*;
 
-#[derive(SystemLabel)]
-pub struct SharedSystemLabel;
+#[derive(SystemSet, Debug, PartialEq, Eq, Hash, Clone)]
+pub struct SharedSystemSet;
 
 pub fn should_run_shared_systems(
     state: Res<State<GameState>>,
-) -> ShouldRun {
-    match state.current() {
+) -> bool {
+    match state.0 {
         GameState::MainMenu |
         GameState::GameStart |
         GameState::GameEnd |
-        GameState::ChooseColor => ShouldRun::No,
-        _ => ShouldRun::Yes,
+        GameState::ChooseColor => false,
+        _ => true,
     }
 }
 
@@ -140,13 +139,13 @@ pub fn animate_tile_highlights(
 }
 
 pub fn wait_for_marble_animation(
-    mut state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
     mut animation_done_events: EventReader<MarbleAnimationDoneEvent>,
     current_player_data: Res<CurrentPlayerData>,
 ) {
     for done_event in animation_done_events.iter() {
         if done_event.0 == current_player_data.player {
-            state.set(GameState::ProcessMove).unwrap();
+            next_state.set(GameState::ProcessMove);
         }
     }
 }

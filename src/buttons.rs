@@ -123,7 +123,7 @@ pub fn spawn_sprite_sheet_button<T: Send + Sync + 'static>(
     texture_atlas: Handle<TextureAtlas>,
     transform: Transform,
     action: ButtonAction<T>,
-    is_visible: bool,
+    visibility: Visibility,
     button_state: ButtonState,
     button_size: ButtonSize,
 ) {
@@ -140,7 +140,7 @@ pub fn spawn_sprite_sheet_button<T: Send + Sync + 'static>(
                 },
                 texture_atlas,
                 transform,
-                visibility: Visibility{ is_visible },
+                visibility,
                 ..default()
             },
             button_state,
@@ -153,7 +153,7 @@ pub fn sprite_sheet_button_bundle<T: Send + Sync + 'static>(
     texture_atlas: Handle<TextureAtlas>,
     transform: Transform,
     action: ButtonAction<T>,
-    is_visible: bool,
+    visibility: Visibility,
     button_state: ButtonState,
     button_size: ButtonSize,
 ) -> impl Bundle {
@@ -169,7 +169,7 @@ pub fn sprite_sheet_button_bundle<T: Send + Sync + 'static>(
             },
             texture_atlas,
             transform,
-            visibility: Visibility{ is_visible },
+            visibility,
             ..default()
         },
         button_state,

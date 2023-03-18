@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy::window::PresentMode;
 
 mod buttons;
 mod components;
@@ -31,14 +30,12 @@ fn main() {
 
         // plugins
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
+            primary_window: Some(Window {
                 title: "Vexation".to_string(),
-                width: WINDOW_SIZE,
-                height: WINDOW_SIZE,
+                resolution: (WINDOW_SIZE, WINDOW_SIZE).into(),
                 resizable: false,
-                present_mode: PresentMode::Fifo,
                 ..default()
-            },
+            }),
             ..default()
         }).set(ImagePlugin::default_nearest()))
         .add_plugin(MainMenuPlugin)

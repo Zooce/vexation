@@ -50,6 +50,8 @@ pub fn calc_possible_moves(
                     .map(|(om, op, _)| Player::shift_index(om.index, *op, current_player_data.player))
                     // we can only capture marbles in front of us
                     .filter(|i| i > &m.index)
+                    // we can only capture in the center if we can enter the center
+                    // .filter(|i| *i != CENTER_INDEX || m.index <= 29)
                     // find the smallest distance between this marble and the opponent marbles
                     .min_by_key(|index| {
                         match *index {
@@ -152,7 +154,7 @@ pub fn count_moves(
 }
 
 pub fn turn_setup_complete(
-    mut state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
     human_player: Res<HumanPlayer>,
     current_player_data: Res<CurrentPlayerData>,
     mut highlight_events: EventWriter<HighlightEvent>,
@@ -163,9 +165,9 @@ pub fn turn_setup_complete(
         highlight_events.send(HighlightEvent::On);
     }
     if human_player.color == current_player_data.player {
-        state.set(GameState::HumanTurn).unwrap();
+        next_state.set(GameState::HumanTurn);
     } else {
-        state.set(GameState::ComputerTurn).unwrap();
+        next_state.set(GameState::ComputerTurn);
     }
 }
 
@@ -321,4 +323,6 @@ mod test {
         basic_rules(&dice, Entity::from_raw(13), &marble, &mut moves);
         assert_eq!(0, moves.len());
     }
+    
+    // TODO: test for capture nearest bug (unreachable code when using capture nearest after tile 29 with an opponent in the center)
 }

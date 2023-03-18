@@ -1,8 +1,8 @@
 use std::f32::consts::PI;
 
 use bevy::prelude::*;
-use bevy::app::AppExit;
 use bevy::window::CursorMoved;
+use bevy::window::PrimaryWindow;
 use crate::components::*;
 use crate::constants::*;
 use crate::resources::*;
@@ -12,16 +12,11 @@ pub struct ChooseColorPlugin;
 impl Plugin for ChooseColorPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_system_set(SystemSet::on_enter(GameState::ChooseColor)
-                .with_system(choose_color_setup)
+            .add_system(choose_color_setup.in_schedule(OnEnter(GameState::ChooseColor)))
+            .add_systems((mouse_hover_handler, mouse_click_handler)
+                .in_set(OnUpdate(GameState::ChooseColor))
             )
-            .add_system_set(SystemSet::on_update(GameState::ChooseColor)
-                .with_system(mouse_hover_handler)
-                .with_system(mouse_click_handler)
-            )
-            .add_system_set(SystemSet::on_exit(GameState::ChooseColor)
-                .with_system(choose_color_cleanup)
-            )
+            .add_system(choose_color_cleanup.in_schedule(OnExit(GameState::ChooseColor)))
             ;
     }
 }
@@ -79,21 +74,16 @@ fn position_to_color(pos: Vec2) -> Option<Player> {
 
 fn mouse_click_handler(
     mut commands: Commands,
-    mut state: ResMut<State<GameState>>,
-    windows: Res<Windows>,
+    mut next_state: ResMut<NextState<GameState>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
     mouse_buttons: Res<Input<MouseButton>>,
     asset_server: Res<AssetServer>,
-    mut app_exit_events: EventWriter<AppExit>, // FIXME: workaround for https://github.com/bevyengine/bevy/commit/07d576987a7f2bdcabc97fefcc043e19e1a30222
 ) {
     if mouse_buttons.just_pressed(MouseButton::Left) {
-        let cursor = match windows.get_primary() {
-            Some(w) => w.cursor_position().unwrap(),
-            None => {
-                app_exit_events.send(AppExit);
-                return;
-            }
+        let Some(cpos) = windows.get_single().map_or(None, |w| w.cursor_position()) else {
+            return;
         };
-        if let Some(color) = position_to_color(cursor) {
+        if let Some(color) = position_to_color(cpos) {
             let human_indicator = commands.spawn(SpriteBundle{
                 texture: asset_server.load("human-indicator.png"), // TODO: change indicator for power ups
                 transform: {
@@ -108,7 +98,7 @@ fn mouse_click_handler(
                 ..default()
             }).id();
             commands.insert_resource(HumanPlayer{ color, human_indicator });
-            state.set(GameState::NextPlayer).unwrap();
+            next_state.set(GameState::NextPlayer);
         }
     }
 }

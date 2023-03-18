@@ -1,6 +1,6 @@
 use bevy::prelude::*;
-use bevy::app::AppExit;
 use bevy::input::mouse::{MouseButtonInput, MouseButton};
+use bevy::window::PrimaryWindow;
 use crate::buttons::*;
 use crate::components::*;
 use crate::constants::*;
@@ -21,43 +21,32 @@ impl Plugin for HumanTurnPlugin {
             .add_event::<ClickEvent>()
             .add_event::<MoveEvent>()
 
-            .add_system_set(SystemSet::on_enter(GameState::HumanTurn)
-                .with_system(enable_ui)
+            .add_system(enable_ui.in_schedule(OnEnter(GameState::HumanTurn)))
+            // ui
+            .add_systems((execute_button_actions, mouse_watcher::<GameButtonAction>, watch_button_state_changes).chain()
+                .in_set(OnUpdate(GameState::HumanTurn))
             )
-            .add_system_set(SystemSet::on_update(GameState::HumanTurn)
-                // ui
-                .with_system(execute_button_actions.before(mouse_watcher::<GameButtonAction>))
-                .with_system(mouse_watcher::<GameButtonAction>)
-                .with_system(watch_button_state_changes.after(mouse_watcher::<GameButtonAction>))
-                // game play
-                .with_system(translate_mouse_input)
-                .with_system(interpret_click_event.after(translate_mouse_input))
-                .with_system(move_event_handler.after(interpret_click_event))
+            // game play
+            .add_systems((translate_mouse_input, interpret_click_event, move_event_handler).chain()
+                .in_set(OnUpdate(GameState::HumanTurn))
             )
-            .add_system_set(SystemSet::on_exit(GameState::HumanTurn)
-                .with_system(disable_ui)
-            )
+            .add_system(disable_ui.in_schedule(OnExit(GameState::HumanTurn)))
             ;
     }
 }
 
 fn enable_ui(
     mouse_button_inputs: Res<Input<MouseButton>>,
-    windows: Res<Windows>,
+    windows: Query<&Window, With<PrimaryWindow>>,
     mut button_query: Query<(&mut ButtonState, &mut TextureAtlasSprite, &Transform)>,
-    mut app_exit_events: EventWriter<AppExit>, // FIXME: workaround for https://github.com/bevyengine/bevy/commit/07d576987a7f2bdcabc97fefcc043e19e1a30222
 ) {
-    let cursor_pos = match windows.get_primary() {
-        Some(w) => w.cursor_position(),
-        None => {
-            app_exit_events.send(AppExit);
-            return;
-        }
+    let Ok(w) = windows.get_single() else {
+        return;
     };
     let mouse_pressed = mouse_button_inputs.pressed(MouseButton::Left);
 
     for (mut button_state, mut button_sprite, button_transform) in &mut button_query {
-        *button_state = get_button_state(cursor_pos, button_transform.translation, UI_BUTTON_SIZE.clone(), mouse_pressed);
+        *button_state = get_button_state(w.cursor_position(), button_transform.translation, UI_BUTTON_SIZE.clone(), mouse_pressed);
         button_sprite.color = Color::WHITE;
     }
 }
@@ -73,26 +62,19 @@ fn disable_ui(
 }
 
 fn translate_mouse_input(
-    windows: Res<Windows>,
+    windows: Query<&Window, With<PrimaryWindow>>,
     mut mouse_button_input_events: EventReader<MouseButtonInput>,
     mut click_events: EventWriter<ClickEvent>,
-    mut app_exit_events: EventWriter<AppExit>, // FIXME: workaround for https://github.com/bevyengine/bevy/commit/07d576987a7f2bdcabc97fefcc043e19e1a30222
 ) {
     if mouse_button_input_events.iter()
         .filter(|e| e.button == MouseButton::Left && e.state.is_pressed())
         .last().is_some()
     {
-        if let Some(cursor) = match windows.get_primary() {
-            Some(w) => w.cursor_position(),
-            None => {
-                app_exit_events.send(AppExit);
-                return;
-            }
-        } {
-            let (x, y) = (cursor.x - WINDOW_SIZE / 2.0, cursor.y - WINDOW_SIZE / 2.0);
-            // POWERUP: ignore this click if it's on a power-up button
-            click_events.send(ClickEvent(Vec2::new(x, y)));
-        }
+        let Some(pos) = windows.get_single().map_or(None, |w| w.cursor_position()) else {
+            return;
+        };
+        let (x, y) = (pos.x - WINDOW_SIZE / 2.0, pos.y - WINDOW_SIZE / 2.0);
+        click_events.send(ClickEvent(Vec2::new(x, y))); 
     }
 }
 
@@ -158,20 +140,20 @@ fn move_event_handler(
     mut move_events: EventReader<MoveEvent>,
     mut marbles: Query<(Entity, &Transform, &mut Marble), With<CurrentPlayer>>,
     mut dice_data: ResMut<DiceData>,
-    mut state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
 ) {
     if let Some(MoveEvent((e, idx, which, dest))) = move_events.iter().last() {
         let (e, t, mut m) = marbles.get_mut(*e).unwrap();
         m.update_index(*idx);
         dice_data.use_die(*which, &mut commands);
         commands.entity(e).insert(Moving::new(*dest, t.translation));
-        state.set(GameState::WaitForAnimation).unwrap();
+        next_state.set(GameState::WaitForAnimation);
     }
 }
 
 fn execute_button_actions(
     mut action_events: EventReader<ActionEvent<GameButtonAction>>,
-    mut state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
     dice_data: Res<DiceData>,
     mut power_events: EventWriter<PowerEvent>,
 ) {
@@ -179,9 +161,9 @@ fn execute_button_actions(
         if let Some((player, index)) = match action.0 {
             GameButtonAction::Done => {
                 if dice_data.dice.doubles {
-                    state.set(GameState::DiceRoll).unwrap();
+                    next_state.set(GameState::DiceRoll);
                 } else {
-                    state.set(GameState::EndTurn).unwrap();
+                    next_state.set(GameState::EndTurn);
                 }
                 None
             }
