@@ -1,4 +1,3 @@
-use bevy::input::keyboard::KeyboardInput;
 use bevy::prelude::*;
 use bevy::app::AppExit;
 use bevy::input::mouse::{MouseButtonInput, MouseButton};

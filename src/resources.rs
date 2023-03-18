@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bevy::prelude::*;
 use crate::components::*;
-use crate::power::PowerUp;
+use crate::power::{PowerUp, MAX_POWER_UPS};
 
 #[derive(Resource)]
 pub struct BufferTimer(pub Timer);
@@ -237,7 +237,7 @@ pub struct PlayerData {
     pub turn_move_count: u8,
     pub consecutive_empty_turns: u8,
     pub multiplier: f32,
-    pub power_ups: [Option<(PowerUp, Entity)>; 3],
+    pub power_ups: [Option<(PowerUp, Entity)>; MAX_POWER_UPS],
     pub power_up_status: PowerUpStatus,
 }
 
