@@ -185,7 +185,7 @@ fn handle_power_events(
             match power {
                 Some(power) => {
                     let power_up = bar.update(power);
-                    println!("{player:?} {bar:?}");
+                    // println!("{player:?} {bar:?}");
                     // power-fill sprite is 14 x 126 (that 126 represents 10 power points, so 126 / 10 = 12.6 pixels for every point)
                     transform.translation.y = bar.origin + bar.power * 12.6;
                     if power_up {
@@ -258,7 +258,7 @@ fn generate_power_up(
             commands.spawn((sprite_sheet, action)).id()
         };
         game_data.players.get_mut(&player).unwrap().power_ups[i] = Some((power_up, power_up_button));
-        println!("{:>6} ++ {:?}", player_string, game_data.players.get(&player).unwrap().power_ups);
+        // println!("{:>6} ++ {:?}", player_string, game_data.players.get(&player).unwrap().power_ups);
 
         // TODOs:
         // mark current player to wait for animation ?? maybe not ??
@@ -278,7 +278,7 @@ fn activate_power_up(
 ) {
     let player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
     for event in events.iter() {
-        println!("activating {:?}", event.0);
+        // println!("activating {:?}", event.0);
         if let Some(new_state) = match event.0 {
             PowerUp::RollAgain => Some(GameState::DiceRoll),
             PowerUp::DoubleDice => {
