@@ -205,12 +205,14 @@ impl PowerUpStatus {
             self.evade_capture_turns -= 1;
             if self.evade_capture_turns == 0 {
                 println!("evading ended");
+                // TODO: return a value indicating we need to turn off this power-up's highlight
             }
         }
         if self.jump_self_turns > 0 {
             self.jump_self_turns -= 1;
             if self.jump_self_turns == 0 {
                 println!("self jump ended");
+                // TODO: return a value indicating we need to turn off this power-up's highlight
             }
         }
     }
@@ -261,7 +263,7 @@ impl PlayerData {
             self.consecutive_empty_turns + 1
         };
         self.turn_move_count = 0;
-        self.power_up_status.tick();
+        self.power_up_status.tick(); // TODO: return value for unhighlighting power-ups (if they've ended)
     }
 
     pub fn use_power_up(&mut self, index: usize) -> Option<(PowerUp, Entity)> {

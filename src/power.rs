@@ -68,6 +68,7 @@ impl Plugin for PowerUpPlugin {
             .add_event::<GeneratePowerUpEvent>()
             .add_event::<PowerEvent>()
             .add_event::<PowerBarEvent>()
+            // TODO: PowerUpHighlightEvent (should be a on/off kind of thing)
 
             .insert_resource(PowerUpDistribution(WeightedIndex::new(&POWER_UP_WEIGHTS).unwrap()))
 
@@ -99,7 +100,7 @@ pub const MAX_POWER: f32 = 10.0;
 pub const MAX_POWER_UPS: usize = 3;
 
 impl PowerBar {
-    /// Update the power bar and return `true` if it's full. 
+    /// Update the power bar and return `true` if it's full.
     pub fn update(&mut self, delta: f32) -> bool {
         let new_power = (self.power + delta).max(0.0); // this reads really weird but it means this -> max(self.power + delta, 0.0)
         if new_power >= MAX_POWER {
@@ -295,6 +296,7 @@ fn activate_power_up(
             }
             PowerUp::SelfJump => {
                 player_data.power_up_status.jump_self();
+                // TODO: there needs to be a system that highlights the self-jumpable marbles
                 Some(GameState::TurnSetup)
             }
             PowerUp::CaptureNearest => {
@@ -310,3 +312,5 @@ fn activate_power_up(
         }
     }
 }
+
+// TODO: power up highlighter system + highlight/unhighlight events
