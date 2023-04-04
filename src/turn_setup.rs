@@ -51,9 +51,9 @@ pub fn calc_possible_moves(
                     // we can only capture marbles in front of us
                     .filter(|i| i > &m.index)
                     // we can only capture in the center if we can enter the center
-                    // .filter(|i| *i != CENTER_INDEX || m.index <= 29)
+                    .filter(|i| *i != CENTER_INDEX || m.index <= 29)
                     // find the smallest distance between this marble and the opponent marbles
-                    .min_by_key(|index| {
+                    .min_by_key(|index| { // FIXME: we're not considering the possibility of more than one nearest capture
                         match *index {
                             // distance to center index depends on where the next entrance is
                             CENTER_INDEX => match m.index {
@@ -323,6 +323,6 @@ mod test {
         basic_rules(&dice, Entity::from_raw(13), &marble, &mut moves);
         assert_eq!(0, moves.len());
     }
-    
+
     // TODO: test for capture nearest bug (unreachable code when using capture nearest after tile 29 with an opponent in the center)
 }
