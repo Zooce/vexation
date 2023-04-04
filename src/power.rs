@@ -20,6 +20,12 @@ pub enum PowerEvent {
 #[derive(Debug)]
 pub struct ActivatePowerUpEvent(pub PowerUp);
 
+#[derive(Debug)]
+pub enum PowerUpHighlightEvent {
+    On,
+    Off
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum PowerUp {
     RollAgain,       // weight = 4
@@ -68,11 +74,11 @@ impl Plugin for PowerUpPlugin {
             .add_event::<GeneratePowerUpEvent>()
             .add_event::<PowerEvent>()
             .add_event::<PowerBarEvent>()
-            // TODO: PowerUpHighlightEvent (should be a on/off kind of thing)
+            .add_event::<PowerUpHighlightEvent>()
 
             .insert_resource(PowerUpDistribution(WeightedIndex::new(&POWER_UP_WEIGHTS).unwrap()))
 
-            .add_systems((handle_power_events, generate_power_up, activate_power_up)
+            .add_systems((handle_power_events, generate_power_up, activate_power_up, power_up_highlighter)
                 .in_set(SharedSystemSet)
             )
             ;
@@ -209,7 +215,7 @@ fn generate_power_up(
 ) {
     let mut rng = thread_rng();
     for GeneratePowerUpEvent(player) in power_up_events.iter() {
-        let player_string = format!("{:?}", &player);
+        // let player_string = format!("{:?}", &player);
         // spawn the power up button first
         let (x, y) = match player {
             Player::Red => (-6.5, 2.5),
@@ -261,7 +267,7 @@ fn generate_power_up(
         game_data.players.get_mut(&player).unwrap().power_ups[i] = Some((power_up, power_up_button));
         // println!("{:>6} ++ {:?}", player_string, game_data.players.get(&player).unwrap().power_ups);
 
-        // TODOs:
+        // TODO:
         // mark current player to wait for animation ?? maybe not ??
         // spawn power-up sprite sheet in player's next empty power-up box
         // mark power-up for animation
@@ -276,6 +282,7 @@ fn activate_power_up(
     mut dice_data: ResMut<DiceData>,
     current_player_data: Res<CurrentPlayerData>,
     mut marbles: Query<Entity, (With<Marble>, With<CurrentPlayer>)>,
+    mut highlight_events: EventWriter<PowerUpHighlightEvent>,
 ) {
     let player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
     for event in events.iter() {
@@ -291,12 +298,12 @@ fn activate_power_up(
                 for marble in marbles.iter_mut() {
                     commands.entity(marble).insert(Evading);
                 }
-                // TODO: there needs to be a system that highlights the evading marbles
+                highlight_events.send(PowerUpHighlightEvent::On);
                 None
             }
             PowerUp::SelfJump => {
                 player_data.power_up_status.jump_self();
-                // TODO: there needs to be a system that highlights the self-jumpable marbles
+                highlight_events.send(PowerUpHighlightEvent::On);
                 Some(GameState::TurnSetup)
             }
             PowerUp::CaptureNearest => {
@@ -313,4 +320,10 @@ fn activate_power_up(
     }
 }
 
-// TODO: power up highlighter system + highlight/unhighlight events
+fn power_up_highlighter(
+    mut highlight_events: EventReader<PowerUpHighlightEvent>,
+) {
+    if let Some(event) = highlight_events.iter().last() {
+        println!("power up highlighter: {:?}", event);
+    }
+}
