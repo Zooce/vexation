@@ -132,7 +132,7 @@ pub fn create_game(
     // → ←
     game_play_entities.board_entities.push(commands.spawn(SpriteBundle{
         texture: asset_server.load("power-up-slots.png"),
-        transform: Transform::from_xyz(0., 0., Z_POWER_UP), 
+        transform: Transform::from_xyz(0., 0., Z_POWER_UP),
         ..default()
     }).id());
     // TODO: animate power bars onto the board AFTER the player chooses their color
@@ -147,7 +147,7 @@ pub fn create_game(
     let power_fill = asset_server.load("power-fill.png");
     for ((x, y), player) in &[
         ((-7.75, 0.), Player::Red),
-        ((-7.75, -8.), Player::Yellow), 
+        ((-7.75, -8.), Player::Yellow),
         ((7.75, 0.), Player::Green),
         ((7.75, -8.), Player::Blue)
     ] {
@@ -267,7 +267,7 @@ pub fn create_game(
                 ..default()
             },
             Die{
-                location: Vec3::new(0.0, 0.0, Z_DICE), 
+                location: Vec3::new(0.0, 0.0, Z_DICE),
                 timer: Timer::from_seconds(0.1, TimerMode::Repeating),
             },
         ))

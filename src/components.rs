@@ -89,7 +89,7 @@ impl Player {
     /// the `to` player at that same location. For example, the 0 index for
     /// `Player::Red` is the 12 index for `Player::Yellow`, so this function
     /// would be called like this:
-    /// 
+    ///
     /// ```rust
     /// Player::rotate_index(0, Player::Red, Player::Yellow); // returns 12
     /// ```

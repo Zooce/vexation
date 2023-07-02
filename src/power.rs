@@ -192,7 +192,6 @@ fn handle_power_events(
             match power {
                 Some(power) => {
                     let power_up = bar.update(power);
-                    // println!("{player:?} {bar:?}");
                     // power-fill sprite is 14 x 126 (that 126 represents 10 power points, so 126 / 10 = 12.6 pixels for every point)
                     transform.translation.y = bar.origin + bar.power * 12.6;
                     if power_up {
@@ -215,7 +214,6 @@ fn generate_power_up(
 ) {
     let mut rng = thread_rng();
     for GeneratePowerUpEvent(player) in power_up_events.iter() {
-        // let player_string = format!("{:?}", &player);
         // spawn the power up button first
         let (x, y) = match player {
             Player::Red => (-6.5, 2.5),
@@ -265,12 +263,6 @@ fn generate_power_up(
             commands.spawn((sprite_sheet, action)).id()
         };
         game_data.players.get_mut(&player).unwrap().power_ups[i] = Some((power_up, power_up_button));
-        // println!("{:>6} ++ {:?}", player_string, game_data.players.get(&player).unwrap().power_ups);
-
-        // TODO:
-        // mark current player to wait for animation ?? maybe not ??
-        // spawn power-up sprite sheet in player's next empty power-up box
-        // mark power-up for animation
     }
 }
 
