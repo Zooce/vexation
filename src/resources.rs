@@ -178,17 +178,27 @@ pub struct PowerUpStatus {
     pub home_run: bool,
 }
 
+pub enum PowerDownType {
+    Evading,
+    SelfJumping,
+    EvadingAndSelfJumping,
+}
+
 impl PowerUpStatus {
-    pub fn evade_capture(&mut self) {
+    pub fn evade_capture(&mut self) -> bool {
+        let already_evading = self.evade_capture_turns > 0;
         // translates to 3 full turns since the first one will get decremented
         // during the turn it's used
         self.evade_capture_turns = 4;
+        return already_evading;
     }
 
-    pub fn jump_self(&mut self) {
+    pub fn jump_self(&mut self) -> bool {
+        let already_jumping = self.jump_self_turns > 0;
         // translates to 3 full turns since the first one will get decremented
         // during the turn it's used
         self.jump_self_turns = 4;
+        return already_jumping;
     }
 
     pub fn capture_nearest(&mut self) {
@@ -200,23 +210,26 @@ impl PowerUpStatus {
     }
 
     /// Advance power-up counters - return true if counters are exhausted
-    pub fn tick(&mut self) -> bool {
+    pub fn tick(&mut self) -> Option<PowerDownType> {
         self.clear_one_shots();
-        if self.evade_capture_turns > 0 {
+        let evade_done = if self.evade_capture_turns > 0 {
             self.evade_capture_turns -= 1;
             if self.evade_capture_turns == 0 {
-                println!("evading ended");
-                return true;
-            }
-        }
-        if self.jump_self_turns > 0 {
+                true
+            } else { false }
+        } else { false } ;
+        let jump_done = if self.jump_self_turns > 0 {
             self.jump_self_turns -= 1;
             if self.jump_self_turns == 0 {
-                println!("self jump ended");
-                return true;
-            }
+                true
+            } else { false }
+        } else { false };
+        match (evade_done, jump_done) {
+            (true, false) => Some(PowerDownType::Evading),
+            (false, true) => Some(PowerDownType::SelfJumping),
+            (true, true) => Some(PowerDownType::EvadingAndSelfJumping),
+            _ => None,
         }
-        false
     }
 
     pub fn clear_one_shots(&mut self) {
@@ -258,7 +271,7 @@ impl Default for PlayerData {
 }
 
 impl PlayerData {
-    pub fn end_of_turn(&mut self) -> bool {
+    pub fn end_of_turn(&mut self) -> Option<PowerDownType> {
         self.consecutive_empty_turns = if self.turn_move_count > 0 {
             0
         } else {

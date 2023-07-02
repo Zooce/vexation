@@ -11,6 +11,7 @@ use crate::dice_roll::DiceRollPlugin;
 use crate::human_turn::HumanTurnPlugin;
 use crate::next_player::*;
 use crate::power::PowerBar;
+use crate::power::PowerUpHighlights;
 use crate::power::PowerUpPlugin;
 use crate::power::PowerUpSpriteSheets;
 use crate::process::ProcessMovePlugin;
@@ -33,6 +34,7 @@ impl Plugin for VexationPlugin {
             .add_system(create_game.in_schedule(OnEnter(GameState::GameStart)))
 
             // game play exit
+            .add_system(game_end.in_set(OnUpdate(GameState::GameEnd)))
             .add_system(destroy_game.in_schedule(OnExit(GameState::GameEnd)))
 
             // --- states + systems -- TODO: move each to their own plugin to keep things smaller?
@@ -70,7 +72,7 @@ impl Plugin for VexationPlugin {
             .add_plugin(DiceRollPlugin)
             .add_plugin(HumanTurnPlugin)
             .add_plugin(ProcessMovePlugin)
-            
+
             // end turn
             .add_system(end_turn.in_set(OnUpdate(GameState::EndTurn)))
             ;
@@ -105,6 +107,10 @@ pub fn create_game(
         self_jump: load_sprite_sheet("power-ups/self-jump-sheet.png", TILE_BUTTON_SIZE.clone(), (3, 1), &asset_server, &mut texture_atlases),
         capture_nearest: load_sprite_sheet("power-ups/capture-nearest-sheet.png", TILE_BUTTON_SIZE.clone(), (3, 1), &asset_server, &mut texture_atlases),
         home_run: load_sprite_sheet("power-ups/home-run-sheet.png", TILE_BUTTON_SIZE.clone(), (3, 1), &asset_server, &mut texture_atlases),
+    });
+    commands.insert_resource(PowerUpHighlights{
+        evading: asset_server.load("power-ups/evade-capture-highlight.png"),
+        self_jumping: asset_server.load("power-ups/self-jump-highlight.png"),
     });
 
     // pick the first player randomly
@@ -297,6 +303,10 @@ pub fn create_game(
     next_state.set(GameState::ChooseColor);
 }
 
+pub fn game_end(mut next_state: ResMut<NextState<GameState>>) {
+    next_state.set(GameState::MainMenu);
+}
+
 pub fn destroy_game(
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
@@ -333,7 +343,7 @@ pub fn destroy_game(
     commands.remove_resource::<HighlightData>();
 
     for marble in &marbles {
-        commands.entity(marble).despawn();
+        commands.entity(marble).despawn_recursive();
     }
 
     next_state.set(GameState::MainMenu);

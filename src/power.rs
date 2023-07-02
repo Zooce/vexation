@@ -1,6 +1,7 @@
 use bevy::prelude::*;
+use rand::seq::IteratorRandom;
 use crate::buttons::{ActionEvent, ButtonAction, ButtonSize, ButtonState};
-use crate::components::{CurrentPlayer, Evading, Marble, Player};
+use crate::components::{CurrentPlayer, Evading, Marble, Player, SelfJumping};
 use crate::constants::{CENTER_INDEX, TILE_BUTTON_SIZE, TILE_SIZE, Z_UI};
 use crate::resources::{CurrentPlayerData, DiceData, GameData, GameState, GameButtonAction, HumanPlayer};
 use crate::shared_systems::SharedSystemSet;
@@ -17,14 +18,13 @@ pub enum PowerEvent {
     Use{player: Player, index: usize},
 }
 
-#[derive(Debug)]
-pub struct ActivatePowerUpEvent(pub PowerUp);
+pub enum PowerDownEvent {
+    Evading(Player),
+    SelfJumping(Player),
+}
 
 #[derive(Debug)]
-pub enum PowerUpHighlightEvent {
-    On,
-    Off
-}
+pub struct ActivatePowerUpEvent(pub PowerUp);
 
 #[derive(Debug, Clone, Copy)]
 pub enum PowerUp {
@@ -65,6 +65,12 @@ pub struct PowerUpSpriteSheets {
     pub home_run: Handle<TextureAtlas>,
 }
 
+#[derive(Resource)]
+pub struct PowerUpHighlights {
+    pub evading: Handle<Image>,
+    pub self_jumping: Handle<Image>,
+}
+
 pub struct PowerUpPlugin;
 
 impl Plugin for PowerUpPlugin {
@@ -74,11 +80,11 @@ impl Plugin for PowerUpPlugin {
             .add_event::<GeneratePowerUpEvent>()
             .add_event::<PowerEvent>()
             .add_event::<PowerBarEvent>()
-            .add_event::<PowerUpHighlightEvent>()
+            .add_event::<PowerDownEvent>()
 
             .insert_resource(PowerUpDistribution(WeightedIndex::new(&POWER_UP_WEIGHTS).unwrap()))
 
-            .add_systems((handle_power_events, generate_power_up, activate_power_up, power_up_highlighter)
+            .add_systems((handle_power_events, generate_power_up, activate_power_up, power_down_event_handler)
                 .in_set(SharedSystemSet)
             )
             ;
@@ -274,11 +280,10 @@ fn activate_power_up(
     mut dice_data: ResMut<DiceData>,
     current_player_data: Res<CurrentPlayerData>,
     mut marbles: Query<Entity, (With<Marble>, With<CurrentPlayer>)>,
-    mut highlight_events: EventWriter<PowerUpHighlightEvent>,
+    power_up_highlights: Res<PowerUpHighlights>,
 ) {
     let player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
     for event in events.iter() {
-        // println!("activating {:?}", event.0);
         if let Some(new_state) = match event.0 {
             PowerUp::RollAgain => Some(GameState::DiceRoll),
             PowerUp::DoubleDice => {
@@ -286,16 +291,39 @@ fn activate_power_up(
                 Some(GameState::TurnSetup)
             }
             PowerUp::EvadeCapture => {
-                player_data.power_up_status.evade_capture();
-                for marble in marbles.iter_mut() {
-                    commands.entity(marble).insert(Evading);
+                if !player_data.power_up_status.evade_capture() {
+                    for marble in marbles.iter_mut() {
+                        commands.entity(marble).insert(Evading)
+                        .with_children(|parent| {
+                            parent.spawn((
+                                Evading,
+                                SpriteBundle{
+                                    transform: Transform::from_xyz(0., 0., 1.),
+                                    texture: power_up_highlights.evading.clone(),
+                                    ..default()
+                                },
+                            ));
+                        });
+                    }
                 }
-                highlight_events.send(PowerUpHighlightEvent::On);
                 None
             }
             PowerUp::SelfJump => {
-                player_data.power_up_status.jump_self();
-                highlight_events.send(PowerUpHighlightEvent::On);
+                if !player_data.power_up_status.jump_self() {
+                    for marble in marbles.iter_mut() {
+                        commands.entity(marble).insert(SelfJumping)
+                        .with_children(|parent| {
+                            parent.spawn((
+                                SelfJumping,
+                                SpriteBundle{
+                                    transform: Transform::from_xyz(0., 0., 1.),
+                                    texture: power_up_highlights.self_jumping.clone(),
+                                    ..default()
+                                },
+                            ));
+                        });
+                    }
+                }
                 Some(GameState::TurnSetup)
             }
             PowerUp::CaptureNearest => {
@@ -312,10 +340,35 @@ fn activate_power_up(
     }
 }
 
-fn power_up_highlighter(
-    mut highlight_events: EventReader<PowerUpHighlightEvent>,
+fn power_down_event_handler(
+    mut commands: Commands,
+    mut power_down_events: EventReader<PowerDownEvent>,
+    marbles: Query<(Entity, &Player), With<Marble>>,
+    evading: Query<(Entity, &Parent), With<Evading>>,
+    jumping: Query<(Entity, &Parent), With<SelfJumping>>,
 ) {
-    if let Some(event) = highlight_events.iter().last() {
-        println!("power up highlighter: {:?}", event);
+    for event in power_down_events.iter() {
+        match event {
+            PowerDownEvent::Evading(player) => {
+                for (highlight_entity, parent) in evading.iter() {
+                    if let Ok((marble_entity, marble_player)) = marbles.get(parent.get()) {
+                        if player == marble_player {
+                            commands.entity(marble_entity).remove::<Evading>();
+                            commands.entity(highlight_entity).remove_parent().despawn();
+                        }
+                    }
+                }
+            }
+            PowerDownEvent::SelfJumping(player) => {
+                for (highlight_entity, parent) in jumping.iter() {
+                    if let Ok((marble_entity, marble_player)) = marbles.get(parent.get()) {
+                        if player == marble_player {
+                            commands.entity(marble_entity).remove::<SelfJumping>();
+                            commands.entity(highlight_entity).remove_parent().despawn();
+                        }
+                    }
+                }
+            }
+        }
     }
 }

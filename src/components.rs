@@ -13,6 +13,9 @@ pub struct Die {
 #[derive(Component)]
 pub struct Evading;
 
+#[derive(Component)]
+pub struct SelfJumping;
+
 // shared_systems.rs
 /// Used to mark the highlight sprites when a marble is selected, so we can
 /// later remove them when a marble is no longer selected.

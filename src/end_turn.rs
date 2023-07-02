@@ -1,24 +1,22 @@
 use bevy::prelude::*;
-use crate::components::{CurrentPlayer, Evading};
-use crate::power::PowerUpHighlightEvent;
-use crate::resources::{CurrentPlayerData, GameData, GameState};
+use crate::power::PowerDownEvent;
+use crate::resources::{CurrentPlayerData, GameData, GameState, PowerDownType};
 
 pub fn end_turn(
-    mut commands: Commands,
-    evading_marbles: Query<Entity, (With<Evading>, With<CurrentPlayer>)>,
     mut current_player_data: ResMut<CurrentPlayerData>,
     mut game_data: ResMut<GameData>,
+    mut power_down_events: EventWriter<PowerDownEvent>,
     mut next_state: ResMut<NextState<GameState>>,
-    mut power_up_events: EventWriter<PowerUpHighlightEvent>,
 ) {
     let player_data = game_data.players.get_mut(&current_player_data.player).unwrap();
-    if player_data.end_of_turn() {
-        if player_data.power_up_status.evade_capture_turns == 0 {
-            evading_marbles.iter().for_each(|e| { commands.entity(e).remove::<Evading>(); });
-            power_up_events.send(PowerUpHighlightEvent::Off);
-        }
-        if player_data.power_up_status.jump_self_turns == 0 {
-            power_up_events.send(PowerUpHighlightEvent::Off);
+    if let Some(power_down) = player_data.end_of_turn() {
+        match power_down {
+            PowerDownType::Evading => power_down_events.send(PowerDownEvent::Evading(current_player_data.player)),
+            PowerDownType::SelfJumping => power_down_events.send(PowerDownEvent::SelfJumping(current_player_data.player)),
+            PowerDownType::EvadingAndSelfJumping => {
+                power_down_events.send(PowerDownEvent::Evading(current_player_data.player));
+                power_down_events.send(PowerDownEvent::SelfJumping(current_player_data.player));
+            }
         }
     }
     current_player_data.clear();
