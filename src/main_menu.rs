@@ -174,12 +174,13 @@ fn create_main_menu(
             parent
                 .spawn(SpriteBundle{
                     texture: ui_assets.title.clone(),
+                    // this is 100 pixels upward from the center of the screen
                     transform: Transform::from_xyz(0.0, y_title, 1.0),
                     ..default()
                 });
 
             // buttons
-            let mut transform = Transform::from_xyz(0.0, y_title - 100.0, 1.0);
+            let mut transform = Transform::from_xyz(0.0, y_title - 100.0, 1.0); // @ (0, 0) or the center of the screen
             spawn_sprite_sheet_button(
                 parent,
                 ui_assets.play_button.clone(),

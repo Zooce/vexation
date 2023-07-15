@@ -75,7 +75,7 @@ pub fn mouse_watcher<T: Copy + Send + Sync + 'static>(
 
 /// This is a helper function used specifically in this file.
 fn is_in_bounds(cursor_pos: Vec2, button_pos: Vec3, button_size: Vec2) -> bool {
-    let (x, y) = (cursor_pos.x - WINDOW_SIZE / 2.0, cursor_pos.y - WINDOW_SIZE / 2.0);
+    let (x, y) = (cursor_pos.x - WINDOW_SIZE / 2.0, -(cursor_pos.y - WINDOW_SIZE / 2.0));
     x > button_pos.x - button_size.x / 2.0 &&
     x < button_pos.x + button_size.x / 2.0 &&
     y > button_pos.y - button_size.y / 2.0 &&
