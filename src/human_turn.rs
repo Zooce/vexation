@@ -76,7 +76,7 @@ fn translate_mouse_input(
         let Some(pos) = windows.get_single().map_or(None, |w| w.cursor_position()) else {
             return;
         };
-        let (x, y) = (pos.x - WINDOW_SIZE / 2.0, pos.y - WINDOW_SIZE / 2.0);
+        let (x, y) = (pos.x - WINDOW_SIZE / 2.0, -(pos.y - WINDOW_SIZE / 2.0));
         click_events.send(ClickEvent(Vec2::new(x, y))); 
     }
 }
@@ -91,10 +91,10 @@ fn interpret_click_event(
     if let Some(click_event) = click_events.iter().last() {
         // interpret click as marble selection
         if let Some(marble) = marbles_query.iter().find_map(|(e, t)| {
-                let found = click_event.0.x > t.translation.x - TILE_SIZE / 2.0 &&
-                            click_event.0.x < t.translation.x + TILE_SIZE / 2.0 &&
-                            click_event.0.y > t.translation.y - TILE_SIZE / 2.0 &&
-                            click_event.0.y < t.translation.y + TILE_SIZE / 2.0;
+                let found = click_event.0.x > t.translation.x - TILE_SIZE / 2.0 && // to the right of the left edge
+                            click_event.0.x < t.translation.x + TILE_SIZE / 2.0 && // to the left of the right edge
+                            click_event.0.y > t.translation.y - TILE_SIZE / 2.0 && // below the top edge
+                            click_event.0.y < t.translation.y + TILE_SIZE / 2.0;   // above the bottom edge
                 if found { Some(e) } else { None }
             })
         {
