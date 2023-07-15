@@ -31,50 +31,51 @@ impl Plugin for VexationPlugin {
             .add_event::<ActionEvent<GameButtonAction>>()
 
             // game play enter
-            .add_system(create_game.in_schedule(OnEnter(GameState::GameStart)))
+            .add_systems(OnEnter(GameState::GameStart), create_game)
 
             // game play exit
-            .add_system(game_end.in_set(OnUpdate(GameState::GameEnd)))
-            .add_system(destroy_game.in_schedule(OnExit(GameState::GameEnd)))
+            .add_systems(Update, game_end.run_if(in_state(GameState::GameEnd)))
+            .add_systems(OnExit(GameState::GameEnd), destroy_game)
 
             // --- states + systems -- TODO: move each to their own plugin to keep things smaller?
 
-            .configure_set(SharedSystemSet.run_if(should_run_shared_systems))
+            .configure_set(Update, SharedSystemSet.run_if(should_run_shared_systems))
             // shared systems
-            .add_systems((
+            .add_systems(Update, (
                 animate_marble_moves,
                 highlighter,
                 animate_tile_highlights,
                 dim_used_die
                 ).in_set(SharedSystemSet)
             )
-            .add_plugin(PowerUpPlugin)
+            .add_plugins(PowerUpPlugin)
 
             // next player
-            .add_systems((choose_next_player, show_or_hide_buttons, next_player_setup).chain()
-                .in_set(OnUpdate(GameState::NextPlayer))
+            .add_systems(Update, (choose_next_player, show_or_hide_buttons, next_player_setup).chain()
+                .run_if(in_state(GameState::NextPlayer))
             )
 
             // turn setup
-            .add_systems((calc_possible_moves, count_moves, turn_setup_complete).chain()
-                .in_set(OnUpdate(GameState::TurnSetup))
+            .add_systems(Update, (calc_possible_moves, count_moves, turn_setup_complete).chain()
+                .run_if(in_state(GameState::TurnSetup))
             )
 
             // computer turn
-            .add_systems((clear_animation_events, computer_choose_move).chain()
-                .in_schedule(OnEnter(GameState::ComputerTurn))
+            .add_systems(
+                OnEnter(GameState::ComputerTurn),
+                (clear_animation_events, computer_choose_move).chain()
             )
-            .add_system(computer_move_buffer.in_set(OnUpdate(GameState::ComputerTurn)))
+            .add_systems(Update, computer_move_buffer.run_if(in_state(GameState::ComputerTurn)))
 
-            .add_system(wait_for_marble_animation.in_set(OnUpdate(GameState::WaitForAnimation)))
+            .add_systems(Update, wait_for_marble_animation.run_if(in_state(GameState::WaitForAnimation)))
 
-            .add_plugin(ChooseColorPlugin)
-            .add_plugin(DiceRollPlugin)
-            .add_plugin(HumanTurnPlugin)
-            .add_plugin(ProcessMovePlugin)
+            .add_plugins(ChooseColorPlugin)
+            .add_plugins(DiceRollPlugin)
+            .add_plugins(HumanTurnPlugin)
+            .add_plugins(ProcessMovePlugin)
 
             // end turn
-            .add_system(end_turn.in_set(OnUpdate(GameState::EndTurn)))
+            .add_systems(Update, end_turn.run_if(in_state(GameState::EndTurn)))
             ;
     }
 }

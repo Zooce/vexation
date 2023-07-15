@@ -10,15 +10,15 @@ impl Plugin for DiceRollPlugin {
     fn build(&self, app: &mut App) {
         app  
             // dice roll
-            .add_systems((undim_dice, roll_dice)
-                .in_schedule(OnEnter(GameState::DiceRoll))
+            .add_systems(
+                OnEnter(GameState::DiceRoll),
+                (undim_dice, roll_dice),
             )
-            .add_system(roll_animation
-                .in_set(OnUpdate(GameState::DiceRoll))
+            .add_systems(Update, roll_animation
+                .run_if(in_state(GameState::DiceRoll))
             )
-            .add_system(
+            .add_systems(OnExit(GameState::DiceRoll),
                 stop_roll_animation
-                .in_schedule(OnExit(GameState::DiceRoll))
             )
         ;
     }

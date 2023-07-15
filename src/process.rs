@@ -9,10 +9,11 @@ pub struct ProcessMovePlugin;
 impl Plugin for ProcessMovePlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_systems((check_for_capture, process_index, check_for_winner).chain()
-                .in_set(OnUpdate(GameState::ProcessMove))
+            .add_systems(Update,
+                (check_for_capture, process_index, check_for_winner).chain()
+                .run_if(in_state(GameState::ProcessMove))
             )
-            .add_system(process_complete.in_schedule(OnExit(GameState::ProcessMove)))
+            .add_systems(OnExit(GameState::ProcessMove), process_complete)
             ;
     }
 }

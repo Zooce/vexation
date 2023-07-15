@@ -3,7 +3,7 @@ use crate::constants::*;
 
 /// An `ActionEvent` that is sent when a button is clicked. The type `T` defines
 /// what those actions really are.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Event)]
 pub struct ActionEvent<T>(pub T);
 
 #[derive(Component, Debug)]

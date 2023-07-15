@@ -9,7 +9,7 @@ pub struct SharedSystemSet;
 pub fn should_run_shared_systems(
     state: Res<State<GameState>>,
 ) -> bool {
-    match state.0 {
+    match state.get() {
         GameState::MainMenu |
         GameState::GameStart |
         GameState::GameEnd |
@@ -42,7 +42,7 @@ pub fn animate_marble_moves(
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Event)]
 pub enum HighlightEvent {
     On,
     Off,

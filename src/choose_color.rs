@@ -12,11 +12,12 @@ pub struct ChooseColorPlugin;
 impl Plugin for ChooseColorPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_system(choose_color_setup.in_schedule(OnEnter(GameState::ChooseColor)))
-            .add_systems((mouse_hover_handler, mouse_click_handler)
-                .in_set(OnUpdate(GameState::ChooseColor))
+            .add_systems(OnEnter(GameState::ChooseColor), choose_color_setup)
+            .add_systems(Update,
+                (mouse_hover_handler, mouse_click_handler)
+                .run_if(in_state(GameState::ChooseColor))
             )
-            .add_system(choose_color_cleanup.in_schedule(OnExit(GameState::ChooseColor)))
+            .add_systems(OnExit(GameState::ChooseColor), choose_color_cleanup)
             ;
     }
 }

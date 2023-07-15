@@ -8,9 +8,10 @@ use crate::power::PowerEvent;
 use crate::shared_systems::HighlightEvent;
 use crate::resources::*;
 
-#[derive(Debug)]
+#[derive(Debug, Event)]
 struct ClickEvent(pub Vec2);
 
+#[derive(Event)]
 struct MoveEvent(pub (Entity, usize, WhichDie, Vec3));
 
 pub struct HumanTurnPlugin;
@@ -21,16 +22,18 @@ impl Plugin for HumanTurnPlugin {
             .add_event::<ClickEvent>()
             .add_event::<MoveEvent>()
 
-            .add_system(enable_ui.in_schedule(OnEnter(GameState::HumanTurn)))
+            .add_systems(OnEnter(GameState::HumanTurn), enable_ui)
             // ui
-            .add_systems((execute_button_actions, mouse_watcher::<GameButtonAction>, watch_button_state_changes).chain()
-                .in_set(OnUpdate(GameState::HumanTurn))
+            .add_systems(Update,
+                (execute_button_actions, mouse_watcher::<GameButtonAction>, watch_button_state_changes).chain()
+                .run_if(in_state(GameState::HumanTurn))
             )
             // game play
-            .add_systems((translate_mouse_input, interpret_click_event, move_event_handler).chain()
-                .in_set(OnUpdate(GameState::HumanTurn))
+            .add_systems(Update,
+                (translate_mouse_input, interpret_click_event, move_event_handler).chain()
+                .run_if(in_state(GameState::HumanTurn))
             )
-            .add_system(disable_ui.in_schedule(OnExit(GameState::HumanTurn)))
+            .add_systems(OnExit(GameState::HumanTurn), disable_ui)
             ;
     }
 }

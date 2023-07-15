@@ -7,22 +7,23 @@ use crate::shared_systems::SharedSystemSet;
 use rand::thread_rng;
 use rand::distributions::{ Distribution, WeightedIndex };
 
-#[derive(Debug)]
+#[derive(Debug, Event)]
 pub struct GeneratePowerUpEvent(pub Player);
 
-#[derive(Debug)]
+#[derive(Debug, Event)]
 pub enum PowerEvent {
     Capture{captor: Player, captive: Player},
     Index{player: Player, index: usize, prev_index: usize},
     Use{player: Player, index: usize},
 }
 
+#[derive(Event)]
 pub enum PowerDownEvent {
     Evading(Player),
     SelfJumping(Player),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Event)]
 pub struct ActivatePowerUpEvent(pub PowerUp);
 
 #[derive(Debug, Clone, Copy)]
@@ -83,7 +84,7 @@ impl Plugin for PowerUpPlugin {
 
             .insert_resource(PowerUpDistribution(WeightedIndex::new(&POWER_UP_WEIGHTS).unwrap()))
 
-            .add_systems((handle_power_events, generate_power_up, activate_power_up, power_down_event_handler)
+            .add_systems(Update, (handle_power_events, generate_power_up, activate_power_up, power_down_event_handler)
                 .in_set(SharedSystemSet)
             )
             ;
@@ -137,6 +138,7 @@ impl PowerBar {
     }
 }
 
+#[derive(Event)]
 pub struct PowerBarEvent {
     pub power: f32,
     pub player: Player,

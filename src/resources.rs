@@ -335,6 +335,7 @@ pub struct HumanPlayer {
     pub human_indicator: Entity,
 }
 
+#[derive(Event)]
 pub struct MarbleAnimationDoneEvent(pub Player);
 
 #[derive(Resource)]

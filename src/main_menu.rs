@@ -43,20 +43,20 @@ impl Plugin for MainMenuPlugin {
 
             .insert_resource(UiPageNumber(0))
 
-            .add_startup_system(setup)
+            .add_systems(Startup, setup)
 
-            .add_system(main_menu_enter.in_schedule(OnEnter(GameState::MainMenu)))
+            .add_systems(OnEnter(GameState::MainMenu), main_menu_enter)
             // I'm executing button actions first because I want a frame
             // delay here so we can see the button animation
-            .add_systems((
+            .add_systems(Update, (
                     execute_menu_action,
                     mouse_watcher::<MainMenuAction>,
                     watch_button_state_changes,
                     menu_page_renderer
                 ).chain()
-                .in_set(OnUpdate(GameState::MainMenu))
+                .run_if(in_state(GameState::MainMenu))
             )
-            .add_system(main_menu_exit.in_schedule(OnExit(GameState::MainMenu)))
+            .add_systems(OnExit(GameState::MainMenu), main_menu_exit)
             ;
     }
 }
@@ -281,12 +281,10 @@ fn create_rules_page(
                 }
             ),
             style: Style{
-                size: Size::new(Val::Px(WINDOW_SIZE - 10.0 * 2.0), Val::Auto),
+                width: Val::Px(WINDOW_SIZE - 10.0 * 2.0),
+                height: Val::Auto,
                 align_self: AlignSelf::FlexStart,
-                position: UiRect{
-                    left: Val::Px(10.0),
-                    ..default()
-                },
+                left: Val::Px(10.0),
                 ..default()
             },
             ..default()

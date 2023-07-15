@@ -26,7 +26,7 @@ fn main() {
         // resources
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
 
-        .add_startup_system(setup)
+        .add_systems(Startup, setup)
 
         // plugins
         .add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -38,8 +38,8 @@ fn main() {
             }),
             ..default()
         }).set(ImagePlugin::default_nearest()))
-        .add_plugin(MainMenuPlugin)
-        .add_plugin(VexationPlugin)
+        .add_plugins(MainMenuPlugin)
+        .add_plugins(VexationPlugin)
 
         // go!
         .run();
