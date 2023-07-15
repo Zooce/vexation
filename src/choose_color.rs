@@ -65,10 +65,10 @@ fn position_to_color(pos: Vec2) -> Option<Player> {
     let lr = (pos.x >= WINDOW_SIZE / 2.).into();
     let bt = (pos.y >= WINDOW_SIZE / 2.).into();
     match (lr, bt) {
-        (0, 0) => Some(Player::Yellow),
-        (0, 1) => Some(Player::Red),
-        (1, 0) => Some(Player::Blue),
-        (1, 1) => Some(Player::Green),
+        (0, 0) => Some(Player::Red),
+        (0, 1) => Some(Player::Yellow),
+        (1, 0) => Some(Player::Green),
+        (1, 1) => Some(Player::Blue),
         _ => None,
     }
 }
